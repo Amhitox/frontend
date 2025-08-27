@@ -44,9 +44,16 @@ jobs:
       run: |
         flutter pub get
 
-    - name: Install CocoaPods (if needed)
+    - name: Install CocoaPods and Update Podfile
       run: |
         if [ -f "ios/Podfile" ]; then
+          echo "Updating Podfile with minimum iOS version 13.0..."
+          # Backup original Podfile
+          cp ios/Podfile ios/Podfile.backup
+          # Add or update platform directive
+          sed -i '' 's/platform :ios,/platform :ios, "13.0"/g' ios/Podfile || \
+          echo 'platform :ios, "13.0"' >> ios/Podfile
+          # Install CocoaPods
           sudo gem install cocoapods
           pod install --project-directory=ios
         fi
