@@ -50,9 +50,17 @@ jobs:
           echo "Updating Podfile with minimum iOS version 13.0..."
           # Backup original Podfile
           cp ios/Podfile ios/Podfile.backup
-          # Add or update platform directive
-          sed -i '' 's/platform :ios,/platform :ios, "13.0"/g' ios/Podfile || \
-          echo 'platform :ios, "13.0"' >> ios/Podfile
+          # Insert platform directive at the top (handle existing content)
+          if ! grep -q "platform :ios" ios/Podfile; then
+            sed -i '' '1s/^/platform :ios, "13.0"\n/' ios/Podfile
+          else
+            sed -i '' 's/platform :ios,/platform :ios, "13.0"/g' ios/Podfile
+          fi
+          # Verify the change
+          if ! grep -q "platform :ios, \"13.0\"" ios/Podfile; then
+            echo "Failed to update Podfile with platform iOS 13.0!"
+            exit 1
+          fi
           # Install CocoaPods
           sudo gem install cocoapods
           pod install --project-directory=ios
