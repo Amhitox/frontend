@@ -9,10 +9,6 @@ jobs:
   build:
     runs-on: macos-latest
 
-    env:
-      SCHEME: "Runner" # Default Flutter iOS scheme; adjust if different
-      DESTINATION: "platform=iOS Simulator,name=iPhone 15,OS=18.0" # Explicitly set to iOS 18.0
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -43,12 +39,6 @@ jobs:
       run: |
         echo "=== Project Structure ==="
         find . -name "*.xcodeproj" -o -name "*.xcworkspace" | head -10
-        echo "=== Available schemes ==="
-        if [ -f ios/Runner.xcworkspace ]; then
-          xcodebuild -workspace ios/Runner.xcworkspace -list
-        elif [ -f ios/Runner.xcodeproj ]; then
-          xcodebuild -project ios/Runner.xcodeproj -list
-        fi
 
     - name: Get Flutter dependencies
       run: |
@@ -65,49 +55,15 @@ jobs:
           pod install --project-directory=ios
         fi
 
-    - name: Install iOS 18.0 Simulator Runtime
+    - name: Copy .app for Upload
       run: |
-        sudo xcodebuild -downloadPlatform iOS -buildVersion 18.0
-        # Wait for the download to complete (this may take time)
-        while ! xcrun simctl list | grep -q "iOS 18.0"; do
-          echo "Waiting for iOS 18.0 runtime to install..."
-          sleep 10
-        done
-        echo "iOS 18.0 runtime installed."
-
-    - name: Build App
-      run: |
-        WORKSPACE="ios/Runner.xcworkspace"
-        if [ -f "$WORKSPACE" ]; then
-          echo "Building workspace: $WORKSPACE with scheme: ${{ env.SCHEME }}"
-          xcodebuild -workspace "$WORKSPACE" \
-            -scheme "${{ env.SCHEME }}" \
-            -configuration Debug \
-            -destination "${{ env.DESTINATION }}" \
-            -derivedDataPath DerivedData \
-            build
-        else
-          PROJECT="ios/Runner.xcodeproj"
-          echo "Building project: $PROJECT with scheme: ${{ env.SCHEME }}"
-          xcodebuild -project "$PROJECT" \
-            -scheme "${{ env.SCHEME }}" \
-            -configuration Debug \
-            -destination "${{ env.DESTINATION }}" \
-            -derivedDataPath DerivedData \
-            build
-        fi
-
-    - name: Package App
-      run: |
-        APP_PATH=$(find DerivedData -name "*.app" | head -1)
-        if [ -n "$APP_PATH" ]; then
+        APP_PATH="build/ios/iphonesimulator/Runner.app"
+        if [ -d "$APP_PATH" ]; then
           echo "Found app at: $APP_PATH"
-          APP_NAME=$(basename "$APP_PATH")
-          cp -r "$APP_PATH" "./$APP_NAME"
-          zip -r "${APP_NAME}.zip" "./$APP_NAME"
-          echo "Created: ${APP_NAME}.zip"
+          cp -r "$APP_PATH" "./Runner.app"
+          echo "Copied to: ./Runner.app"
         else
-          echo "No .app file found!"
+          echo "No .app file found at $APP_PATH!"
           exit 1
         fi
 
@@ -115,5 +71,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: iOS-App-Simulator-${{ github.sha }}
-        path: "*.zip"
+        path: "Runner.app"
         retention-days: 30
