@@ -1,30 +1,35 @@
 workflows:
   ios-workflow:
-    name: iOS Workflow
+    name: iOS Build
     max_build_duration: 120
     instance_type: mac_mini_m1
-    integrations:
-      app_store_connect: codemagic  # Optional: for App Store
     environment:
       flutter: stable
-      ios_signing:
-        distribution_type: development  # No signing for .app file
-      vars:
-        BUNDLE_ID: "com.example.frontend"  # Replace with your bundle ID
+      xcode: latest
+      cocoapods: default
     scripts:
-      - name: Set up code signing settings on Xcode project
-        script: |
-          xcode-project use-profiles
       - name: Get Flutter packages
         script: |
-          flutter packages pub get
+          flutter pub get
       - name: Install CocoaPods dependencies
         script: |
-          find . -name "Podfile" -execdir pod install \;
-      - name: Flutter build
+          cd ios
+          pod install
+      - name: Build iOS app for simulator
         script: |
           flutter build ios --no-codesign --simulator --debug
+      - name: Package app
+        script: |
+          cd build/ios/iphonesimulator/
+          ls -la
+          echo "Available .app files:"
+          find . -name "*.app" -type d
     artifacts:
       - build/ios/iphonesimulator/*.app
     publishing:
-      # No publishing needed for testing
+      email:
+        recipients:
+          - amhitasao@gmail.com  # Optional: get email when build completes
+        notify:
+          success: true
+          failure: true
