@@ -260,7 +260,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
-                          '2 months FREE',
+                          'Save 20%',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 9,

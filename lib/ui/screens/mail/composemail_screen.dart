@@ -235,15 +235,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     _bodyController.replaceText(index, length, emoji.emoji, null);
   }
 
-  void _toggleEmojiPicker() {
-    setState(() {
-      _showEmojiPicker = !_showEmojiPicker;
-      if (_showEmojiPicker) {
-        _bodyFocus.unfocus();
-      }
-    });
-  }
-
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
@@ -395,15 +386,15 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
         isLargeScreen
             ? 24
             : isTablet
-            ? 20
-            : 16,
+            ? 16
+            : 8,
         0,
         isLargeScreen
             ? 24
             : isTablet
-            ? 20
-            : 16,
-        isTablet ? 20 : 16,
+            ? 16
+            : 8,
+        isTablet ? 16 : 8,
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.05),
@@ -415,16 +406,29 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
       child: Column(
         children: [
-          SizedBox(height: isTablet ? 24 : 20),
-          _buildInputFields(isTablet, isLargeScreen),
+          // Compact input fields section
+          _buildCompactInputFields(isTablet, isLargeScreen),
+
+          // Attachments section (if any)
           if (_attachments.isNotEmpty)
             _buildAttachmentsSection(isTablet, isLargeScreen),
-          _buildToolbar(isTablet, isLargeScreen),
-          Expanded(child: _buildMessageField(isTablet, isLargeScreen)),
+
+          // Compact toolbar
+          _buildCompactToolbar(isTablet, isLargeScreen),
+
+          // Expanded body input - takes most of the space
+          Expanded(
+            flex: 3, // Give more weight to the body
+            child: _buildMessageField(isTablet, isLargeScreen),
+          ),
+
+          // Send button
           _buildSendButton(isTablet, isLargeScreen),
+
+          // Emoji picker
           if (_showEmojiPicker)
             SizedBox(
-              height: 250,
+              height: 200, // Reduced height for mobile
               child: EmojiPicker(
                 onEmojiSelected: (category, emoji) {
                   _onEmojiSelected(emoji);
@@ -436,12 +440,18 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     );
   }
 
-  Widget _buildInputFields(bool isTablet, bool isLargeScreen) {
+  Widget _buildCompactInputFields(bool isTablet, bool isLargeScreen) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 20),
+      padding: EdgeInsets.fromLTRB(
+        isTablet ? 24 : 16,
+        isTablet ? 20 : 12,
+        isTablet ? 24 : 16,
+        isTablet ? 8 : 4,
+      ),
       child: Column(
         children: [
-          _buildTextField(
+          // Compact To field
+          _buildCompactTextField(
             controller: _toController,
             focusNode: _toFocus,
             hint: 'To',
@@ -449,82 +459,55 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             isRequired: true,
             suggestions: _suggestions,
           ),
-          SizedBox(height: isTablet ? 16 : 12),
+          SizedBox(height: isTablet ? 8 : 6),
+
+          // CC/BCC buttons row
+          if (!_showCc || !_showBcc)
+            Row(
+              children: [
+                if (!_showCc)
+                  _buildSmallButton(
+                    'Cc',
+                    () => setState(() => _showCc = true),
+                    isTablet,
+                  ),
+                if (!_showCc && !_showBcc) SizedBox(width: isTablet ? 8 : 6),
+                if (!_showBcc)
+                  _buildSmallButton(
+                    'Bcc',
+                    () => setState(() => _showBcc = true),
+                    isTablet,
+                  ),
+              ],
+            ),
+          if (!_showCc || !_showBcc) SizedBox(height: isTablet ? 8 : 6),
+
+          // Show CC field if enabled
           if (_showCc) ...[
-            _buildTextField(
+            _buildCompactTextField(
               controller: TextEditingController(),
               focusNode: FocusNode(),
               hint: 'Cc',
               isTablet: isTablet,
               suggestions: _suggestions,
             ),
-            SizedBox(height: isTablet ? 16 : 12),
+            SizedBox(height: isTablet ? 8 : 6),
           ],
+
+          // Show BCC field if enabled
           if (_showBcc) ...[
-            _buildTextField(
+            _buildCompactTextField(
               controller: TextEditingController(),
               focusNode: FocusNode(),
               hint: 'Bcc',
               isTablet: isTablet,
               suggestions: _suggestions,
             ),
-            SizedBox(height: isTablet ? 16 : 12),
+            SizedBox(height: isTablet ? 8 : 6),
           ],
-          Row(
-            children: [
-              if (!_showCc)
-                GestureDetector(
-                  onTap: () => setState(() => _showCc = true),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isTablet ? 12 : 8,
-                      vertical: isTablet ? 6 : 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(isTablet ? 12 : 8),
-                    ),
-                    child: Text(
-                      'Cc',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontSize: isTablet ? 12 : 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              if (!_showCc && !_showBcc) SizedBox(width: isTablet ? 8 : 6),
-              if (!_showBcc)
-                GestureDetector(
-                  onTap: () => setState(() => _showBcc = true),
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isTablet ? 12 : 8,
-                      vertical: isTablet ? 6 : 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(isTablet ? 12 : 8),
-                    ),
-                    child: Text(
-                      'Bcc',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontSize: isTablet ? 12 : 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          SizedBox(height: isTablet ? 16 : 12),
-          _buildTextField(
+
+          // Compact Subject field
+          _buildCompactTextField(
             controller: _subjectController,
             focusNode: _subjectFocus,
             hint: 'Subject',
@@ -536,7 +519,31 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     );
   }
 
-  Widget _buildTextField({
+  Widget _buildSmallButton(String text, VoidCallback onTap, bool isTablet) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isTablet ? 8 : 6,
+          vertical: isTablet ? 4 : 3,
+        ),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontSize: isTablet ? 11 : 9,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactTextField({
     required TextEditingController controller,
     required FocusNode focusNode,
     required String hint,
@@ -548,29 +555,19 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       animation: focusNode,
       builder: (context, child) {
         return Container(
+          height: isTablet ? 42 : 36, // Fixed compact height
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface.withValues(
               alpha: focusNode.hasFocus ? 0.1 : 0.03,
             ),
-            borderRadius: BorderRadius.circular(isTablet ? 12 : 8),
-            border: Border.all(
-              color:
-                  focusNode.hasFocus
-                      ? Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.3)
-                      : Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.1),
-              width: focusNode.hasFocus ? 2 : 1,
-            ),
+            borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
           ),
           child: TextField(
             controller: controller,
             focusNode: focusNode,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface,
-              fontSize: isTablet ? 16 : 14,
+              fontSize: isTablet ? 14 : 13,
             ),
             decoration: InputDecoration(
               hintText: '$hint${isRequired ? ' *' : ''}',
@@ -578,11 +575,12 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                 color: Theme.of(
                   context,
                 ).colorScheme.onSurface.withValues(alpha: 0.4),
+                fontSize: isTablet ? 14 : 13,
               ),
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(
-                horizontal: isTablet ? 16 : 12,
-                vertical: isTablet ? 14 : 12,
+                horizontal: isTablet ? 12 : 10,
+                vertical: isTablet ? 10 : 8,
               ),
             ),
           ),
@@ -593,12 +591,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
 
   Widget _buildAttachmentsSection(bool isTablet, bool isLargeScreen) {
     return Container(
-      margin: EdgeInsets.fromLTRB(
-        isTablet ? 24 : 20,
-        isTablet ? 16 : 12,
-        isTablet ? 24 : 20,
-        0,
-      ),
+      margin: EdgeInsets.fromLTRB(isTablet ? 24 : 16, 0, isTablet ? 24 : 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -610,7 +603,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                   color: Theme.of(
                     context,
                   ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  fontSize: isTablet ? 14 : 12,
+                  fontSize: isTablet ? 12 : 11,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -621,27 +614,27 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                   color: Theme.of(
                     context,
                   ).colorScheme.onSurface.withValues(alpha: 0.5),
-                  fontSize: isTablet ? 12 : 10,
+                  fontSize: isTablet ? 10 : 9,
                 ),
               ),
             ],
           ),
-          SizedBox(height: isTablet ? 12 : 8),
+          SizedBox(height: isTablet ? 8 : 6),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _attachments.length,
             separatorBuilder:
-                (context, index) => SizedBox(height: isTablet ? 8 : 6),
+                (context, index) => SizedBox(height: isTablet ? 6 : 4),
             itemBuilder: (context, index) {
               final attachment = _attachments[index];
               return Container(
-                padding: EdgeInsets.all(isTablet ? 12 : 10),
+                padding: EdgeInsets.all(isTablet ? 8 : 6),
                 decoration: BoxDecoration(
                   color: Theme.of(
                     context,
                   ).colorScheme.primary.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(isTablet ? 12 : 8),
+                  borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
                   border: Border.all(
                     color: Theme.of(
                       context,
@@ -652,20 +645,20 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                 child: Row(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(isTablet ? 8 : 6),
+                      padding: EdgeInsets.all(isTablet ? 6 : 4),
                       decoration: BoxDecoration(
                         color: Theme.of(
                           context,
                         ).colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
+                        borderRadius: BorderRadius.circular(isTablet ? 6 : 4),
                       ),
                       child: Icon(
                         attachment.isImage ? Icons.image : Icons.attach_file,
                         color: Theme.of(context).colorScheme.primary,
-                        size: isTablet ? 20 : 16,
+                        size: isTablet ? 16 : 14,
                       ),
                     ),
-                    SizedBox(width: isTablet ? 12 : 8),
+                    SizedBox(width: isTablet ? 8 : 6),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,19 +667,18 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                             attachment.name,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface,
-                              fontSize: isTablet ? 14 : 12,
+                              fontSize: isTablet ? 12 : 11,
                               fontWeight: FontWeight.w500,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 2),
                           Text(
                             _formatFileSize(attachment.size),
                             style: TextStyle(
                               color: Theme.of(
                                 context,
                               ).colorScheme.onSurface.withValues(alpha: 0.6),
-                              fontSize: isTablet ? 12 : 10,
+                              fontSize: isTablet ? 10 : 9,
                             ),
                           ),
                         ],
@@ -699,12 +691,12 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                         color: Theme.of(
                           context,
                         ).colorScheme.onSurface.withValues(alpha: 0.6),
-                        size: isTablet ? 18 : 16,
+                        size: isTablet ? 16 : 14,
                       ),
                       padding: EdgeInsets.zero,
                       constraints: BoxConstraints(
-                        minWidth: isTablet ? 32 : 28,
-                        minHeight: isTablet ? 32 : 28,
+                        minWidth: isTablet ? 24 : 20,
+                        minHeight: isTablet ? 24 : 20,
                       ),
                     ),
                   ],
@@ -712,26 +704,27 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               );
             },
           ),
+          SizedBox(height: isTablet ? 8 : 6),
         ],
       ),
     );
   }
 
-  Widget _buildToolbar(bool isTablet, bool isLargeScreen) {
+  Widget _buildCompactToolbar(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.fromLTRB(
-        isTablet ? 24 : 20,
-        isTablet ? 16 : 12,
-        isTablet ? 24 : 20,
+        isTablet ? 24 : 16,
         0,
+        isTablet ? 24 : 16,
+        isTablet ? 8 : 6,
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: isTablet ? 16 : 12,
-        vertical: isTablet ? 12 : 8,
+        horizontal: isTablet ? 12 : 8,
+        vertical: isTablet ? 6 : 0,
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(isTablet ? 12 : 8),
+        borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
         border: Border.all(
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
           width: 1,
@@ -739,7 +732,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
       child: Row(
         children: [
-          // QuillSimpleToolbar wrapped in Flexible to prevent layout conflicts
+          // Minimal QuillToolbar for basic formatting
           Flexible(
             child: quill.QuillSimpleToolbar(
               controller: _bodyController,
@@ -756,7 +749,11 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                 showSuperscript: false,
                 showInlineCode: false,
                 showDividers: false,
+                showColorButton: false,
+                showBackgroundColorButton: false,
                 multiRowsDisplay: false,
+                showSearchButton: false,
+                showQuote: false,
                 iconTheme: quill.QuillIconTheme(
                   iconButtonSelectedData: quill.IconButtonData(
                     color: Theme.of(context).colorScheme.primary,
@@ -767,41 +764,36 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                     ).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
-                customButtons: [
-                  quill.QuillToolbarCustomButtonOptions(
-                    icon: Icon(Icons.emoji_emotions_outlined),
-                    onPressed: _toggleEmojiPicker,
-                  ),
-                ],
+                customButtons: [],
               ),
             ),
           ),
 
-          // Custom attachment buttons
+          // Divider
           Container(
-            height: 24,
+            height: 16,
             width: 1,
             color: Theme.of(
               context,
             ).colorScheme.onSurface.withValues(alpha: 0.2),
-            margin: const EdgeInsets.symmetric(horizontal: 8),
+            margin: const EdgeInsets.symmetric(horizontal: 6),
           ),
 
           // Attach files button
           Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(4),
               onTap: _isUploadingFile ? null : _pickFiles,
               child: Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(6),
                 child:
                     _isUploadingFile
                         ? SizedBox(
-                          width: 16,
-                          height: 16,
+                          width: 12,
+                          height: 12,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                            strokeWidth: 1.5,
                             valueColor: AlwaysStoppedAnimation(
                               Theme.of(context).colorScheme.primary,
                             ),
@@ -812,7 +804,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                           color: Theme.of(
                             context,
                           ).colorScheme.onSurface.withValues(alpha: 0.7),
-                          size: 18,
+                          size: isTablet ? 16 : 14,
                         ),
               ),
             ),
@@ -822,16 +814,16 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(4),
               onTap: _isUploadingFile ? null : _pickImages,
               child: Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(6),
                 child: Icon(
                   Icons.image,
                   color: Theme.of(
                     context,
                   ).colorScheme.onSurface.withValues(alpha: 0.7),
-                  size: 18,
+                  size: isTablet ? 16 : 14,
                 ),
               ),
             ),
@@ -843,17 +835,12 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
 
   Widget _buildMessageField(bool isTablet, bool isLargeScreen) {
     return Container(
-      margin: EdgeInsets.fromLTRB(
-        isTablet ? 24 : 20,
-        isTablet ? 16 : 12,
-        isTablet ? 24 : 20,
-        0,
-      ),
+      margin: EdgeInsets.fromLTRB(isTablet ? 24 : 16, 0, isTablet ? 24 : 16, 0),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface.withValues(
           alpha: _bodyFocus.hasFocus ? 0.1 : 0.03,
         ),
-        borderRadius: BorderRadius.circular(isTablet ? 12 : 8),
+        borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
         border: Border.all(
           color:
               _bodyFocus.hasFocus
@@ -861,23 +848,31 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                   : Theme.of(
                     context,
                   ).colorScheme.onSurface.withValues(alpha: 0.1),
-          width: _bodyFocus.hasFocus ? 2 : 1,
+          width: _bodyFocus.hasFocus ? 1.5 : 1,
         ),
       ),
-      child: quill.QuillEditor.basic(
-        controller: _bodyController,
-        focusNode: _bodyFocus,
+      child: Padding(
+        padding: EdgeInsets.all(isTablet ? 8 : 6),
+        child: quill.QuillEditor.basic(
+          controller: _bodyController,
+          focusNode: _bodyFocus,
+        ),
       ),
     );
   }
 
   Widget _buildSendButton(bool isTablet, bool isLargeScreen) {
     return Container(
-      padding: EdgeInsets.all(isTablet ? 24 : 20),
+      padding: EdgeInsets.fromLTRB(
+        isTablet ? 24 : 16,
+        isTablet ? 16 : 12,
+        isTablet ? 24 : 16,
+        isTablet ? 20 : 16,
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(isTablet ? 12 : 8),
+          borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
           onTap:
               _isSending
                   ? null
@@ -888,7 +883,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: double.infinity,
-            height: isTablet ? 56 : 48,
+            height: isTablet ? 48 : 40,
             decoration: BoxDecoration(
               color:
                   _isSending
@@ -896,14 +891,14 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                         context,
                       ).colorScheme.primary.withValues(alpha: 0.6)
                       : Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(isTablet ? 12 : 8),
+              borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
             ),
             child: Center(
               child:
                   _isSending
                       ? SizedBox(
-                        width: isTablet ? 24 : 20,
-                        height: isTablet ? 24 : 20,
+                        width: isTablet ? 20 : 16,
+                        height: isTablet ? 20 : 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation(
@@ -917,16 +912,16 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                           Icon(
                             Icons.send_rounded,
                             color: Theme.of(context).colorScheme.onPrimary,
-                            size: isTablet ? 20 : 18,
+                            size: isTablet ? 18 : 16,
                           ),
-                          SizedBox(width: isTablet ? 12 : 8),
+                          SizedBox(width: isTablet ? 8 : 6),
                           Text(
                             widget.editingMail != null
                                 ? 'Update Message'
                                 : 'Send Message',
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onPrimary,
-                              fontSize: isTablet ? 16 : 14,
+                              fontSize: isTablet ? 14 : 13,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
