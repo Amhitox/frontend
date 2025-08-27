@@ -44,30 +44,34 @@ jobs:
       run: |
         flutter pub get
 
-    - name: Install iOS 18.0 Simulator Runtime
-      run: |
-        echo "Attempting to download iOS 18.0 runtime..."
-        sudo xcodebuild -downloadPlatform iOS -buildVersion 18.0
-        # Wait for the download to complete (up to 10 minutes)
-        for i in {1..60}; do
-          if xcrun simctl list | grep -q "iOS 18.0"; then
-            echo "iOS 18.0 runtime installed."
-            break
-          fi
-          echo "Waiting for iOS 18.0 runtime... ($i/60)"
-          sleep 10
-          if [ $i -eq 60 ]; then
-            echo "Timeout: iOS 18.0 runtime not detected. Check available runtimes with 'xcrun simctl list'."
-            exit 1
-          fi
-        done
-
     - name: Install CocoaPods (if needed)
       run: |
         if [ -f "ios/Podfile" ]; then
           sudo gem install cocoapods
           pod install --project-directory=ios
         fi
+
+    - name: Install All Simulator Runtimes
+      run: |
+        echo "Attempting to download all simulator runtimes..."
+        sudo xcodebuild -downloadAllPlatforms
+        # Wait for runtimes to be available (up to 10 minutes)
+        for i in {1..60}; do
+          if xcrun simctl list | grep -q "iOS"; then
+            echo "Simulator runtimes detected."
+            break
+          fi
+          echo "Waiting for simulator runtimes... ($i/60)"
+          sleep 10
+          if [ $i -eq 60 ]; then
+            echo "Timeout: No simulator runtimes detected. Check with 'xcrun simctl list'."
+            exit 1
+          fi
+        done
+
+    - name: List Available SDKs (Debug)
+      run: |
+        xcodebuild -showsdks
 
     - name: Build Flutter iOS
       run: |
