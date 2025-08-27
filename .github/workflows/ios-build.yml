@@ -67,7 +67,7 @@ jobs:
 
     - name: Install iOS 18.0 Simulator Runtime
       run: |
-        sudo xcodebuild -downloadPlatform iOS --platform-version 18.0
+        sudo xcodebuild -downloadPlatform iOS -buildVersion 18.0
         # Wait for the download to complete (this may take time)
         while ! xcrun simctl list | grep -q "iOS 18.0"; do
           echo "Waiting for iOS 18.0 runtime to install..."
