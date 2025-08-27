@@ -1,68 +1,30 @@
-# codemagic.yaml
-
 workflows:
-  build-ios-app:
-    name: Build iOS App
-    max_build_duration: 120 # Maximum build time in minutes (adjust as needed)
-    instance_type: mac_mini_m1 # Use a macOS instance with M1 chip for iOS builds
+  ios-workflow:
+    name: iOS Workflow
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic  # Optional: for App Store
     environment:
-      flutter: stable # Use the stable Flutter channel
-      xcode: latest # Use the latest Xcode version
-      cocoapods: default # Use default CocoaPods installation
-
+      flutter: stable
+      ios_signing:
+        distribution_type: development  # No signing for .app file
+      vars:
+        BUNDLE_ID: "com.example.frontend"  # Replace with your bundle ID
     scripts:
-      - name: Set up environment
+      - name: Set up code signing settings on Xcode project
         script: |
-          flutter --version
-          xcodebuild -version
-
-      - name: Install Flutter dependencies
+          xcode-project use-profiles
+      - name: Get Flutter packages
         script: |
-          flutter pub get
-
-      - name: Install CocoaPods
+          flutter packages pub get
+      - name: Install CocoaPods dependencies
         script: |
-          if [ -f "ios/Podfile" ]; then
-            gem install cocoapods
-            # Update Podfile to set minimum iOS version to 13.0
-            cp ios/Podfile ios/Podfile.backup
-            if ! grep -q "platform :ios" ios/Podfile; then
-              sed -i '' '1s/^/platform :ios, "13.0"\n/' ios/Podfile
-            else
-              sed -i '' 's/platform :ios,/platform :ios, "13.0"/g' ios/Podfile
-            fi
-            if ! grep -q "platform :ios, \"13.0\"" ios/Podfile; then
-              echo "Failed to update Podfile with platform iOS 13.0!"
-              exit 1
-            fi
-            pod install --project-directory=ios
-          fi
-
-      - name: Build iOS Simulator App
+          find . -name "Podfile" -execdir pod install \;
+      - name: Flutter build
         script: |
-          flutter build ios --simulator --no-codesign
-
-      - name: Copy .app for Artifact
-        script: |
-          APP_PATH="build/ios/iphonesimulator/Runner.app"
-          if [ -d "$APP_PATH" ]; then
-            echo "Found app at: $APP_PATH"
-            cp -r "$APP_PATH" "./Runner.app"
-            echo "Copied to: ./Runner.app"
-          else
-            echo "No .app file found at $APP_PATH!"
-            exit 1
-          fi
-
+          flutter build ios --no-codesign --simulator --debug
     artifacts:
-      - Runner.app/** # Include the Runner.app folder and its contents
-      - build/ios/iphonesimulator/Runner.app/** # Fallback to original build location
-
+      - build/ios/iphonesimulator/*.app
     publishing:
-      # No publishing steps to avoid signing or deployment
-      email:
-        recipients:
-          - your-email@example.com # Optional: Replace with your email for notifications
-        notify:
-          success: true # Notify on success
-          failure: true # Notify on failure
+      # No publishing needed for testing
