@@ -1,0 +1,895 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:frontend/ui/widgets/side_menu.dart';
+import 'package:frontend/ui/widgets/dragable_menu.dart';
+import 'package:frontend/ui/widgets/calendar_view.dart';
+import 'package:go_router/go_router.dart';
+import '../../../models/task.dart';
+import '../../../models/taskpriority.dart';
+
+class TaskScreen extends StatefulWidget {
+  const TaskScreen({super.key});
+
+  @override
+  _TaskScreenState createState() => _TaskScreenState();
+}
+
+class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
+  late AnimationController _slideController;
+  late Animation<Offset> _slideAnimation;
+
+  DateTime _selectedDate = DateTime.now();
+  bool _showingCalendarView = false;
+  String _selectedFilter = "All";
+
+  final List<String> _filters = ["All", "Pending", "In Progress", "Completed"];
+
+  final List<Task> _tasks = [
+    Task(
+      title: "Review Q4 Financial Reports",
+      description: "Analyze revenue, expenses, and profitability metrics",
+      category: "Finance",
+      priority: TaskPriority.high,
+      isCompleted: false,
+      dueTime: "10:00 AM",
+    ),
+    Task(
+      title: "Approve Marketing Campaign",
+      description: "Review campaign materials and budget allocation",
+      category: "Marketing",
+      priority: TaskPriority.high,
+      isCompleted: true,
+      dueTime: "11:30 AM",
+    ),
+    Task(
+      title: "Team Performance Reviews",
+      description: "Conduct quarterly performance evaluations",
+      category: "HR",
+      priority: TaskPriority.medium,
+      isCompleted: false,
+      dueTime: "2:00 PM",
+    ),
+    Task(
+      title: "Contract Negotiations Follow-up",
+      description: "Review terms and conditions with legal team",
+      category: "Legal",
+      priority: TaskPriority.medium,
+      isCompleted: false,
+      dueTime: "3:30 PM",
+    ),
+    Task(
+      title: "Prepare Board Presentation",
+      description: "Create slides for quarterly board meeting",
+      category: "Strategy",
+      priority: TaskPriority.high,
+      isCompleted: false,
+      dueTime: "5:00 PM",
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+    _slideController.forward();
+  }
+
+  @override
+  void dispose() {
+    _slideController.dispose();
+    super.dispose();
+  }
+
+  void _toggleCalendarView() {
+    setState(() {
+      _showingCalendarView = !_showingCalendarView;
+    });
+  }
+
+  void _selectDateFromCalendar(DateTime date) {
+    setState(() {
+      _selectedDate = date;
+      _showingCalendarView = false;
+    });
+  }
+
+  void _toggleTaskCompletion(Task task) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      task.isCompleted = !task.isCompleted;
+    });
+  }
+
+  void _editTask(Task task) {
+    HapticFeedback.mediumImpact();
+    // Navigate to edit task screen with the task data
+    context.goNamed('addTask', extra: task);
+  }
+
+  void _deleteTask(Task task) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _tasks.remove(task);
+    });
+
+    // Show confirmation snackbar
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Task "${task.title}" deleted'),
+        backgroundColor: Colors.red.withValues(alpha: 0.9),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+        action: SnackBarAction(
+          label: 'UNDO',
+          textColor: Colors.white,
+          onPressed: () {
+            setState(() {
+              _tasks.add(task);
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  List<Task> get _filteredTasks {
+    switch (_selectedFilter) {
+      case 'Pending':
+        return _tasks.where((task) => !task.isCompleted).toList();
+      case 'In Progress':
+        return _tasks.where((task) => !task.isCompleted).toList();
+      case 'Completed':
+        return _tasks.where((task) => task.isCompleted).toList();
+      default:
+        return _tasks;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    final isLargeScreen = screenSize.width > 900;
+
+    return Scaffold(
+      drawer: const SideMenu(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).scaffoldBackgroundColor,
+              Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
+              Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
+            SafeArea(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child:
+                    _showingCalendarView
+                        ? _buildCalendarView()
+                        : SlideTransition(
+                          position: _slideAnimation,
+                          child: Column(
+                            key: const ValueKey('tasks'),
+                            children: [
+                              _buildHeader(isTablet, isLargeScreen),
+                              _buildProgressCard(isTablet),
+                              _buildFilterTabs(isTablet),
+                              Expanded(child: _buildTasksList(isTablet)),
+                            ],
+                          ),
+                        ),
+              ),
+            ),
+            const DraggableMenu(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(bool isTablet, bool isLargeScreen) {
+    return Padding(
+      padding: EdgeInsets.all(
+        isLargeScreen
+            ? 24
+            : isTablet
+            ? 20
+            : 16,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tasks',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize:
+                        isLargeScreen
+                            ? 32
+                            : isTablet
+                            ? 30
+                            : 28,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_filteredTasks.length} tasks for ${_getDateLabel()}',
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontSize: isTablet ? 16 : 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              _buildHeaderButton(
+                Icons.calendar_month_rounded,
+                _toggleCalendarView,
+                Theme.of(context),
+                isTablet,
+              ),
+              SizedBox(width: isTablet ? 12 : 8),
+              _buildHeaderButton(
+                Icons.add,
+                () => context.goNamed('addTask'),
+                Theme.of(context),
+                isTablet,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderButton(
+    IconData icon,
+    VoidCallback onTap,
+    ThemeData theme,
+    bool isTablet,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Container(
+          width: isTablet ? 48 : 40,
+          height: isTablet ? 48 : 40,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: theme.colorScheme.primary,
+            size: isTablet ? 22 : 18,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalendarView() {
+    return CalendarView(
+      key: const ValueKey('calendar'),
+      selectedDate: _selectedDate,
+      onDateSelected: _selectDateFromCalendar,
+      onBack: _toggleCalendarView,
+    );
+  }
+
+  Widget _buildProgressCard(bool isTablet) {
+    final completedTasks = _tasks.where((task) => task.isCompleted).length;
+    final totalTasks = _tasks.length;
+    final progress = totalTasks > 0 ? completedTasks / totalTasks : 0.0;
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: isTablet ? 20 : 16,
+        vertical: 12,
+      ),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Today's Progress",
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: isTablet ? 14 : 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$completedTasks of $totalTasks completed',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: isTablet ? 18 : 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _buildStatChip(
+                      'High',
+                      _getHighPriorityCount(),
+                      Colors.red,
+                      isTablet,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          _buildProgressCircle(progress),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatChip(String label, int count, Color color, bool isTablet) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: isTablet ? 8 : 6,
+          height: isTablet ? 8 : 6,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '$count',
+          style: TextStyle(
+            color: color,
+            fontSize: isTablet ? 14 : 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
+            fontSize: isTablet ? 12 : 11,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProgressCircle(double progress) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox(
+          width: 60,
+          height: 60,
+          child: CircularProgressIndicator(
+            value: progress,
+            strokeWidth: 4,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.1),
+            valueColor: AlwaysStoppedAnimation(
+              Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+        Text(
+          '${(progress * 100).toInt()}%',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterTabs(bool isTablet) {
+    return Container(
+      height: 50,
+      margin: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16, vertical: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _filters.length,
+        itemBuilder: (context, index) {
+          final filter = _filters[index];
+          final isSelected = _selectedFilter == filter;
+
+          return GestureDetector(
+            onTap: () => setState(() => _selectedFilter = filter),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: EdgeInsets.only(right: isTablet ? 16 : 12),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color:
+                    isSelected
+                        ? Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.15)
+                        : Theme.of(
+                          context,
+                        ).colorScheme.surface.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color:
+                      isSelected
+                          ? Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.3)
+                          : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.1),
+                  width: 1,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  filter,
+                  style: TextStyle(
+                    color:
+                        isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    fontSize: isTablet ? 14 : 12,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTasksList(bool isTablet) {
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 20 : 16,
+        vertical: 8,
+      ),
+      itemCount: _filteredTasks.length,
+      itemBuilder: (context, index) {
+        final task = _filteredTasks[index];
+        return _buildTaskItem(task, isTablet);
+      },
+    );
+  }
+
+  Widget _buildTaskItem(Task task, bool isTablet) {
+    return Dismissible(
+      key: Key(task.title + task.dueTime),
+      background: _buildSwipeBackground(isEdit: true, isTablet: isTablet),
+      secondaryBackground: _buildSwipeBackground(
+        isEdit: false,
+        isTablet: isTablet,
+      ),
+      onDismissed: (direction) {
+        if (direction == DismissDirection.startToEnd) {
+          _editTask(task);
+        } else {
+          _deleteTask(task);
+        }
+      },
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          // Edit action - don't dismiss, just trigger edit
+          _editTask(task);
+          return false;
+        } else {
+          // Delete action - show confirmation
+          return await _showDeleteConfirmation(task);
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
+        decoration: BoxDecoration(
+          color:
+              task.isCompleted
+                  ? Theme.of(
+                    context,
+                  ).colorScheme.surface.withValues(alpha: 0.03)
+                  : Theme.of(
+                    context,
+                  ).colorScheme.surface.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color:
+                task.isCompleted
+                    ? Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1)
+                    : Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.08),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => _toggleTaskCompletion(task),
+            child: Padding(
+              padding: EdgeInsets.all(isTablet ? 20 : 16),
+              child: Row(
+                children: [
+                  // Circular checkbox button
+                  _buildCheckboxButton(task, isTablet),
+                  SizedBox(width: isTablet ? 16 : 12),
+
+                  // Task content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title and Priority
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                task.title,
+                                style: TextStyle(
+                                  color:
+                                      task.isCompleted
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.5)
+                                          : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                  fontSize: isTablet ? 16 : 14,
+                                  fontWeight: FontWeight.w600,
+                                  decoration:
+                                      task.isCompleted
+                                          ? TextDecoration.lineThrough
+                                          : TextDecoration.none,
+                                ),
+                              ),
+                            ),
+                            _buildPriorityChip(task, isTablet),
+                          ],
+                        ),
+
+                        // Description
+                        if (task.description.isNotEmpty) ...[
+                          SizedBox(height: isTablet ? 6 : 4),
+                          Text(
+                            task.description,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(
+                                alpha: task.isCompleted ? 0.4 : 0.6,
+                              ),
+                              fontSize: isTablet ? 14 : 12,
+                              decoration:
+                                  task.isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+
+                        SizedBox(height: isTablet ? 12 : 8),
+
+                        // Category and Due Time
+                        Row(
+                          children: [
+                            _buildCategoryChip(task, isTablet),
+                            const Spacer(),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withValues(
+                                    alpha: task.isCompleted ? 0.4 : 0.6,
+                                  ),
+                                  size: isTablet ? 16 : 14,
+                                ),
+                                SizedBox(width: isTablet ? 6 : 4),
+                                Text(
+                                  task.dueTime,
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withValues(
+                                      alpha: task.isCompleted ? 0.4 : 0.6,
+                                    ),
+                                    fontSize: isTablet ? 14 : 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSwipeBackground({required bool isEdit, required bool isTablet}) {
+    return Container(
+      margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
+      decoration: BoxDecoration(
+        color:
+            isEdit
+                ? Colors.blue.withValues(alpha: 0.8)
+                : Colors.red.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Align(
+        alignment: isEdit ? Alignment.centerLeft : Alignment.centerRight,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isEdit ? Icons.edit_rounded : Icons.delete_rounded,
+                color: Colors.white,
+                size: isTablet ? 28 : 24,
+              ),
+              SizedBox(height: isTablet ? 8 : 6),
+              Text(
+                isEdit ? 'Edit' : 'Delete',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: isTablet ? 14 : 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _showDeleteConfirmation(Task task) async {
+    return await showDialog<bool>(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                title: Text(
+                  'Delete Task',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                content: Text(
+                  'Are you sure you want to delete "${task.title}"?',
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.8),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+        ) ??
+        false;
+  }
+
+  Widget _buildCheckboxButton(Task task, bool isTablet) {
+    final size = isTablet ? 28.0 : 24.0;
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: task.isCompleted ? Colors.green : Colors.transparent,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color:
+              task.isCompleted
+                  ? Colors.green
+                  : Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.4),
+          width: 2,
+        ),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child:
+            task.isCompleted
+                ? Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: isTablet ? 16 : 14,
+                  key: const ValueKey('check'),
+                )
+                : const SizedBox.shrink(key: ValueKey('empty')),
+      ),
+    );
+  }
+
+  Widget _buildPriorityChip(Task task, bool isTablet) {
+    Color color;
+    String label;
+    switch (task.priority) {
+      case TaskPriority.high:
+        color = Colors.red.shade400;
+        label = 'HIGH';
+        break;
+      case TaskPriority.medium:
+        color = Colors.orange.shade400;
+        label = 'MED';
+        break;
+      default:
+        color = Colors.green.shade400;
+        label = 'LOW';
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 8 : 6,
+        vertical: isTablet ? 4 : 3,
+      ),
+      decoration: BoxDecoration(
+        color:
+            (task.isCompleted
+                ? color.withValues(alpha: 0.2)
+                : color.withValues(alpha: 0.15)),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color:
+              task.isCompleted
+                  ? color.withValues(alpha: 0.3)
+                  : color.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: task.isCompleted ? color.withValues(alpha: 0.6) : color,
+          fontSize: isTablet ? 11 : 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(Task task, bool isTablet) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 10 : 8,
+        vertical: isTablet ? 4 : 3,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.primary.withValues(alpha: task.isCompleted ? 0.1 : 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: task.isCompleted ? 0.2 : 0.3),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        task.category,
+        style: TextStyle(
+          color: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: task.isCompleted ? 0.6 : 0.8),
+          fontSize: isTablet ? 12 : 10,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  String _getDateLabel() {
+    return '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}';
+  }
+
+  int _getHighPriorityCount() =>
+      _tasks.where((t) => t.priority == TaskPriority.high).length;
+}
