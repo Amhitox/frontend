@@ -569,18 +569,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               ],
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: theme.colorScheme.primary,
-            activeTrackColor: theme.colorScheme.primary.withValues(alpha: 0.3),
-            inactiveThumbColor: theme.colorScheme.onSurface.withValues(
-              alpha: 0.7,
-            ),
-            inactiveTrackColor: theme.colorScheme.onSurface.withValues(
-              alpha: 0.2,
-            ),
-          ),
+          Switch(value: value, onChanged: onChanged),
         ],
       ),
     );
