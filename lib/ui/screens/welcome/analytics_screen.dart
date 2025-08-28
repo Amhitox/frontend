@@ -23,7 +23,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     'This Year',
   ];
 
-  // Mock analytics data
   final Map<String, AnalyticsData> _analyticsData = {
     'Today': AnalyticsData(
       emailsSent: 12,
@@ -573,46 +572,58 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   ) {
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth >= 600;
-    final isLargeScreen = screenWidth >= 900;
 
-    // Responsive sizing
-    final cardPadding =
-        isLargeScreen
+    final double cardPadding =
+        screenWidth >= 900
             ? 20.0
-            : isTablet
+            : screenWidth >= 600
             ? 18.0
-            : 16.0;
-    final iconSize =
-        isLargeScreen
-            ? 36.0
-            : isTablet
-            ? 34.0
-            : 32.0;
-    final valueSize =
-        isLargeScreen
-            ? 28.0
-            : isTablet
-            ? 26.0
-            : 24.0;
-    final titleSize =
-        isLargeScreen
-            ? 14.0
-            : isTablet
-            ? 13.0
+            : screenWidth >= 400
+            ? 16.0
             : 12.0;
+
+    final double iconSize =
+        screenWidth >= 900
+            ? 33.0
+            : screenWidth >= 600
+            ? 31.0
+            : screenWidth >= 400
+            ? 29.0
+            : 24.0;
+
+    final double maxValueSize =
+        screenWidth >= 900
+            ? 25.0
+            : screenWidth >= 600
+            ? 23.0
+            : screenWidth >= 400
+            ? 21.0
+            : 18.0;
+
+    final double titleSize =
+        screenWidth >= 900
+            ? 14.0
+            : screenWidth >= 600
+            ? 13.0
+            : screenWidth >= 400
+            ? 12.0
+            : 10.0;
+
+    final double spacing = screenWidth >= 600 ? 10.0 : 8.0;
+    final double titleSpacing = screenWidth >= 600 ? 6.0 : 4.0;
+
     return Container(
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          color: theme.colorScheme.outline.withOpacity(0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: 0.08),
+            color: theme.colorScheme.shadow.withOpacity(0.08),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -620,35 +631,65 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Container(
-                width: iconSize,
-                height: iconSize,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(iconSize * 0.25),
-                ),
-                child: Icon(icon, color: color, size: iconSize * 0.55),
+          Flexible(
+            flex: 0,
+            child: Container(
+              width: iconSize,
+              height: iconSize,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(iconSize * 0.25),
               ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontSize: valueSize,
-              fontWeight: FontWeight.w600,
+              child: Icon(icon, color: color, size: iconSize * 0.55),
             ),
           ),
-          SizedBox(height: isTablet ? 6 : 4),
-          Text(
-            title,
-            style: TextStyle(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              fontSize: titleSize,
+          SizedBox(height: spacing),
+
+          Flexible(
+            flex: 0,
+            child: Container(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: 1,
+                    maxWidth:
+                        screenWidth * 0.8, // Prevent taking full screen width
+                  ),
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: maxValueSize,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: titleSpacing),
+
+          Flexible(
+            flex: 0,
+            child: Container(
+              width: double.infinity,
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                  fontSize: titleSize,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+              ),
             ),
           ),
         ],

@@ -17,7 +17,6 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _floatingAnimation;
-  late Animation<double> _pulseAnimation;
 
   late PageController _pageController;
   int selectedPlan =
@@ -66,10 +65,6 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
 
     _floatingAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _floatingController, curve: Curves.easeInOut),
-    );
-
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
     _mainAnimationController.forward();
@@ -919,38 +914,6 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
           style: TextStyle(color: Colors.grey[500], fontSize: 11),
           textAlign: TextAlign.center,
         ),
-      ],
-    );
-  }
-
-  Widget _buildFooterText() {
-    return Text(
-      '7-day free trial • Cancel anytime',
-      style: TextStyle(color: Colors.grey[500], fontSize: 12),
-      textAlign: TextAlign.center,
-    );
-  }
-
-  Widget _buildSecurityBadges() {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 16,
-      runSpacing: 8,
-      children: [
-        _buildBadge(Icons.security, 'Enterprise Security'),
-        _buildBadge(Icons.verified_user, 'GDPR Compliant'),
-        _buildBadge(Icons.lock, 'SSL Encrypted'),
-      ],
-    );
-  }
-
-  Widget _buildBadge(IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: Colors.grey[600], size: 14),
-        const SizedBox(width: 4),
-        Text(text, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
       ],
     );
   }
