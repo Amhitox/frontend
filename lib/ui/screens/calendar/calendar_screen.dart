@@ -166,7 +166,7 @@ class _CalendarPageState extends State<CalendarPage>
   void _editMeeting(Meeting meeting) {
     HapticFeedback.mediumImpact();
     // Navigate to edit meeting screen with the meeting data
-    context.goNamed(
+    context.pushNamed(
       'addSchedule',
       extra: meeting,
     ); // Pass the Meeting object directly
@@ -403,7 +403,7 @@ class _CalendarPageState extends State<CalendarPage>
               SizedBox(width: isTablet ? 12 : 8),
               _buildHeaderButton(
                 Icons.add_rounded,
-                () => context.goNamed('addSchedule'),
+                () => context.pushNamed('addSchedule'),
                 theme,
                 isTablet,
               ),

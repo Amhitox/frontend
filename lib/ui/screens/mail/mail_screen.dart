@@ -258,7 +258,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
           SizedBox(width: isTablet ? 12 : 8),
           _buildHeaderButton(
             Icons.add_rounded,
-            () => context.go('/composemail'),
+            () => context.pushNamed('composemail'),
             Theme.of(context),
             isTablet,
           ),
@@ -513,7 +513,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       itemBuilder: (context, index) {
         return GestureDetector(
           onTap: () {
-            context.go('/maildetail', extra: _filteredEmails[index]);
+            context.pushNamed('maildetail', extra: _filteredEmails[index]);
           },
           child: _buildMailItem(
             _filteredEmails[index],
@@ -528,7 +528,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
   Widget _buildMailItem(MailItem email, bool isTablet, bool isLargeScreen) {
     return GestureDetector(
       onTap: () {
-        context.go('/maildetail', extra: email);
+        context.pushNamed('maildetail', extra: email);
       },
       child: Container(
         margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),

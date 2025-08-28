@@ -514,10 +514,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildCentralMicrophone(bool isTablet, bool isLargeScreen) {
     final micSize =
         isLargeScreen
-            ? 120.0
+            ? 130.0
             : isTablet
-            ? 110.0
-            : 100.0;
+            ? 120.0
+            : 110.0;
 
     return Stack(
       alignment: Alignment.center,
@@ -663,7 +663,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildVoiceIndicator(bool isTablet) {
     return SizedBox(
-      height: isTablet ? 50 : 40,
+      height: isTablet ? 60 : 50,
       child: AnimatedBuilder(
         animation: _waveController,
         builder: (context, child) {
@@ -680,7 +680,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               (isTablet ? 12 : 10)
                       : 3;
               return Container(
-                width: isTablet ? 4 : 3,
+                width: isTablet ? 6 : 5,
                 height: height.abs(),
                 margin: EdgeInsets.symmetric(horizontal: isTablet ? 4 : 3),
                 decoration: BoxDecoration(
@@ -723,10 +723,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       margin: EdgeInsets.symmetric(
         horizontal:
             isLargeScreen
-                ? 60
+                ? 65
                 : isTablet
-                ? 50
-                : 40,
+                ? 55
+                : 45,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,

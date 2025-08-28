@@ -110,32 +110,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
   AnalyticsData get _currentData => _analyticsData[_selectedPeriod]!;
 
+  // Enhanced responsive breakpoints for better iPad support
+  bool _isLargeScreen(double width) => width >= 1024;
+  bool _isTablet(double width) => width >= 768 && width < 1024;
+  bool _isSmallTablet(double width) => width >= 600 && width < 768;
+  bool _isMobile(double width) => width < 600;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final screenSize = MediaQuery.of(context).size;
+    final mediaQuery = MediaQuery.of(context);
+    final screenSize = mediaQuery.size;
     final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;
-
-    // Responsive breakpoints
-    final isLargeScreen = screenWidth >= 900;
-    final isTablet = screenWidth >= 600;
     final isLandscape = screenWidth > screenHeight;
 
-    // Responsive dimensions
-    final horizontalPadding =
-        isLargeScreen
-            ? 32.0
-            : isTablet
-            ? 24.0
-            : 16.0;
-    final verticalSpacing =
-        isLargeScreen
-            ? 24.0
-            : isTablet
-            ? 20.0
-            : 16.0;
-    final contentMaxWidth = isLargeScreen ? 1200.0 : double.infinity;
+    // Enhanced responsive dimensions
+    final double horizontalPadding = _getHorizontalPadding(screenWidth);
+    final double verticalSpacing = _getVerticalSpacing(screenWidth);
+    final double contentMaxWidth = _getContentMaxWidth(screenWidth);
 
     return Scaffold(
       drawer: const SideMenu(),
@@ -151,140 +144,234 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ],
           ),
         ),
-        child: Stack(
-          children: [
-            SafeArea(
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                    child: Column(
-                      children: [
-                        _buildHeader(context, isTablet, isLargeScreen),
-                        _buildPeriodTabs(context, isTablet),
-                        Expanded(
-                          child: SingleChildScrollView(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: horizontalPadding,
-                            ),
-                            child:
-                                isLargeScreen && !isLandscape
-                                    ? _buildDesktopLayout(
-                                      context,
-                                      verticalSpacing,
-                                    )
-                                    : _buildMobileLayout(
-                                      context,
-                                      verticalSpacing,
-                                      isTablet,
-                                    ),
-                          ),
+        child: SafeArea(
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                child: Column(
+                  children: [
+                    _buildHeader(context, screenWidth),
+                    _buildPeriodTabs(context, screenWidth),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
                         ),
-                      ],
+                        child: _buildResponsiveLayout(
+                          context,
+                          screenWidth,
+                          isLandscape,
+                          verticalSpacing,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  // Desktop layout with side-by-side cards
-  Widget _buildDesktopLayout(BuildContext context, double spacing) {
+  double _getHorizontalPadding(double width) {
+    if (_isLargeScreen(width)) return 40.0;
+    if (_isTablet(width)) return 32.0;
+    if (_isSmallTablet(width)) return 24.0;
+    return 16.0;
+  }
+
+  double _getVerticalSpacing(double width) {
+    if (_isLargeScreen(width)) return 28.0;
+    if (_isTablet(width)) return 24.0;
+    if (_isSmallTablet(width)) return 20.0;
+    return 16.0;
+  }
+
+  double _getContentMaxWidth(double width) {
+    if (_isLargeScreen(width)) return 1400.0;
+    if (_isTablet(width)) return double.infinity;
+    return double.infinity;
+  }
+
+  Widget _buildResponsiveLayout(
+    BuildContext context,
+    double screenWidth,
+    bool isLandscape,
+    double spacing,
+  ) {
+    // For iPads and larger screens in landscape, use a sophisticated multi-column layout
+    if ((_isTablet(screenWidth) || _isLargeScreen(screenWidth)) &&
+        isLandscape) {
+      return _buildTabletLandscapeLayout(context, screenWidth, spacing);
+    }
+    // For iPads in portrait, use a two-column layout for some sections
+    else if (_isTablet(screenWidth) || _isLargeScreen(screenWidth)) {
+      return _buildTabletPortraitLayout(context, screenWidth, spacing);
+    }
+    // For smaller tablets, use an optimized single-column layout
+    else if (_isSmallTablet(screenWidth)) {
+      return _buildSmallTabletLayout(context, screenWidth, spacing);
+    }
+    // For mobile devices
+    else {
+      return _buildMobileLayout(context, screenWidth, spacing);
+    }
+  }
+
+  // Enhanced tablet landscape layout
+  Widget _buildTabletLandscapeLayout(
+    BuildContext context,
+    double screenWidth,
+    double spacing,
+  ) {
     return Column(
       children: [
         SizedBox(height: spacing),
+        // Stats in a single row for landscape
+        _buildQuickStats(context, crossAxisCount: 4, aspectRatio: 1.4),
+        SizedBox(height: spacing),
+        // Main content in three columns
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Left column - Productivity and insights
             Expanded(
               flex: 2,
               child: Column(
                 children: [
-                  _buildQuickStats(context, crossAxisCount: 4),
+                  _buildProductivityCard(context, screenWidth),
                   SizedBox(height: spacing),
-                  _buildProductivityCard(context),
+                  _buildInsightsCard(context, screenWidth),
+                ],
+              ),
+            ),
+            SizedBox(width: spacing),
+            // Middle column - Chart
+            Expanded(flex: 2, child: _buildChartCard(context, screenWidth)),
+            SizedBox(width: spacing),
+            // Right column - Category breakdown
+            Expanded(
+              flex: 2,
+              child: _buildCategoryBreakdown(context, screenWidth),
+            ),
+          ],
+        ),
+        SizedBox(height: spacing * 1.5),
+      ],
+    );
+  }
+
+  // Enhanced tablet portrait layout
+  Widget _buildTabletPortraitLayout(
+    BuildContext context,
+    double screenWidth,
+    double spacing,
+  ) {
+    return Column(
+      children: [
+        SizedBox(height: spacing),
+        _buildQuickStats(context, crossAxisCount: 4, aspectRatio: 1.6),
+        SizedBox(height: spacing),
+        // Two-column layout for main content
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: Column(
+                children: [
+                  _buildProductivityCard(context, screenWidth),
+                  SizedBox(height: spacing),
+                  _buildChartCard(context, screenWidth),
                 ],
               ),
             ),
             SizedBox(width: spacing),
             Expanded(
-              flex: 1,
+              flex: 2,
               child: Column(
                 children: [
-                  _buildChartCard(context),
+                  _buildCategoryBreakdown(context, screenWidth),
                   SizedBox(height: spacing),
-                  _buildInsightsCard(context),
+                  _buildInsightsCard(context, screenWidth),
                 ],
               ),
             ),
           ],
         ),
-        SizedBox(height: spacing),
-        _buildCategoryBreakdown(context),
         SizedBox(height: spacing * 1.5),
       ],
     );
   }
 
-  // Mobile/tablet layout with stacked cards
-  Widget _buildMobileLayout(
+  // Small tablet layout
+  Widget _buildSmallTabletLayout(
     BuildContext context,
+    double screenWidth,
     double spacing,
-    bool isTablet,
   ) {
     return Column(
       children: [
         SizedBox(height: spacing),
-        _buildQuickStats(context, crossAxisCount: isTablet ? 4 : 2),
+        _buildQuickStats(context, crossAxisCount: 2, aspectRatio: 1.8),
         SizedBox(height: spacing),
-        _buildProductivityCard(context),
+        _buildProductivityCard(context, screenWidth),
         SizedBox(height: spacing),
-        _buildChartCard(context),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _buildChartCard(context, screenWidth)),
+            SizedBox(width: spacing),
+            Expanded(child: _buildCategoryBreakdown(context, screenWidth)),
+          ],
+        ),
         SizedBox(height: spacing),
-        _buildCategoryBreakdown(context),
-        SizedBox(height: spacing),
-        _buildInsightsCard(context),
+        _buildInsightsCard(context, screenWidth),
         SizedBox(height: spacing * 1.5),
       ],
     );
   }
 
-  Widget _buildHeader(BuildContext context, bool isTablet, bool isLargeScreen) {
+  // Mobile layout
+  Widget _buildMobileLayout(
+    BuildContext context,
+    double screenWidth,
+    double spacing,
+  ) {
+    return Column(
+      children: [
+        SizedBox(height: spacing),
+        _buildQuickStats(context, crossAxisCount: 2, aspectRatio: 1.5),
+        SizedBox(height: spacing),
+        _buildProductivityCard(context, screenWidth),
+        SizedBox(height: spacing),
+        _buildChartCard(context, screenWidth),
+        SizedBox(height: spacing),
+        _buildCategoryBreakdown(context, screenWidth),
+        SizedBox(height: spacing),
+        _buildInsightsCard(context, screenWidth),
+        SizedBox(height: spacing * 1.5),
+      ],
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, double screenWidth) {
     final theme = Theme.of(context);
 
-    // Responsive sizing
-    final padding =
-        isLargeScreen
-            ? 32.0
-            : isTablet
-            ? 24.0
-            : 20.0;
-    final iconSize =
-        isLargeScreen
-            ? 56.0
-            : isTablet
-            ? 52.0
-            : 48.0;
-    final titleSize =
-        isLargeScreen
-            ? 26.0
-            : isTablet
-            ? 24.0
-            : 22.0;
-    final subtitleSize =
-        isLargeScreen
-            ? 15.0
-            : isTablet
-            ? 14.0
-            : 13.0;
-    final borderRadius = isLargeScreen ? 28.0 : 24.0;
+    // Enhanced responsive sizing
+    final double padding = _getHeaderPadding(screenWidth);
+    final double iconSize = _getHeaderIconSize(screenWidth);
+    final double titleSize = _getHeaderTitleSize(screenWidth);
+    final double subtitleSize = _getHeaderSubtitleSize(screenWidth);
+    final double borderRadius = _getHeaderBorderRadius(screenWidth);
+    final double margin = _getHeaderMargin(screenWidth);
+
     return Container(
-      margin: EdgeInsets.all(isTablet ? 20.0 : 16.0),
+      margin: EdgeInsets.all(margin),
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -346,7 +433,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         letterSpacing: -0.5,
                       ),
                     ),
-                    SizedBox(height: isTablet ? 4 : 2),
+                    SizedBox(height: _isTablet(screenWidth) ? 6 : 4),
                     Text(
                       'Track your productivity & performance',
                       style: TextStyle(
@@ -362,16 +449,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               ),
               Row(
                 children: [
-                  _buildHeaderButton(Icons.download_outlined, () {}),
+                  _buildHeaderButton(
+                    Icons.download_outlined,
+                    () {},
+                    screenWidth,
+                  ),
                   const SizedBox(width: 8),
-                  _buildHeaderButton(Icons.share_outlined, () {}),
+                  _buildHeaderButton(Icons.share_outlined, () {}, screenWidth),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: _isTablet(screenWidth) ? 20 : 16,
+              vertical: _isTablet(screenWidth) ? 16 : 12,
+            ),
             decoration: BoxDecoration(
               color: theme.colorScheme.secondaryContainer.withValues(
                 alpha: 0.6,
@@ -385,6 +479,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   'Score',
                   '${_currentData.productivityScore}%',
                   _getProductivityColor(_currentData.productivityScore),
+                  screenWidth,
                 ),
                 Container(
                   width: 1,
@@ -395,6 +490,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   'Emails',
                   '${_currentData.emailsSent + _currentData.emailsReceived}',
                   Colors.blue,
+                  screenWidth,
                 ),
                 Container(
                   width: 1,
@@ -405,6 +501,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   'Tasks',
                   '${_currentData.tasksCompleted}',
                   Colors.orange,
+                  screenWidth,
                 ),
               ],
             ),
@@ -414,15 +511,62 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildQuickMetric(String label, String value, Color color) {
+  double _getHeaderPadding(double width) {
+    if (_isLargeScreen(width)) return 32.0;
+    if (_isTablet(width)) return 28.0;
+    if (_isSmallTablet(width)) return 24.0;
+    return 20.0;
+  }
+
+  double _getHeaderIconSize(double width) {
+    if (_isLargeScreen(width)) return 64.0;
+    if (_isTablet(width)) return 60.0;
+    if (_isSmallTablet(width)) return 56.0;
+    return 48.0;
+  }
+
+  double _getHeaderTitleSize(double width) {
+    if (_isLargeScreen(width)) return 32.0;
+    if (_isTablet(width)) return 28.0;
+    if (_isSmallTablet(width)) return 26.0;
+    return 22.0;
+  }
+
+  double _getHeaderSubtitleSize(double width) {
+    if (_isLargeScreen(width)) return 18.0;
+    if (_isTablet(width)) return 16.0;
+    if (_isSmallTablet(width)) return 15.0;
+    return 13.0;
+  }
+
+  double _getHeaderBorderRadius(double width) {
+    if (_isTablet(width) || _isLargeScreen(width)) return 28.0;
+    return 24.0;
+  }
+
+  double _getHeaderMargin(double width) {
+    if (_isLargeScreen(width)) return 24.0;
+    if (_isTablet(width)) return 20.0;
+    return 16.0;
+  }
+
+  Widget _buildQuickMetric(
+    String label,
+    String value,
+    Color color,
+    double screenWidth,
+  ) {
     final theme = Theme.of(context);
+    final double valueSize = _isTablet(screenWidth) ? 20.0 : 18.0;
+    final double labelSize = _isTablet(screenWidth) ? 12.0 : 11.0;
+
     return Column(
       children: [
         Text(
           value,
           style: TextStyle(
             color: color,
-            fontSize: 18,
+            fontSize: valueSize,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -431,7 +575,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           label,
           style: TextStyle(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            fontSize: 11,
+            fontSize: labelSize,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -439,13 +583,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildHeaderButton(IconData icon, VoidCallback onTap) {
+  Widget _buildHeaderButton(
+    IconData icon,
+    VoidCallback onTap,
+    double screenWidth,
+  ) {
     final theme = Theme.of(context);
+    final double buttonSize = _isTablet(screenWidth) ? 44.0 : 36.0;
+    final double iconSize = _isTablet(screenWidth) ? 20.0 : 16.0;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36,
-        height: 36,
+        width: buttonSize,
+        height: buttonSize,
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(12),
@@ -454,15 +605,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             width: 1,
           ),
         ),
-        child: Icon(icon, color: theme.colorScheme.onSurface, size: 16),
+        child: Icon(icon, color: theme.colorScheme.onSurface, size: iconSize),
       ),
     );
   }
 
-  Widget _buildPeriodTabs(BuildContext context, bool isTablet) {
+  Widget _buildPeriodTabs(BuildContext context, double screenWidth) {
     final theme = Theme.of(context);
-    final fontSize = isTablet ? 14.0 : 12.0;
-    final padding = isTablet ? 20.0 : 16.0;
+    final double fontSize = _getTabFontSize(screenWidth);
+    final double padding = _getTabPadding(screenWidth);
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: padding, vertical: 8),
       padding: const EdgeInsets.all(4),
@@ -483,7 +635,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: EdgeInsets.symmetric(
+                      vertical: _isTablet(screenWidth) ? 12 : 8,
+                    ),
                     decoration: BoxDecoration(
                       color:
                           isSelected
@@ -493,13 +647,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     ),
                     child: Center(
                       child: Text(
-                        period == 'This Week'
-                            ? 'Week'
-                            : period == 'This Month'
-                            ? 'Month'
-                            : period == 'This Year'
-                            ? 'Year'
-                            : period,
+                        _getShortPeriodName(period),
                         style: TextStyle(
                           color:
                               isSelected
@@ -521,7 +669,57 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildQuickStats(BuildContext context, {int crossAxisCount = 2}) {
+  double _getTabFontSize(double width) {
+    if (_isTablet(width) || _isLargeScreen(width)) return 16.0;
+    if (_isSmallTablet(width)) return 14.0;
+    return 12.0;
+  }
+
+  double _getTabPadding(double width) {
+    if (_isLargeScreen(width)) return 32.0;
+    if (_isTablet(width)) return 24.0;
+    return 16.0;
+  }
+
+  String _getShortPeriodName(String period) {
+    switch (period) {
+      case 'This Week':
+        return 'Week';
+      case 'This Month':
+        return 'Month';
+      case 'This Year':
+        return 'Year';
+      default:
+        return period;
+    }
+  }
+
+  Widget _buildQuickStats(
+    BuildContext context, {
+    int crossAxisCount = 2,
+    double aspectRatio = 1.5,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Better aspect ratio calculation for iPads
+    double finalAspectRatio = aspectRatio;
+    if (_isTablet(screenWidth) || _isLargeScreen(screenWidth)) {
+      finalAspectRatio = crossAxisCount == 4 ? 1.4 : 1.6;
+    } else if (_isSmallTablet(screenWidth)) {
+      finalAspectRatio = crossAxisCount == 4 ? 1.3 : 1.7;
+    }
+
+    // Enhanced spacing for different screen sizes
+    final double crossSpacing =
+        _isLargeScreen(screenWidth)
+            ? 24.0
+            : _isTablet(screenWidth)
+            ? 20.0
+            : _isSmallTablet(screenWidth)
+            ? 18.0
+            : 16.0;
+    final double mainSpacing = crossSpacing;
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
@@ -530,9 +728,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: crossAxisCount,
-          childAspectRatio: crossAxisCount > 2 ? 1.8 : 1.5,
-          crossAxisSpacing: crossAxisCount > 2 ? 16 : 12,
-          mainAxisSpacing: crossAxisCount > 2 ? 16 : 12,
+          childAspectRatio: finalAspectRatio,
+          crossAxisSpacing: crossSpacing,
+          mainAxisSpacing: mainSpacing,
           children: [
             _buildStatCard(
               'Emails Sent',
@@ -573,50 +771,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
 
-    final double cardPadding =
-        screenWidth >= 900
-            ? 20.0
-            : screenWidth >= 600
-            ? 18.0
-            : screenWidth >= 400
-            ? 16.0
-            : 12.0;
-
-    final double iconSize =
-        screenWidth >= 900
-            ? 33.0
-            : screenWidth >= 600
-            ? 31.0
-            : screenWidth >= 400
-            ? 29.0
-            : 24.0;
-
-    final double maxValueSize =
-        screenWidth >= 900
-            ? 25.0
-            : screenWidth >= 600
-            ? 23.0
-            : screenWidth >= 400
-            ? 21.0
-            : 18.0;
-
-    final double titleSize =
-        screenWidth >= 900
-            ? 14.0
-            : screenWidth >= 600
-            ? 13.0
-            : screenWidth >= 400
-            ? 12.0
-            : 10.0;
-
-    final double spacing = screenWidth >= 600 ? 10.0 : 8.0;
-    final double titleSpacing = screenWidth >= 600 ? 6.0 : 4.0;
+    // Enhanced responsive sizing
+    final double cardPadding = _getStatCardPadding(screenWidth);
+    final double iconSize = _getStatCardIconSize(screenWidth);
+    final double valueSize = _getStatCardValueSize(screenWidth);
+    final double titleSize = _getStatCardTitleSize(screenWidth);
+    final double spacing = _getStatCardSpacing(screenWidth);
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: theme.colorScheme.outline.withOpacity(0.1),
           width: 1,
@@ -624,89 +790,141 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         boxShadow: [
           BoxShadow(
             color: theme.colorScheme.shadow.withOpacity(0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            flex: 0,
-            child: Container(
-              width: iconSize,
-              height: iconSize,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(iconSize * 0.25),
-              ),
-              child: Icon(icon, color: color, size: iconSize * 0.55),
-            ),
-          ),
-          SizedBox(height: spacing),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Calculate available space for better layout distribution
+          final availableHeight = constraints.maxHeight - (cardPadding * 2);
+          final iconSpace = iconSize + spacing;
+          final remainingHeight = availableHeight - iconSpace;
 
-          Flexible(
-            flex: 0,
-            child: Container(
-              width: double.infinity,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minWidth: 1,
-                    maxWidth:
-                        screenWidth * 0.8, // Prevent taking full screen width
-                  ),
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: maxValueSize,
-                      fontWeight: FontWeight.w600,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              // Icon container with fixed size
+              Container(
+                width: iconSize,
+                height: iconSize,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(iconSize * 0.25),
+                ),
+                child: Icon(icon, color: color, size: iconSize * 0.55),
+              ),
+              SizedBox(height: spacing),
+
+              // Value text with proper space allocation
+              Expanded(
+                flex: 3,
+                child: Container(
+                  width: double.infinity,
+                  alignment: Alignment.centerLeft,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: 1,
+                        maxWidth: constraints.maxWidth - (cardPadding * 2),
+                      ),
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontSize: valueSize,
+                          fontWeight: FontWeight.w600,
+                          height: 1.1,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.visible,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
-            ),
-          ),
-          SizedBox(height: titleSpacing),
 
-          Flexible(
-            flex: 0,
-            child: Container(
-              width: double.infinity,
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  fontSize: titleSize,
+              // Small spacing between value and title
+              SizedBox(height: spacing * 0.3),
+
+              // Title text with proper space allocation
+              Expanded(
+                flex: 2,
+                child: Container(
+                  width: double.infinity,
+                  alignment: Alignment.topLeft,
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      fontSize: titleSize,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: true,
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                softWrap: true,
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildProductivityCard(BuildContext context) {
+  double _getStatCardPadding(double width) {
+    if (_isLargeScreen(width)) return 24.0;
+    if (_isTablet(width)) return 20.0;
+    if (_isSmallTablet(width)) return 18.0;
+    return 16.0;
+  }
+
+  double _getStatCardIconSize(double width) {
+    if (_isLargeScreen(width)) return 40.0;
+    if (_isTablet(width)) return 36.0;
+    if (_isSmallTablet(width)) return 32.0;
+    return 28.0;
+  }
+
+  double _getStatCardValueSize(double width) {
+    if (_isLargeScreen(width)) return 28.0;
+    if (_isTablet(width)) return 24.0;
+    if (_isSmallTablet(width)) return 22.0;
+    return 20.0;
+  }
+
+  double _getStatCardTitleSize(double width) {
+    if (_isLargeScreen(width)) return 15.0;
+    if (_isTablet(width)) return 14.0;
+    if (_isSmallTablet(width)) return 13.0;
+    return 12.0;
+  }
+
+  double _getStatCardSpacing(double width) {
+    if (_isTablet(width) || _isLargeScreen(width)) return 12.0;
+    return 10.0;
+  }
+
+  Widget _buildProductivityCard(BuildContext context, double screenWidth) {
     final theme = Theme.of(context);
+    final double padding = _getCardPadding(screenWidth);
+    final double titleSize = _getCardTitleSize(screenWidth);
+    final double subtitleSize = _getCardSubtitleSize(screenWidth);
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(padding),
         decoration: BoxDecoration(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -718,56 +936,58 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   'Productivity Score',
                   style: TextStyle(
                     color: theme.colorScheme.onSurface,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: _isTablet(screenWidth) ? 16 : 12,
+                    vertical: _isTablet(screenWidth) ? 8 : 6,
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     '${_currentData.productivityScore}%',
                     style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      color: _getProductivityColor(
+                        _currentData.productivityScore,
+                      ),
+                      fontSize: subtitleSize,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: _isTablet(screenWidth) ? 20 : 16),
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               child: LinearProgressIndicator(
                 value: _currentData.productivityScore / 100,
                 backgroundColor: theme.colorScheme.surfaceContainer,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   _getProductivityColor(_currentData.productivityScore),
                 ),
-                minHeight: 8,
+                minHeight: _isTablet(screenWidth) ? 12 : 8,
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: _isTablet(screenWidth) ? 20 : 16),
             Row(
               children: [
                 Icon(
                   Icons.schedule,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  size: 16,
+                  size: _isTablet(screenWidth) ? 20 : 16,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Avg Response Time: ${_currentData.responseTime}',
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontSize: 14,
+                    fontSize: subtitleSize,
                   ),
                 ),
               ],
@@ -776,6 +996,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         ),
       ),
     );
+  }
+
+  double _getCardPadding(double width) {
+    if (_isLargeScreen(width)) return 28.0;
+    if (_isTablet(width)) return 24.0;
+    if (_isSmallTablet(width)) return 20.0;
+    return 16.0;
+  }
+
+  double _getCardTitleSize(double width) {
+    if (_isLargeScreen(width)) return 22.0;
+    if (_isTablet(width)) return 20.0;
+    if (_isSmallTablet(width)) return 18.0;
+    return 16.0;
+  }
+
+  double _getCardSubtitleSize(double width) {
+    if (_isLargeScreen(width)) return 16.0;
+    if (_isTablet(width)) return 15.0;
+    if (_isSmallTablet(width)) return 14.0;
+    return 13.0;
   }
 
   Color _getProductivityColor(int score) {
@@ -784,16 +1025,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return Colors.red;
   }
 
-  Widget _buildChartCard(BuildContext context) {
+  Widget _buildChartCard(BuildContext context, double screenWidth) {
     final theme = Theme.of(context);
+    final double padding = _getCardPadding(screenWidth);
+    final double titleSize = _getCardTitleSize(screenWidth);
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(padding),
         decoration: BoxDecoration(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -802,14 +1046,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               'Activity Trend',
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
+                fontSize: titleSize,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: _isTablet(screenWidth) ? 24 : 20),
             SizedBox(
-              height: 130,
-              child: _buildSimpleChart(_currentData.weeklyData),
+              height: _getChartHeight(screenWidth),
+              child: _buildSimpleChart(_currentData.weeklyData, screenWidth),
             ),
           ],
         ),
@@ -817,9 +1061,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildSimpleChart(List<int> data) {
+  double _getChartHeight(double width) {
+    if (_isLargeScreen(width)) return 160.0;
+    if (_isTablet(width)) return 140.0;
+    if (_isSmallTablet(width)) return 130.0;
+    return 120.0;
+  }
+
+  Widget _buildSimpleChart(List<int> data, double screenWidth) {
     final maxValue = data.reduce((a, b) => a > b ? a : b).toDouble();
     final theme = Theme.of(context);
+    final double barWidth = _getChartBarWidth(screenWidth);
+    final double fontSize = _getChartLabelSize(screenWidth);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -827,7 +1081,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           data.asMap().entries.map((entry) {
             final index = entry.key;
             final value = entry.value;
-            final height = (value / maxValue) * 100;
+            final height = (value / maxValue) * _getChartMaxHeight(screenWidth);
 
             return TweenAnimationBuilder<double>(
               duration: Duration(milliseconds: 800 + (index * 100)),
@@ -837,7 +1091,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Container(
-                      width: 20,
+                      width: barWidth,
                       height: animatedHeight,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -848,17 +1102,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                             Colors.blue.withValues(alpha: 0.4),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(barWidth * 0.4),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: _isTablet(screenWidth) ? 10 : 8),
                     Text(
                       ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index],
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.5,
                         ),
-                        fontSize: 10,
+                        fontSize: fontSize,
                       ),
                     ),
                   ],
@@ -869,16 +1123,39 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildCategoryBreakdown(BuildContext context) {
+  double _getChartBarWidth(double width) {
+    if (_isLargeScreen(width)) return 28.0;
+    if (_isTablet(width)) return 24.0;
+    if (_isSmallTablet(width)) return 22.0;
+    return 18.0;
+  }
+
+  double _getChartMaxHeight(double width) {
+    if (_isLargeScreen(width)) return 120.0;
+    if (_isTablet(width)) return 100.0;
+    if (_isSmallTablet(width)) return 90.0;
+    return 80.0;
+  }
+
+  double _getChartLabelSize(double width) {
+    if (_isTablet(width) || _isLargeScreen(width)) return 12.0;
+    return 10.0;
+  }
+
+  Widget _buildCategoryBreakdown(BuildContext context, double screenWidth) {
     final theme = Theme.of(context);
+    final double padding = _getCardPadding(screenWidth);
+    final double titleSize = _getCardTitleSize(screenWidth);
+    final double itemSize = _getCategoryItemSize(screenWidth);
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(padding),
         decoration: BoxDecoration(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -887,18 +1164,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               'Category Breakdown',
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
+                fontSize: titleSize,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: _isTablet(screenWidth) ? 24 : 20),
             ...List.generate(_currentData.topCategories.length, (index) {
               final category = _currentData.topCategories[index];
               final percentage = _currentData.categoryData[index];
               final color = _currentData.chartColors[index];
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
+                padding: EdgeInsets.only(
+                  bottom: _isTablet(screenWidth) ? 20 : 16,
+                ),
                 child: Column(
                   children: [
                     Row(
@@ -907,19 +1186,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         Row(
                           children: [
                             Container(
-                              width: 12,
-                              height: 12,
+                              width: _getCategoryDotSize(screenWidth),
+                              height: _getCategoryDotSize(screenWidth),
                               decoration: BoxDecoration(
                                 color: color,
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(
+                                  _getCategoryDotSize(screenWidth) * 0.5,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: _isTablet(screenWidth) ? 16 : 12),
                             Text(
                               category,
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface,
-                                fontSize: 14,
+                                fontSize: itemSize,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
@@ -930,24 +1212,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.7,
                             ),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontSize: itemSize,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: _isTablet(screenWidth) ? 12 : 8),
                     TweenAnimationBuilder<double>(
                       duration: Duration(milliseconds: 1000 + (index * 200)),
                       tween: Tween(begin: 0.0, end: percentage / 100),
                       builder: (context, value, child) {
                         return ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(6),
                           child: LinearProgressIndicator(
                             value: value,
                             backgroundColor: theme.colorScheme.surfaceContainer,
                             valueColor: AlwaysStoppedAnimation<Color>(color),
-                            minHeight: 6,
+                            minHeight: _isTablet(screenWidth) ? 8 : 6,
                           ),
                         );
                       },
@@ -962,16 +1244,31 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  Widget _buildInsightsCard(BuildContext context) {
+  double _getCategoryItemSize(double width) {
+    if (_isLargeScreen(width)) return 16.0;
+    if (_isTablet(width)) return 15.0;
+    if (_isSmallTablet(width)) return 14.0;
+    return 13.0;
+  }
+
+  double _getCategoryDotSize(double width) {
+    if (_isTablet(width) || _isLargeScreen(width)) return 14.0;
+    return 12.0;
+  }
+
+  Widget _buildInsightsCard(BuildContext context, double screenWidth) {
     final theme = Theme.of(context);
+    final double padding = _getCardPadding(screenWidth);
+    final double titleSize = _getCardTitleSize(screenWidth);
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(padding),
         decoration: BoxDecoration(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -981,39 +1278,42 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 Icon(
                   Icons.lightbulb,
                   color: Colors.yellow.withValues(alpha: 0.8),
-                  size: 20,
+                  size: _isTablet(screenWidth) ? 24 : 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Insights',
                   style: TextStyle(
                     color: theme.colorScheme.onSurface,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: _isTablet(screenWidth) ? 20 : 16),
             _buildInsightItem(
               'Peak Activity',
               _getPeakActivityInsight(),
               Icons.trending_up,
               Colors.green,
+              screenWidth,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: _isTablet(screenWidth) ? 16 : 12),
             _buildInsightItem(
               'Response Pattern',
               _getResponsePatternInsight(),
               Icons.schedule,
               Colors.blue,
+              screenWidth,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: _isTablet(screenWidth) ? 16 : 12),
             _buildInsightItem(
               'Suggestion',
               _getSuggestion(),
               Icons.recommend,
               Colors.orange,
+              screenWidth,
             ),
           ],
         ),
@@ -1026,21 +1326,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     String description,
     IconData icon,
     Color color,
+    double screenWidth,
   ) {
     final theme = Theme.of(context);
+    final double iconSize = _getInsightIconSize(screenWidth);
+    final double titleSize = _getInsightTitleSize(screenWidth);
+    final double descSize = _getInsightDescSize(screenWidth);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 24,
-          height: 24,
+          width: iconSize,
+          height: iconSize,
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: color, size: 14),
+          child: Icon(icon, color: color, size: iconSize * 0.6),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: _isTablet(screenWidth) ? 16 : 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1049,17 +1354,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 title,
                 style: TextStyle(
                   color: theme.colorScheme.onSurface,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 description,
                 style: TextStyle(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                  fontSize: 12,
-                  height: 1.3,
+                  fontSize: descSize,
+                  height: 1.4,
                 ),
               ),
             ],
@@ -1067,6 +1372,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         ),
       ],
     );
+  }
+
+  double _getInsightIconSize(double width) {
+    if (_isLargeScreen(width)) return 32.0;
+    if (_isTablet(width)) return 28.0;
+    return 24.0;
+  }
+
+  double _getInsightTitleSize(double width) {
+    if (_isLargeScreen(width)) return 16.0;
+    if (_isTablet(width)) return 15.0;
+    if (_isSmallTablet(width)) return 14.0;
+    return 13.0;
+  }
+
+  double _getInsightDescSize(double width) {
+    if (_isLargeScreen(width)) return 14.0;
+    if (_isTablet(width)) return 13.0;
+    if (_isSmallTablet(width)) return 12.0;
+    return 11.0;
   }
 
   String _getPeakActivityInsight() {

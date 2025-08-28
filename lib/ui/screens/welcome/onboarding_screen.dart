@@ -80,8 +80,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final screenHeight = screenSize.height;
     final screenWidth = screenSize.width;
 
-    // Enhanced responsive breakpoints
-    final isSmallScreen = screenHeight < 700 || screenWidth < 400;
+    // Enhanced responsive breakpoints with iPhone 8 specific handling
+    final isVerySmallScreen = screenHeight < 680; // iPhone 8 and smaller
+    final isSmallScreen = screenHeight < 750 || screenWidth < 400;
     final isMediumScreen = screenHeight >= 700 && screenHeight < 900;
     final isTablet = screenWidth > 600;
 
@@ -129,7 +130,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             position: _slideAnimation,
             child: Column(
               children: [
-                _buildHeader(isSmallScreen, isTablet, primaryTextColor, isDark),
+                _buildHeader(
+                  isVerySmallScreen,
+                  isSmallScreen,
+                  isTablet,
+                  primaryTextColor,
+                  isDark,
+                ),
                 Expanded(
                   child: PageView.builder(
                     controller: _pageController,
@@ -140,6 +147,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         (context, index) => _buildPage(
                           _pages[index],
                           index,
+                          isVerySmallScreen,
                           isSmallScreen,
                           isMediumScreen,
                           isTablet,
@@ -150,6 +158,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ),
                 ),
                 _buildBottomSection(
+                  isVerySmallScreen,
                   isSmallScreen,
                   isMediumScreen,
                   isTablet,
@@ -166,25 +175,32 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Widget _buildHeader(
+    bool isVerySmallScreen,
     bool isSmallScreen,
     bool isTablet,
     Color primaryTextColor,
     bool isDark,
   ) {
     final logoSize =
-        isSmallScreen
+        isVerySmallScreen
+            ? 28.0 // Much smaller for iPhone 8
+            : isSmallScreen
             ? 36.0
             : isTablet
             ? 44.0
             : 40.0;
     final titleSize =
-        isSmallScreen
+        isVerySmallScreen
+            ? 16.0 // Smaller title for iPhone 8
+            : isSmallScreen
             ? 18.0
             : isTablet
             ? 22.0
             : 20.0;
     final skipButtonPadding =
-        isSmallScreen
+        isVerySmallScreen
+            ? 12.0 // Smaller padding for iPhone 8
+            : isSmallScreen
             ? 16.0
             : isTablet
             ? 24.0
@@ -192,7 +208,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
     return Padding(
       padding: EdgeInsets.all(
-        isSmallScreen
+        isVerySmallScreen
+            ? 12.0 // Reduced padding for iPhone 8
+            : isSmallScreen
             ? 16.0
             : isTablet
             ? 24.0
@@ -213,7 +231,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8), // Reduced spacing
                 Text(
                   'ELYO AI',
                   style: TextStyle(
@@ -232,7 +250,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               padding: EdgeInsets.symmetric(
                 horizontal: skipButtonPadding,
                 vertical:
-                    isSmallScreen
+                    isVerySmallScreen
+                        ? 6 // Smaller vertical padding
+                        : isSmallScreen
                         ? 8
                         : isTablet
                         ? 12
@@ -260,7 +280,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           ? Colors.white.withValues(alpha: 0.9)
                           : const Color(0xFF3B77D8),
                   fontSize:
-                      isSmallScreen
+                      isVerySmallScreen
+                          ? 11 // Even smaller font
+                          : isSmallScreen
                           ? 12
                           : isTablet
                           ? 16
@@ -278,6 +300,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget _buildPage(
     OnboardingPage page,
     int index,
+    bool isVerySmallScreen,
     bool isSmallScreen,
     bool isMediumScreen,
     bool isTablet,
@@ -285,15 +308,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     Color secondaryTextColor,
     Color subtitleTextColor,
   ) {
-    // Responsive sizing
+    // Responsive sizing with iPhone 8 specific adjustments
     final horizontalPadding =
-        isSmallScreen
+        isVerySmallScreen
+            ? 20.0 // Reduced padding for iPhone 8
+            : isSmallScreen
             ? 24.0
             : isTablet
             ? 48.0
             : 32.0;
     final baseIconSize =
-        isSmallScreen
+        isVerySmallScreen
+            ? 140.0 // Much smaller icon area for iPhone 8
+            : isSmallScreen
             ? 200.0
             : isTablet
             ? 300.0
@@ -301,204 +328,241 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             ? 250.0
             : 220.0;
     final iconContainerSize =
-        isSmallScreen
+        isVerySmallScreen
+            ? 80.0 // Smaller container for iPhone 8
+            : isSmallScreen
             ? 120.0
             : isTablet
             ? 160.0
             : 140.0;
     final iconSize =
-        isSmallScreen
+        isVerySmallScreen
+            ? 40.0 // Smaller icon for iPhone 8
+            : isSmallScreen
             ? 60.0
             : isTablet
             ? 80.0
             : 70.0;
     final titleSize =
-        isSmallScreen
+        isVerySmallScreen
+            ? 22.0 // Smaller title for iPhone 8
+            : isSmallScreen
             ? 28.0
             : isTablet
             ? 38.0
             : 32.0;
     final descriptionSize =
-        isSmallScreen
+        isVerySmallScreen
+            ? 13.0 // Smaller description for iPhone 8
+            : isSmallScreen
             ? 15.0
             : isTablet
             ? 18.0
             : 16.0;
     final subtitleSize =
-        isSmallScreen
+        isVerySmallScreen
+            ? 10.0 // Smaller subtitle for iPhone 8
+            : isSmallScreen
             ? 11.0
             : isTablet
             ? 14.0
             : 12.0;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Icon section
-          TweenAnimationBuilder<double>(
-            key: ValueKey(index),
-            duration: const Duration(milliseconds: 800),
-            tween: Tween(begin: 0.0, end: 1.0),
-            builder: (context, value, child) {
-              return Transform.scale(
-                scale: 0.7 + (value * 0.3),
-                child: Opacity(
-                  opacity: value,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Breathing circle
-                      AnimatedBuilder(
-                        animation: _breathingController,
-                        builder: (context, child) {
-                          return Container(
-                            width:
-                                baseIconSize +
-                                (_breathingController.value * 15),
-                            height:
-                                baseIconSize +
-                                (_breathingController.value * 15),
+    return SingleChildScrollView(
+      // Added scroll capability
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight:
+                MediaQuery.of(context).size.height * 0.6, // Minimum height
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon section
+              TweenAnimationBuilder<double>(
+                key: ValueKey(index),
+                duration: const Duration(milliseconds: 800),
+                tween: Tween(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: 0.7 + (value * 0.3),
+                    child: Opacity(
+                      opacity: value,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Breathing circle - reduced for iPhone 8
+                          if (!isVerySmallScreen) // Skip breathing circle on very small screens
+                            AnimatedBuilder(
+                              animation: _breathingController,
+                              builder: (context, child) {
+                                return Container(
+                                  width:
+                                      baseIconSize +
+                                      (_breathingController.value * 15),
+                                  height:
+                                      baseIconSize +
+                                      (_breathingController.value * 15),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        primaryTextColor.withValues(
+                                          alpha: 0.05,
+                                        ),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                    border: Border.all(
+                                      color: primaryTextColor.withValues(
+                                        alpha:
+                                            0.1 -
+                                            (_breathingController.value * 0.03),
+                                      ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          // Main icon
+                          Container(
+                            width: iconContainerSize,
+                            height: iconContainerSize,
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                                 colors: [
-                                  primaryTextColor.withValues(alpha: 0.05),
-                                  Colors.transparent,
+                                  const Color(
+                                    0xFF3B77D8,
+                                  ).withValues(alpha: 0.15),
+                                  const Color(
+                                    0xFF3B77D8,
+                                  ).withValues(alpha: 0.08),
                                 ],
                               ),
-                              border: Border.all(
-                                color: primaryTextColor.withValues(
-                                  alpha:
-                                      0.1 - (_breathingController.value * 0.03),
-                                ),
-                                width: 1,
+                              borderRadius: BorderRadius.circular(
+                                iconContainerSize * 0.25,
                               ),
+                              border: Border.all(
+                                color: const Color(
+                                  0xFF3B77D8,
+                                ).withValues(alpha: 0.2),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF3B77D8,
+                                  ).withValues(alpha: 0.1),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
-                      // Main icon
-                      Container(
-                        width: iconContainerSize,
-                        height: iconContainerSize,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              const Color(0xFF3B77D8).withValues(alpha: 0.15),
-                              const Color(0xFF3B77D8).withValues(alpha: 0.08),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(
-                            iconContainerSize * 0.25,
-                          ),
-                          border: Border.all(
-                            color: const Color(
-                              0xFF3B77D8,
-                            ).withValues(alpha: 0.2),
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF3B77D8,
-                              ).withValues(alpha: 0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                            child: Icon(
+                              page.icon,
+                              size: iconSize,
+                              color: const Color(0xFF3B77D8),
                             ),
-                          ],
-                        ),
-                        child: Icon(
-                          page.icon,
-                          size: iconSize,
-                          color: const Color(0xFF3B77D8),
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  );
+                },
+              ),
+
+              SizedBox(
+                height:
+                    isVerySmallScreen
+                        ? 30 // Much smaller spacing for iPhone 8
+                        : isSmallScreen
+                        ? 50
+                        : isTablet
+                        ? 70
+                        : 60,
+              ),
+
+              // Text content
+              Text(
+                page.subtitle.toUpperCase(),
+                style: TextStyle(
+                  color: subtitleTextColor,
+                  fontSize: subtitleSize,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing:
+                      isVerySmallScreen ? 1.5 : 2, // Reduced letter spacing
                 ),
-              );
-            },
-          ),
-
-          SizedBox(
-            height:
-                isSmallScreen
-                    ? 50
-                    : isTablet
-                    ? 70
-                    : 60,
-          ),
-
-          // Text content
-          Text(
-            page.subtitle.toUpperCase(),
-            style: TextStyle(
-              color: subtitleTextColor,
-              fontSize: subtitleSize,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 2,
-            ),
-          ),
-
-          SizedBox(
-            height:
-                isSmallScreen
-                    ? 10
-                    : isTablet
-                    ? 16
-                    : 12,
-          ),
-
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: isTablet ? 500 : double.infinity,
-            ),
-            child: Text(
-              page.title,
-              style: TextStyle(
-                color: primaryTextColor,
-                fontSize: titleSize,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ),
 
-          SizedBox(
-            height:
-                isSmallScreen
-                    ? 20
-                    : isTablet
-                    ? 28
-                    : 24,
-          ),
-
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: isTablet ? 400 : double.infinity,
-            ),
-            child: Text(
-              page.description,
-              style: TextStyle(
-                color: secondaryTextColor,
-                fontSize: descriptionSize,
-                height: 1.6,
-                fontWeight: FontWeight.w400,
+              SizedBox(
+                height:
+                    isVerySmallScreen
+                        ? 6 // Smaller spacing for iPhone 8
+                        : isSmallScreen
+                        ? 10
+                        : isTablet
+                        ? 16
+                        : 12,
               ),
-              textAlign: TextAlign.center,
-            ),
+
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isTablet ? 500 : double.infinity,
+                ),
+                child: Text(
+                  page.title,
+                  style: TextStyle(
+                    color: primaryTextColor,
+                    fontSize: titleSize,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing:
+                        isVerySmallScreen ? -0.5 : -1, // Reduced letter spacing
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+              SizedBox(
+                height:
+                    isVerySmallScreen
+                        ? 12 // Smaller spacing for iPhone 8
+                        : isSmallScreen
+                        ? 20
+                        : isTablet
+                        ? 28
+                        : 24,
+              ),
+
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isTablet ? 400 : double.infinity,
+                ),
+                child: Text(
+                  page.description,
+                  style: TextStyle(
+                    color: secondaryTextColor,
+                    fontSize: descriptionSize,
+                    height:
+                        isVerySmallScreen ? 1.4 : 1.6, // Reduced line height
+                    fontWeight: FontWeight.w400,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildBottomSection(
+    bool isVerySmallScreen,
     bool isSmallScreen,
     bool isMediumScreen,
     bool isTablet,
@@ -507,25 +571,33 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     bool isDark,
   ) {
     final bottomPadding =
-        isSmallScreen
+        isVerySmallScreen
+            ? 16.0 // Reduced padding for iPhone 8
+            : isSmallScreen
             ? 24.0
             : isTablet
             ? 40.0
             : 32.0;
     final buttonHeight =
-        isSmallScreen
+        isVerySmallScreen
+            ? 44.0 // Smaller button for iPhone 8
+            : isSmallScreen
             ? 52.0
             : isTablet
             ? 60.0
             : 56.0;
     final backButtonHeight =
-        isSmallScreen
+        isVerySmallScreen
+            ? 36.0 // Smaller back button for iPhone 8
+            : isSmallScreen
             ? 44.0
             : isTablet
             ? 52.0
             : 48.0;
     final buttonFontSize =
-        isSmallScreen
+        isVerySmallScreen
+            ? 14.0 // Smaller font for iPhone 8
+            : isSmallScreen
             ? 15.0
             : isTablet
             ? 18.0
@@ -545,17 +617,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 (index) => AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: EdgeInsets.symmetric(
-                    horizontal: isSmallScreen ? 4 : 6,
+                    horizontal: isVerySmallScreen ? 3 : (isSmallScreen ? 4 : 6),
                   ),
                   width:
                       _currentPage == index
-                          ? (isSmallScreen
+                          ? (isVerySmallScreen
+                              ? 24 // Smaller indicator for iPhone 8
+                              : isSmallScreen
                               ? 28
                               : isTablet
                               ? 36
                               : 32)
-                          : 8,
-                  height: 8,
+                          : 6, // Smaller inactive indicator
+                  height: isVerySmallScreen ? 6 : 8, // Thinner for iPhone 8
                   decoration: BoxDecoration(
                     gradient:
                         _currentPage == index
@@ -578,7 +652,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
             SizedBox(
               height:
-                  isSmallScreen
+                  isVerySmallScreen
+                      ? 20 // Much smaller spacing for iPhone 8
+                      : isSmallScreen
                       ? 32
                       : isTablet
                       ? 48
@@ -621,7 +697,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             if (_currentPage > 0) ...[
               SizedBox(
                 height:
-                    isSmallScreen
+                    isVerySmallScreen
+                        ? 8 // Smaller spacing for iPhone 8
+                        : isSmallScreen
                         ? 12
                         : isTablet
                         ? 20

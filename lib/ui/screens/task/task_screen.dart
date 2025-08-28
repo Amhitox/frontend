@@ -110,7 +110,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   void _editTask(Task task) {
     HapticFeedback.mediumImpact();
     // Navigate to edit task screen with the task data
-    context.goNamed('addTask', extra: task);
+    context.pushNamed('addTask', extra: task);
   }
 
   void _deleteTask(Task task) {
@@ -255,7 +255,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               SizedBox(width: isTablet ? 12 : 8),
               _buildHeaderButton(
                 Icons.add,
-                () => context.goNamed('addTask'),
+                () => context.pushNamed('addTask'),
                 Theme.of(context),
                 isTablet,
               ),

@@ -57,9 +57,9 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
 
     // Use go instead of push for main navigation to replace current route
     if (route != '/') {
-      context.go(route);
+      context.push(route);
     } else {
-      context.go('/');
+      context.push('/');
     }
   }
 
