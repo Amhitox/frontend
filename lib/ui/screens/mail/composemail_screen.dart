@@ -31,7 +31,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   bool _isSending = false;
   bool _showCc = false;
   bool _showBcc = false;
-  bool _showEmojiPicker = false;
+  final bool _showEmojiPicker = false;
   bool _isUploadingFile = false;
 
   final List<AttachmentItem> _attachments = [];

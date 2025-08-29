@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class CalendarView extends StatefulWidget {
   final DateTime selectedDate;
@@ -17,56 +18,98 @@ class CalendarView extends StatefulWidget {
 }
 
 class _CalendarViewState extends State<CalendarView> {
-  late DateTime _currentMonth;
-
+  bool _showingCalendarView = false;
+  late DateTime _selectedDate;
   @override
   void initState() {
     super.initState();
-    _currentMonth = DateTime(
-      widget.selectedDate.year,
-      widget.selectedDate.month,
-    );
+    _selectedDate = widget.selectedDate;
+  }
+
+  void _toggleCalendarView() {
+    setState(() {
+      _showingCalendarView = !_showingCalendarView;
+    });
+    HapticFeedback.lightImpact();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    final isLargeScreen = screenSize.width > 900;
+
     return Column(
       children: [
-        _buildCalendarViewHeader(),
-        Expanded(child: _buildMonthCalendar()),
+        _buildCalendarViewHeader(theme, isTablet, isLargeScreen),
+        Expanded(child: _buildMonthCalendar(theme, isTablet, isLargeScreen)),
       ],
     );
   }
 
-  Widget _buildCalendarViewHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
+  Widget _buildCalendarViewHeader(
+    ThemeData theme,
+    bool isTablet,
+    bool isLargeScreen,
+  ) {
+    final padding =
+        isLargeScreen
+            ? 32.0
+            : isTablet
+            ? 24.0
+            : 20.0;
+
+    return Container(
+      padding: EdgeInsets.all(padding),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: 0.1),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+      ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: widget.onBack,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
-                size: 16,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(24),
+              onTap: _toggleCalendarView,
+              child: Container(
+                width: isTablet ? 48 : 40,
+                height: isTablet ? 48 : 40,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: GestureDetector(
+                  onTap: () {
+                    widget.onBack();
+                  },
+                  child: Icon(
+                    Icons.arrow_back_ios_rounded,
+                    color: theme.colorScheme.onSurface,
+                    size: isTablet ? 20 : 16,
+                  ),
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 16),
-          const Expanded(
+          SizedBox(width: isTablet ? 20 : 16),
+          Expanded(
             child: Text(
               'Select Date',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.w400,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontSize:
+                    isLargeScreen
+                        ? 28
+                        : isTablet
+                        ? 24
+                        : 20,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -75,79 +118,137 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
-  Widget _buildMonthCalendar() {
+  Widget _buildMonthCalendar(
+    ThemeData theme,
+    bool isTablet,
+    bool isLargeScreen,
+  ) {
+    final margin =
+        isLargeScreen
+            ? 32.0
+            : isTablet
+            ? 24.0
+            : 20.0;
+    final padding =
+        isLargeScreen
+            ? 24.0
+            : isTablet
+            ? 20.0
+            : 16.0;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.all(margin),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
+        color: theme.colorScheme.surface.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          _buildCalendarMonthHeader(),
-          const SizedBox(height: 20),
-          _buildCalendarDaysHeader(),
-          const SizedBox(height: 12),
-          Expanded(child: _buildCalendarGrid()),
+          _buildCalendarMonthHeader(theme, isTablet),
+          SizedBox(height: isTablet ? 24 : 20),
+          _buildCalendarDaysHeader(theme, isTablet),
+          SizedBox(height: isTablet ? 16 : 12),
+          Expanded(child: _buildCalendarGrid(theme, isTablet)),
         ],
       ),
     );
   }
 
-  Widget _buildCalendarMonthHeader() {
+  Widget _buildCalendarMonthHeader(ThemeData theme, bool isTablet) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          _formatMonthYear(_currentMonth),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
+          _formatFullDate(_selectedDate),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontSize: isTablet ? 22 : 18,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         Row(
           children: [
-            _buildCalendarNavButton(Icons.chevron_left, () {
-              setState(() {
-                _currentMonth = DateTime(
-                  _currentMonth.year,
-                  _currentMonth.month - 1,
-                );
-              });
-            }),
-            const SizedBox(width: 8),
-            _buildCalendarNavButton(Icons.chevron_right, () {
-              setState(() {
-                _currentMonth = DateTime(
-                  _currentMonth.year,
-                  _currentMonth.month + 1,
-                );
-              });
-            }),
+            _buildCalendarNavButton(
+              Icons.chevron_left_rounded,
+              () {
+                setState(() {
+                  _selectedDate = DateTime(
+                    _selectedDate.year,
+                    _selectedDate.month - 1,
+                  );
+                });
+              },
+              theme,
+              isTablet,
+            ),
+            SizedBox(width: isTablet ? 12 : 8),
+            _buildCalendarNavButton(
+              Icons.chevron_right_rounded,
+              () {
+                setState(() {
+                  _selectedDate = DateTime(
+                    _selectedDate.year,
+                    _selectedDate.month + 1,
+                  );
+                });
+              },
+              theme,
+              isTablet,
+            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildCalendarNavButton(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
+  Widget _buildCalendarNavButton(
+    IconData icon,
+    VoidCallback onTap,
+    ThemeData theme,
+    bool isTablet,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Container(
+          width: isTablet ? 40 : 32,
+          height: isTablet ? 40 : 32,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: theme.colorScheme.primary,
+            size: isTablet ? 20 : 18,
+          ),
         ),
-        child: Icon(icon, color: Colors.white, size: 18),
       ),
     );
   }
 
-  Widget _buildCalendarDaysHeader() {
+  Widget _buildCalendarDaysHeader(ThemeData theme, bool isTablet) {
     final days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return Row(
       children:
@@ -156,9 +257,9 @@ class _CalendarViewState extends State<CalendarView> {
                 (day) => Expanded(
                   child: Text(
                     day,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 12,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      fontSize: isTablet ? 14 : 12,
                       fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
@@ -169,12 +270,12 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
-  Widget _buildCalendarGrid() {
+  Widget _buildCalendarGrid(ThemeData theme, bool isTablet) {
     final daysInMonth =
-        DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+        DateTime(_selectedDate.year, _selectedDate.month + 1, 0).day;
     final firstDayOfMonth = DateTime(
-      _currentMonth.year,
-      _currentMonth.month,
+      _selectedDate.year,
+      _selectedDate.month,
       1,
     );
     final startingWeekday = firstDayOfMonth.weekday % 7;
@@ -195,31 +296,54 @@ class _CalendarViewState extends State<CalendarView> {
           return Container(); // Empty cells after month ends
         }
 
-        final date = DateTime(_currentMonth.year, _currentMonth.month, day);
+        final date = DateTime(_selectedDate.year, _selectedDate.month, day);
         final isToday = _isSameDay(date, DateTime.now());
-        final isSelected = _isSameDay(date, widget.selectedDate);
+        final isSelected = _isSameDay(date, _selectedDate);
 
-        return GestureDetector(
-          onTap: () => widget.onDateSelected(date),
-          child: Container(
-            margin: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              color:
-                  isSelected
-                      ? Colors.white
-                      : (isToday
-                          ? Colors.white.withValues(alpha: 0.2)
-                          : Colors.transparent),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                day.toString(),
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFF0C1421) : Colors.white,
-                  fontSize: 16,
-                  fontWeight:
-                      isSelected || isToday ? FontWeight.w500 : FontWeight.w400,
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _selectDateFromCalendar(date);
+            },
+            child: Container(
+              margin: EdgeInsets.all(isTablet ? 4 : 2),
+              decoration: BoxDecoration(
+                color:
+                    isSelected
+                        ? theme.colorScheme.primary
+                        : (isToday
+                            ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                            : Colors.transparent),
+                borderRadius: BorderRadius.circular(12),
+                border:
+                    isToday && !isSelected
+                        ? Border.all(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.5,
+                          ),
+                          width: 1,
+                        )
+                        : null,
+              ),
+              child: Center(
+                child: Text(
+                  day.toString(),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color:
+                        isSelected
+                            ? Colors.white
+                            : (isToday
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.onSurface),
+                    fontSize: isTablet ? 16 : 14,
+                    fontWeight:
+                        isSelected || isToday
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                  ),
                 ),
               ),
             ),
@@ -229,7 +353,16 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
-  String _formatMonthYear(DateTime date) {
+  void _selectDateFromCalendar(DateTime date) {
+    setState(() {
+      _selectedDate = date;
+      _showingCalendarView = false;
+    });
+    widget.onDateSelected(date);
+    HapticFeedback.mediumImpact();
+  }
+
+  String _formatFullDate(DateTime date) {
     List<String> months = [
       'January',
       'February',
