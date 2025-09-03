@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/ui/widgets/tab_switch.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,8 +19,19 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
 
+  Future<bool> handleLogin() async {
+    final email = _formKey.currentState?.fields['email']?.value;
+    final password = _formKey.currentState?.fields['password']?.value;
+    if (email != null && password != null) {
+      final success = await context.read<AuthProvider>().login(email, password);
+      return success;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final screenSize = MediaQuery.of(context).size;
@@ -184,6 +197,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
+            if (authProvider.isLoading)
+              Container(
+                color: Colors.black.withOpacity(0.5),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: Color.fromARGB(255, 134, 37, 224),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -509,10 +531,28 @@ class _LoginScreenState extends State<LoginScreen> {
             width: double.infinity,
             height: buttonHeight,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (_formKey.currentState != null &&
                     _formKey.currentState!.saveAndValidate()) {
-                  context.goNamed('home');
+                  final email = _formKey.currentState?.fields['email']?.value;
+                  final password =
+                      _formKey.currentState?.fields['password']?.value;
+                  final success = await context.read<AuthProvider>().login(
+                    email,
+                    password,
+                  );
+                  if (success && context.mounted) {
+                    context.goNamed('home');
+                  } else if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          context.read<AuthProvider>().errorMessage!,
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    );
+                  }
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -522,13 +562,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 }
               },
-              child: Text(
-                'Login',
-                style: TextStyle(
-                  fontSize: fontSize + 1,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child:
+                  context.watch<AuthProvider>().isLoading
+                      ? CircularProgressIndicator(
+                        color: Color.fromARGB(255, 134, 37, 224),
+                      )
+                      : Text(
+                        'Login',
+                        style: TextStyle(
+                          fontSize: fontSize + 1,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
             ),
           ),
         ],
@@ -607,7 +652,9 @@ class _LoginScreenState extends State<LoginScreen> {
           height: buttonHeight,
           child: ElevatedButton(
             style: socialButtonStyle,
-            onPressed: () {},
+            onPressed: () {
+              context.read<AuthProvider>().logout();
+            },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

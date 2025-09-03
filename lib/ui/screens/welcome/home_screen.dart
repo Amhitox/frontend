@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'dart:math' as math;
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -308,12 +310,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         builder: (context, child) {
           return Container(
             padding: EdgeInsets.symmetric(
-              horizontal:
-                  isLargeScreen
-                      ? 18
-                      : isTablet
-                      ? 16
-                      : 14,
+              horizontal: isLargeScreen
+                  ? 18
+                  : isTablet
+                  ? 16
+                  : 14,
               vertical: isTablet ? 10 : 8,
             ),
             decoration: BoxDecoration(
@@ -349,12 +350,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   'Premium',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize:
-                        isLargeScreen
-                            ? 13
-                            : isTablet
-                            ? 12
-                            : 11,
+                    fontSize: isLargeScreen
+                        ? 13
+                        : isTablet
+                        ? 12
+                        : 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
                   ),
@@ -372,12 +372,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     bool isTablet,
     bool isLargeScreen,
   ) {
-    final spacing =
-        isLargeScreen
-            ? 80.0
-            : isTablet
-            ? 70.0
-            : 60.0;
+    final spacing = isLargeScreen
+        ? 80.0
+        : isTablet
+        ? 70.0
+        : 60.0;
 
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: constraints.maxHeight),
@@ -396,14 +395,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildWelcomeSection(bool isTablet, bool isLargeScreen) {
+    final user = context.read<AuthProvider>().user;
     return Container(
       margin: EdgeInsets.symmetric(
-        horizontal:
-            isLargeScreen
-                ? 60
-                : isTablet
-                ? 50
-                : 40,
+        horizontal: isLargeScreen
+            ? 60
+            : isTablet
+            ? 50
+            : 40,
       ),
       child: Column(
         children: [
@@ -413,35 +412,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               color: Theme.of(
                 context,
               ).colorScheme.onSurface.withValues(alpha: 0.7),
-              fontSize:
-                  isLargeScreen
-                      ? 20
-                      : isTablet
-                      ? 18
-                      : 16,
+              fontSize: isLargeScreen
+                  ? 20
+                  : isTablet
+                  ? 18
+                  : 16,
               fontWeight: FontWeight.w300,
               letterSpacing: 0.5,
             ),
           ),
           SizedBox(height: 6),
           ShaderMask(
-            shaderCallback:
-                (bounds) => LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.onSurface,
-                    Theme.of(context).colorScheme.primary,
-                  ],
-                ).createShader(bounds),
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.onSurface,
+                Theme.of(context).colorScheme.primary,
+              ],
+            ).createShader(bounds),
             child: Text(
-              'Amhita Marouane',
+              '${user?.firstName ?? ''} ${user?.lastName ?? ''}' ??
+                  'Amhita Marouane',
               style: TextStyle(
                 color: Colors.white,
-                fontSize:
-                    isLargeScreen
-                        ? 28
-                        : isTablet
-                        ? 26
-                        : 22,
+                fontSize: isLargeScreen
+                    ? 28
+                    : isTablet
+                    ? 26
+                    : 22,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.3,
               ),
@@ -512,12 +509,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildCentralMicrophone(bool isTablet, bool isLargeScreen) {
-    final micSize =
-        isLargeScreen
-            ? 130.0
-            : isTablet
-            ? 120.0
-            : 110.0;
+    final micSize = isLargeScreen
+        ? 130.0
+        : isTablet
+        ? 120.0
+        : 110.0;
 
     return Stack(
       alignment: Alignment.center,
@@ -593,67 +589,63 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             height: micSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient:
-                  _isListening
-                      ? LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.8),
-                        ],
-                      )
-                      : LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Theme.of(
-                            context,
-                          ).colorScheme.surface.withValues(alpha: 0.15),
-                          Theme.of(
-                            context,
-                          ).colorScheme.surface.withValues(alpha: 0.08),
-                        ],
-                      ),
-              border: Border.all(
-                color:
-                    _isListening
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(
+              gradient: _isListening
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(
                           context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.25),
+                        ).colorScheme.primary.withValues(alpha: 0.8),
+                      ],
+                    )
+                  : LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Theme.of(
+                          context,
+                        ).colorScheme.surface.withValues(alpha: 0.15),
+                        Theme.of(
+                          context,
+                        ).colorScheme.surface.withValues(alpha: 0.08),
+                      ],
+                    ),
+              border: Border.all(
+                color: _isListening
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.25),
                 width: _isListening ? 2 : 1.5,
               ),
-              boxShadow:
-                  _isListening
-                      ? [
-                        BoxShadow(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.4),
-                          blurRadius: 25,
-                          spreadRadius: 3,
-                        ),
-                      ]
-                      : [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.1),
-                          blurRadius: 15,
-                          offset: Offset(0, 8),
-                        ),
-                      ],
+              boxShadow: _isListening
+                  ? [
+                      BoxShadow(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.4),
+                        blurRadius: 25,
+                        spreadRadius: 3,
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 15,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
             ),
             child: Icon(
               _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
               size: isTablet ? 40 : 36,
-              color:
-                  _isListening
-                      ? Colors.white
-                      : Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.85),
+              color: _isListening
+                  ? Colors.white
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.85),
             ),
           ),
         ),
@@ -670,44 +662,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(9, (index) {
-              double height =
-                  _isListening
-                      ? 4 +
-                          math.sin(
-                                (_waveController.value * 3 * math.pi) +
-                                    (index * 0.5),
-                              ) *
-                              (isTablet ? 12 : 10)
-                      : 3;
+              double height = _isListening
+                  ? 4 +
+                        math.sin(
+                              (_waveController.value * 3 * math.pi) +
+                                  (index * 0.5),
+                            ) *
+                            (isTablet ? 12 : 10)
+                  : 3;
               return Container(
                 width: isTablet ? 6 : 5,
                 height: height.abs(),
                 margin: EdgeInsets.symmetric(horizontal: isTablet ? 4 : 3),
                 decoration: BoxDecoration(
-                  gradient:
-                      _isListening
-                          ? LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.9),
-                              Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.6),
-                            ],
-                          )
-                          : LinearGradient(
-                            colors: [
-                              Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.3),
-                              Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.1),
-                            ],
-                          ),
+                  gradient: _isListening
+                      ? LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.9),
+                            Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.6),
+                          ],
+                        )
+                      : LinearGradient(
+                          colors: [
+                            Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.3),
+                            Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.1),
+                          ],
+                        ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               );
@@ -721,12 +711,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildQuickActions(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.symmetric(
-        horizontal:
-            isLargeScreen
-                ? 65
-                : isTablet
-                ? 55
-                : 45,
+        horizontal: isLargeScreen
+            ? 65
+            : isTablet
+            ? 55
+            : 45,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,

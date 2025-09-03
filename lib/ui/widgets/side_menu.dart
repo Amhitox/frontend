@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class SideMenu extends StatefulWidget {
   const SideMenu({super.key});
@@ -135,6 +137,7 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final user = context.read<AuthProvider>().user;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -180,7 +183,8 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
 
           // User name
           Text(
-            'Amhita Marouane',
+            '${user?.firstName ?? ''} ${user?.lastName ?? ''}' ??
+                'Amhita Marouane',
             style: TextStyle(
               color: colorScheme.onSurface,
               fontSize: nameSize,
@@ -191,7 +195,7 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
 
           // User email or status
           Text(
-            'amhita@example.com',
+            user?.email ?? 'test@example.com',
             style: TextStyle(
               color: colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: emailSize,
@@ -413,8 +417,9 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-              onTap: () {
-                context.go('/login');
+              onTap: () async {
+                context.read<AuthProvider>().logout();
+                context.pushNamed('login');
               },
               child: Container(
                 padding: EdgeInsets.symmetric(
