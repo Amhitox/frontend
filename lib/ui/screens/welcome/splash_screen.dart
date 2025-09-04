@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/routes/app_router.dart';
+import 'package:frontend/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'dart:math' as math;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -81,12 +85,34 @@ class _SplashScreenState extends State<SplashScreen>
     _particleController.repeat();
 
     await Future.delayed(const Duration(milliseconds: 800));
-    _breathingController.repeat(reverse: true);
+    if (mounted) {
+      _breathingController.repeat(reverse: true);
+    }
 
     await Future.delayed(const Duration(milliseconds: 2500));
-    _fadeController.forward().then((_) {
+    if (mounted) {
+      _fadeController.forward().then((_) {
+        if (mounted) {
+          _navigateNext();
+        }
+      });
+    }
+  }
+
+  void _navigateNext() async {
+    final auth = context.read<AuthProvider>();
+    final pref = await SharedPreferences.getInstance();
+    final firstOpen = pref.getBool("firstOpen");
+
+    if (firstOpen == null || firstOpen) {
       context.go('/onboarding');
-    });
+    } else {
+      if (auth.isLoggedIn) {
+        context.go('/');
+      } else {
+        context.go('/login');
+      }
+    }
   }
 
   @override
@@ -100,6 +126,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    print('SplashScreen: Building splash screen');
+
     final theme = Theme.of(context);
     final screenSize = MediaQuery.of(context).size;
     final screenHeight = screenSize.height;

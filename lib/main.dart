@@ -13,15 +13,17 @@ Future<void> main() async {
   // mobile version
   await dotenv.load(fileName: '.env');
   // await dotenv.load();
+
   final authProvider = AuthProvider();
   await authProvider.init();
+  await AppRoutes().init();
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => authProvider),
       ],
-      child: const MainApp(),
+      child: MainApp(),
     ),
   );
 }
@@ -33,6 +35,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final router = AppRoutes().createRouter(context);
+
     return MaterialApp.router(
       title: 'ELYO AI',
       theme: AppTheme.light,

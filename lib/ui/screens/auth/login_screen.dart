@@ -6,6 +6,7 @@ import 'package:frontend/ui/widgets/tab_switch.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,6 +28,23 @@ class _LoginScreenState extends State<LoginScreen> {
       return success;
     }
     return false;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _handleFirstLaunch();
+  }
+
+  Future<void> _handleFirstLaunch() async {
+    try {
+      final pref = await SharedPreferences.getInstance();
+      await pref.setBool("firstOpen", false);
+
+      print('SplashScreen: Updated firstOpen to false');
+    } catch (e) {
+      print('SplashScreen: Error updating firstOpen: $e');
+    }
   }
 
   @override

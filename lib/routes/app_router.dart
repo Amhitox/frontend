@@ -4,6 +4,7 @@ import 'package:frontend/ui/screens/mail/maildetails_screen.dart' as mailDetail;
 import 'package:frontend/ui/screens/settings/setting_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../ui/screens/welcome/home_screen.dart';
 import '../ui/screens/auth/login_screen.dart';
 import '../ui/screens/auth/signup_screen.dart';
@@ -25,6 +26,11 @@ import '../models/meeting.dart';
 import '../models/task.dart';
 
 class AppRoutes {
+  // Singleton pattern
+  static final AppRoutes _instance = AppRoutes._internal();
+  factory AppRoutes() => _instance;
+  AppRoutes._internal();
+
   // Route paths as constants
   static const String splash = '/splash';
   static const String onboarding = '/onboarding';
@@ -45,30 +51,39 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String profile = '/profile';
   static const String security = '/security';
+
+  bool firstOpen = true;
+
+  Future<void> init() async {
+    final pref = await SharedPreferences.getInstance();
+    firstOpen = pref.getBool('firstOpen') ?? true;
+  }
+
   // Go Router configuration
   GoRouter createRouter(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
     return GoRouter(
-      // Initial route when app starts
-      initialLocation: auth.isLoggedIn ? home : splash,
+      // Initial route determination
+      initialLocation: splash,
+
       // Define all routes
       routes: [
-        // Home Route
+        // Splash and Onboarding Routes
         GoRoute(
-          path: home,
-          name: 'home', // Optional: gives route a name
-          builder: (BuildContext context, GoRouterState state) {
-            return HomeScreen();
-          },
+          path: splash,
+          name: 'splash',
+          builder: (context, state) => const SplashScreen(),
+        ),
+        GoRoute(
+          path: onboarding,
+          name: 'onboarding',
+          builder: (context, state) => const OnboardingScreen(),
         ),
 
-        // Login Route
+        // Auth Routes
         GoRoute(
           path: login,
           name: 'login',
-          builder: (BuildContext context, GoRouterState state) {
-            return const LoginScreen();
-          },
+          builder: (context, state) => const LoginScreen(),
         ),
         GoRoute(
           path: signup,
@@ -78,40 +93,51 @@ class AppRoutes {
         GoRoute(
           path: forgetPassword,
           name: 'forgetPassword',
-          builder: (context, state) => ForgotPasswordScreen(),
+          builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+
+        // Main App Routes (Protected)
+        GoRoute(
+          path: home,
+          name: 'home',
+          builder: (context, state) => const HomeScreen(),
         ),
         GoRoute(
           path: calendar,
           name: 'calendar',
-          builder: (context, state) => CalendarPage(),
+          builder: (context, state) => const CalendarPage(),
         ),
         GoRoute(
           path: task,
           name: 'task',
-          builder: (context, state) => TaskScreen(),
+          builder: (context, state) => const TaskScreen(),
         ),
         GoRoute(
           path: mail,
           name: 'mail',
-          builder: (context, state) => MailScreen(),
+          builder: (context, state) => const MailScreen(),
         ),
         GoRoute(
-          path: '/maildetail',
+          path: maildetail,
+          name: 'maildetail',
           builder: (context, state) {
-            // Receive the single MailItem via `extra`
-            final email = state.extra as MailItem;
+            final email = state.extra as MailItem?;
+            if (email == null) {
+              // Handle null case - redirect to mail screen
+              return const MailScreen();
+            }
             return mailDetail.MailDetailScreen(email: email);
           },
         ),
         GoRoute(
           path: composemail,
           name: 'composemail',
-          builder: (context, state) => ComposeMailScreen(),
+          builder: (context, state) => const ComposeMailScreen(),
         ),
         GoRoute(
           path: subscription,
           name: 'subscription',
-          builder: (context, state) => SubscriptionPlansScreen(),
+          builder: (context, state) => const SubscriptionPlansScreen(),
         ),
         GoRoute(
           path: addSchedule,
@@ -132,77 +158,68 @@ class AppRoutes {
         GoRoute(
           path: analytics,
           name: 'analytics',
-          builder: (context, state) => AnalyticsScreen(),
+          builder: (context, state) => const AnalyticsScreen(),
         ),
         GoRoute(
           path: settings,
           name: 'settings',
-          builder: (context, state) => SettingsScreen(),
+          builder: (context, state) => const SettingsScreen(),
         ),
         GoRoute(
           path: notifications,
           name: 'notifications',
-          builder: (context, state) => NotificationsScreen(),
+          builder: (context, state) => const NotificationsScreen(),
         ),
         GoRoute(
           path: profile,
           name: 'profile',
-          builder: (context, state) => ProfileScreen(),
+          builder: (context, state) => const ProfileScreen(),
         ),
         GoRoute(
           path: security,
           name: 'security',
-          builder: (context, state) => SecurityScreen(),
-        ),
-        GoRoute(
-          path: splash,
-          name: 'splash',
-          builder: (context, state) => SplashScreen(),
-        ),
-        GoRoute(
-          path: onboarding,
-          name: 'onboarding',
-          builder: (context, state) => OnboardingScreen(),
+          builder: (context, state) => const SecurityScreen(),
         ),
       ],
 
-      redirect: (BuildContext context, GoRouterState state) {
-        final loggedIn = context.read<AuthProvider>().isLoggedIn;
-        final loggingIn =
-            state.matchedLocation == AppRoutes.login ||
-            state.matchedLocation == AppRoutes.signup;
-
-        if (!loggedIn && !loggingIn) return AppRoutes.login;
-        if (loggedIn && loggingIn) return AppRoutes.home;
-
-        return null;
-      },
-
-      // Optional: Handle unknown routes
+      // Error handling
       errorBuilder:
           (context, state) => Scaffold(
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  SizedBox(height: 16),
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
                   Text(
                     'Page not found: ${state.matchedLocation}',
-                    style: TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 18),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => context.go(home),
-                    child: Text('Go Home'),
+                    child: const Text('Go Home'),
                   ),
                 ],
               ),
             ),
           ),
 
-      // Optional: Debug logging (remove in production)
+      // Debug logging (remove in production)
       debugLogDiagnostics: true,
     );
   }
+
+  // String _getInitialRoute(BuildContext context) {
+  //   if (firstOpen) {
+  //     return splash;
+  //   }
+
+  //   final auth = context.read<AuthProvider>();
+  //   if (!auth.isLoggedIn) {
+  //     return login;
+  //   }
+
+  //   return home;
+  // }
 }
