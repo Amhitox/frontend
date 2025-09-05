@@ -3,6 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/task_provider.dart';
+import 'package:frontend/providers/user_provider.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'utils/app_theme.dart';
@@ -21,7 +23,13 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => authProvider),
+        ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider(
+          create: (_) => TaskProvider(dio: authProvider.dio),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => UserProvider(dio: authProvider.dio),
+        ),
       ],
       child: MainApp(),
     ),

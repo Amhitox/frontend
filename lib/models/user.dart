@@ -1,10 +1,10 @@
 class User {
-  final String? uid;
-  final String? email;
-  final String? subscriptionStatus;
-  final DateTime? updatedAt;
-  final String? lang;
-  final String? lastName;
+  String? uid;
+  String? email;
+  String? subscriptionStatus;
+  DateTime? updatedAt;
+  String? lang;
+  String? lastName;
   final String? hashedPassword;
   final bool? premiumFeatureBGlobalAccess;
   final String? status;
@@ -14,9 +14,9 @@ class User {
   final String? subscriptionTier;
   final bool? premiumFeatureAGlobalAccess;
   final String? freeAccessExpiryStatus;
-  final String? firstName;
+  String? firstName;
   final String? id;
-  final String? workEmail;
+  String? workEmail;
   final DateTime? createdAt;
 
   User({

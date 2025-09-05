@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:frontend/models/user.dart';
-import 'package:frontend/utils/constants.dart';
 
 class UserService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: AppConstants.baseUrl));
+  final Dio _dio;
+  UserService({required Dio dio}) : _dio = dio;
 
   Future<dynamic> getUser(String id) async {
     try {
@@ -16,9 +16,9 @@ class UserService {
     }
   }
 
-  Future<dynamic> updateUser(String id, User user) async {
+  Future<dynamic> updateUser(String? id, User user) async {
     try {
-      final response = await _dio.put('api/users/$id', data: user.toJson());
+      final response = await _dio.put('/api/users/$id', data: user.toJson());
       print('✅ Update user successful');
       return response;
     } on DioException catch (e) {
@@ -30,7 +30,7 @@ class UserService {
   Future<dynamic> changePassword(String id, String newPassword) async {
     try {
       final response = await _dio.put(
-        'api/users/$id/change-password',
+        '/api/users/$id/change-password',
         data: {'password': newPassword, 'confirmPassword': newPassword},
       );
       print('✅ Change password successful');
@@ -43,7 +43,7 @@ class UserService {
 
   Future<dynamic> deleteUser(String id) async {
     try {
-      final response = await _dio.delete('api/users/$id');
+      final response = await _dio.delete('/api/users/$id');
       print('✅ Delete user successful');
       return response;
     } on DioException catch (e) {

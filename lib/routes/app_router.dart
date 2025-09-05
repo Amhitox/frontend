@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/ui/screens/mail/maildetails_screen.dart' as mailDetail;
 import 'package:frontend/ui/screens/settings/setting_screen.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../ui/screens/welcome/home_screen.dart';
 import '../ui/screens/auth/login_screen.dart';

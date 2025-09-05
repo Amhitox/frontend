@@ -11,13 +11,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  late AuthService _authService;
   late PersistCookieJar _cookieJar;
   late Dio _dio;
   bool _isLoading = false;
   User? _user;
   String? _errorMessage;
 
+  Dio get dio => _dio;
   bool get isLoading => _isLoading;
   User? get user => _user;
   bool get isLoggedIn => _user != null;
@@ -28,6 +29,7 @@ class AuthProvider extends ChangeNotifier {
     _cookieJar = PersistCookieJar(storage: FileStorage('${dir.path}/cookies/'));
     _dio = Dio(BaseOptions(baseUrl: AppConstants.baseUrl));
     _dio.interceptors.add(CookieManager(_cookieJar));
+    _authService = AuthService(dio: _dio);
 
     final prefs = await SharedPreferences.getInstance();
     final userJson = prefs.getString('user');
@@ -35,6 +37,15 @@ class AuthProvider extends ChangeNotifier {
       _user = User.fromJson(jsonDecode(userJson));
       notifyListeners();
     }
+
+    final cookies = await _cookieJar.loadForRequest(
+      Uri.parse(AppConstants.baseUrl),
+    );
+    if (cookies.isNotEmpty) {
+      _dio.interceptors.add(CookieManager(_cookieJar));
+    }
+
+    print("Cookies loaded from storage: $cookies");
   }
 
   Future<bool> login(String email, String password) async {
@@ -50,6 +61,10 @@ class AuthProvider extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         prefs.setString('user', jsonEncode(_user!.toJson()));
         notifyListeners();
+        final cookies = await _cookieJar.loadForRequest(
+          Uri.parse(AppConstants.baseUrl),
+        );
+        print("Cookies after login: $cookies");
         return true;
       } else {
         _errorMessage = response.data["message"] ?? "Login failed";

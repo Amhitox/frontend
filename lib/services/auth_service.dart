@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:frontend/utils/constants.dart';
 
 class AuthService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: AppConstants.baseUrl));
+  final Dio _dio;
+  AuthService({required Dio dio}) : _dio = dio;
 
   Future<dynamic> login(String email, String password) async {
     try {

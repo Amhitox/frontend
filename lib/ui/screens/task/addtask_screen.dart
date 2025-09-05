@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend/providers/task_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
 
@@ -126,6 +128,12 @@ class _AddTaskScreenState extends State<AddTaskScreen>
     }
 
     setState(() => _isSaving = true);
+    context.read<TaskProvider>().addTask(
+      "amhita",
+      "test desciption task",
+      "low",
+    );
+
     HapticFeedback.mediumImpact();
     await Future.delayed(const Duration(milliseconds: 1000));
     _showFeedback(

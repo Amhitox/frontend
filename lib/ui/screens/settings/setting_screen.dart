@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/models/user.dart';
+import 'package:frontend/providers/user_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/providers/auth_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -18,8 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   late final ThemeProvider themeProvider;
   // User data
   String _userName = 'Amhita Marouane';
-  final String _registrationEmail = 'amhita.maroua@gmail.com';
-  String _contactEmail = 'amhita.maroua@gmail.com';
+  String _workEmail = 'amhita.maroua@gmail.com';
 
   // User preferences
   String _selectedVoice = 'Female';
@@ -62,6 +64,13 @@ class _SettingsScreenState extends State<SettingsScreen>
     super.dispose();
   }
 
+  String currentLanguage(User user) {
+    if (user.lang == 'fr') {
+      return 'French';
+    }
+    return 'English';
+  }
+
   // Method to change theme - this would integrate with your theme provider
   void _changeTheme(String theme) {
     themeProvider.setTheme(
@@ -92,6 +101,10 @@ class _SettingsScreenState extends State<SettingsScreen>
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
     final theme = Theme.of(context);
+    var user = context.read<AuthProvider>().user ?? User();
+    setState(() {
+      _selectedLanguage = currentLanguage(user);
+    });
 
     return Scaffold(
       drawer: const SideMenu(),
@@ -112,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             position: _slideAnimation,
             child: Column(
               children: [
-                _buildHeader(isTablet, isLargeScreen, theme),
+                _buildHeader(isTablet, isLargeScreen, theme, user),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(
@@ -126,13 +139,18 @@ class _SettingsScreenState extends State<SettingsScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildEmailSection(isTablet, isLargeScreen, theme),
+                        _buildEmailSection(
+                          isTablet,
+                          isLargeScreen,
+                          theme,
+                          user,
+                        ),
                         _buildSection(
                           'App Preferences',
                           Icons.tune_outlined,
                           [
                             _buildVoiceSelector(isTablet, theme),
-                            _buildLanguageSelector(isTablet, theme),
+                            _buildLanguageSelector(isTablet, theme, user),
                             _buildThemeSelector(isTablet, theme),
                             _buildSwitchItem(
                               'Push Notifications',
@@ -183,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             ),
                             _buildSettingItem(
                               'Help & Support',
-                              'Get help and contact support',
+                              'Get help and work support',
                               Icons.support_agent_outlined,
                               onTap: () => context.go('/support'),
                               isTablet: isTablet,
@@ -243,7 +261,14 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _buildHeader(bool isTablet, bool isLargeScreen, ThemeData theme) {
+  Widget _buildHeader(
+    bool isTablet,
+    bool isLargeScreen,
+    ThemeData theme,
+    User user,
+  ) {
+    _userName = '${user.firstName} ${user.lastName}';
+    _workEmail = user.workEmail!;
     return Container(
       margin: EdgeInsets.all(
         isLargeScreen
@@ -325,7 +350,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         ),
                         SizedBox(width: isTablet ? 12 : 8),
                         GestureDetector(
-                          onTap: () => _editName(theme, isTablet),
+                          onTap: () => _editName(theme, isTablet, user),
                           child: Container(
                             width: isTablet ? 28 : 24,
                             height: isTablet ? 28 : 24,
@@ -350,7 +375,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ),
                     SizedBox(height: isTablet ? 6 : 4),
                     Text(
-                      _registrationEmail,
+                      _workEmail,
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.7,
@@ -451,6 +476,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     bool isTablet,
     bool isLargeScreen,
     ThemeData theme,
+    User user,
   ) {
     return Container(
       margin: EdgeInsets.only(bottom: isTablet ? 24 : 20),
@@ -547,7 +573,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             ),
                             SizedBox(height: isTablet ? 4 : 2),
                             Text(
-                              _registrationEmail,
+                              user.email ?? "test@gmail.com",
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface.withValues(
                                   alpha: 0.6,
@@ -585,7 +611,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ],
                   ),
                 ),
-                // Contact Email (Editable)
+                // Work Email (Editable)
                 Container(
                   padding: EdgeInsets.all(isTablet ? 20 : 16),
                   child: Row(
@@ -611,7 +637,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Contact Email',
+                              'Work Email',
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface,
                                 fontSize: isTablet ? 16 : 15,
@@ -620,7 +646,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             ),
                             SizedBox(height: isTablet ? 4 : 2),
                             Text(
-                              _contactEmail,
+                              _workEmail,
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface.withValues(
                                   alpha: 0.6,
@@ -632,7 +658,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => _editContactEmail(theme, isTablet),
+                        onTap: () => _editWorkEmail(theme, isTablet, user),
                         child: Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: isTablet ? 14 : 12,
@@ -893,7 +919,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _buildLanguageSelector(bool isTablet, ThemeData theme) {
+  Widget _buildLanguageSelector(bool isTablet, ThemeData theme, User user) {
     return _buildSettingItem(
       'Language',
       'App language: $_selectedLanguage',
@@ -917,13 +943,21 @@ class _SettingsScreenState extends State<SettingsScreen>
               fontSize: isTablet ? 13 : 12,
             ),
             items:
-                ['English', 'Français'].map((language) {
+                ['English', 'French'].map((language) {
                   return DropdownMenuItem(
                     value: language,
                     child: Text(language),
                   );
                 }).toList(),
-            onChanged: (value) => setState(() => _selectedLanguage = value!),
+            onChanged: (value) {
+              if (value == 'English') {
+                user.lang = 'en';
+              } else {
+                user.lang = 'fr';
+              }
+              context.read<UserProvider>().updateUser(user.id, user);
+              setState(() => _selectedLanguage = value!);
+            },
           ),
         ),
       ),
@@ -1029,7 +1063,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  void _editName(ThemeData theme, bool isTablet) {
+  void _editName(ThemeData theme, bool isTablet, User user) {
     final TextEditingController nameController = TextEditingController(
       text: _userName,
     );
@@ -1085,6 +1119,9 @@ class _SettingsScreenState extends State<SettingsScreen>
               ElevatedButton(
                 onPressed: () {
                   setState(() => _userName = nameController.text);
+                  user.firstName = _userName.split(' ')[0];
+                  user.lastName = _userName.split(' ')[1];
+                  context.read<UserProvider>().updateUser(user.id, user);
                   Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(
@@ -1103,9 +1140,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  void _editContactEmail(ThemeData theme, bool isTablet) {
+  void _editWorkEmail(ThemeData theme, bool isTablet, User user) {
     final TextEditingController emailController = TextEditingController(
-      text: _contactEmail,
+      text: _workEmail,
     );
 
     showDialog(
@@ -1117,7 +1154,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              'Edit Contact Email',
+              'Edit Work Email',
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -1132,7 +1169,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                hintText: 'Enter your contact email',
+                hintText: 'Enter your work email',
                 hintStyle: TextStyle(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
@@ -1159,7 +1196,9 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
               ElevatedButton(
                 onPressed: () {
-                  setState(() => _contactEmail = emailController.text);
+                  setState(() => _workEmail = emailController.text);
+                  user.email = _workEmail;
+                  context.read<UserProvider>().updateUser(user.id, user);
                   Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(
