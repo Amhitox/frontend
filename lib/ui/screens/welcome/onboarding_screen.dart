@@ -233,7 +233,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
                 const SizedBox(width: 8), // Reduced spacing
                 Text(
-                  'ELYO AI',
+                  'Aixy',
                   style: TextStyle(
                     color: primaryTextColor,
                     fontSize: titleSize,

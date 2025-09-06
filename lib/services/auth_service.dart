@@ -13,8 +13,8 @@ class AuthService {
       print('✅ Login successful');
       return response;
     } on DioException catch (e) {
-      print('❌ Login failed: ${e.message}');
-      rethrow;
+      print('❌ Login failed: ${e.response}');
+      throw Exception(e.response?.data["message"] ?? "Login failed");
     }
   }
 
@@ -23,9 +23,9 @@ class AuthService {
     String password,
     String firstName,
     String lastName,
-    String phone,
-    String dateOfBirth,
-  ) async {
+    String phone, {
+    String birthday = "2003-01-01",
+  }) async {
     try {
       final response = await _dio.post(
         '/api/auth/register',
@@ -35,9 +35,10 @@ class AuthService {
           'firstName': firstName,
           'lastName': lastName,
           // 'phone': phone,
-          // 'dateOfBirth': dateOfBirth,
+          'birthday': birthday,
         },
       );
+      print('register was successful');
       return response;
     } on DioException catch (e) {
       print('❌ Register failed: ${e.message}');
@@ -52,6 +53,34 @@ class AuthService {
       return response;
     } catch (e) {
       print('Logout failed');
+      rethrow;
+    }
+  }
+
+  Future<dynamic> signInWithGoogle(String idToken) async {
+    try {
+      final response = await _dio.post(
+        '/api/auth/Oauth/google',
+        data: {'token': idToken},
+      );
+      print('✅ Google Sign-In successful');
+      return response;
+    } on DioException catch (e) {
+      print('❌ Google Sign-In failed: ${e.response}');
+      rethrow;
+    }
+  }
+
+  Future<dynamic> forgotPassword(String email) async {
+    try {
+      final response = await _dio.post(
+        '/api/auth/forget-password',
+        data: {'email': email},
+      );
+      print('✅ Forgot password successful');
+      return response;
+    } on DioException catch (e) {
+      print('❌ Forgot password failed: ${e.response}');
       rethrow;
     }
   }

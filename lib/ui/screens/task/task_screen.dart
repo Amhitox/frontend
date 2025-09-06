@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/calendar_view.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
 
@@ -24,48 +27,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   final List<String> _filters = ["All", "Pending", "In Progress", "Completed"];
 
-  final List<Task> _tasks = [
-    Task(
-      title: "Review Q4 Financial Reports",
-      description: "Analyze revenue, expenses, and profitability metrics",
-      category: "Finance",
-      priority: TaskPriority.high,
-      isCompleted: false,
-      dueTime: "10:00 AM",
-    ),
-    Task(
-      title: "Approve Marketing Campaign",
-      description: "Review campaign materials and budget allocation",
-      category: "Marketing",
-      priority: TaskPriority.high,
-      isCompleted: true,
-      dueTime: "11:30 AM",
-    ),
-    Task(
-      title: "Team Performance Reviews",
-      description: "Conduct quarterly performance evaluations",
-      category: "HR",
-      priority: TaskPriority.medium,
-      isCompleted: false,
-      dueTime: "2:00 PM",
-    ),
-    Task(
-      title: "Contract Negotiations Follow-up",
-      description: "Review terms and conditions with legal team",
-      category: "Legal",
-      priority: TaskPriority.medium,
-      isCompleted: false,
-      dueTime: "3:30 PM",
-    ),
-    Task(
-      title: "Prepare Board Presentation",
-      description: "Create slides for quarterly board meeting",
-      category: "Strategy",
-      priority: TaskPriority.high,
-      isCompleted: false,
-      dueTime: "5:00 PM",
-    ),
-  ];
+  List<Task> _tasks = [];
 
   @override
   void initState() {
@@ -79,6 +41,18 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
     _slideController.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      getTasks();
+    });
+  }
+
+  getTasks() async {
+    final tasks = await context.read<TaskProvider>().getTasks();
+    if (mounted) {
+      setState(() {
+        _tasks = tasks;
+      });
+    }
   }
 
   @override
@@ -495,7 +469,110 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildShimmerList(bool isTablet) {
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 20 : 16,
+        vertical: 8,
+      ),
+      itemCount: 5,
+      itemBuilder: (context, index) {
+        return _buildShimmerItem(context, isTablet);
+      },
+    );
+  }
+
+  Widget _buildShimmerItem(context, bool isTablet) {
+    return Shimmer.fromColors(
+      baseColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
+      highlightColor: Theme.of(
+        context,
+      ).colorScheme.surface.withValues(alpha: 0.1),
+      child: Container(
+        margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
+        padding: EdgeInsets.all(isTablet ? 20 : 16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: isTablet ? 28 : 24,
+              height: isTablet ? 28 : 24,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(width: isTablet ? 16 : 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 120,
+                        height: isTablet ? 16 : 14,
+                        color: Colors.white,
+                      ),
+                      const Spacer(),
+                      Container(
+                        width: 40,
+                        height: isTablet ? 20 : 18,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: isTablet ? 6 : 4),
+                  Container(
+                    width: 200,
+                    height: isTablet ? 14 : 12,
+                    color: Colors.white,
+                  ),
+                  SizedBox(height: isTablet ? 12 : 8),
+                  Row(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: isTablet ? 24 : 22,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        width: 50,
+                        height: isTablet ? 14 : 12,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTasksList(bool isTablet) {
+    var isLoading = context.watch<TaskProvider>().isLoading;
+    if (isLoading) {
+      return _buildShimmerList(isTablet);
+    }
     return ListView.builder(
       padding: EdgeInsets.symmetric(
         horizontal: isTablet ? 20 : 16,

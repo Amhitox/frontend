@@ -1197,7 +1197,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               ElevatedButton(
                 onPressed: () {
                   setState(() => _workEmail = emailController.text);
-                  user.email = _workEmail;
+                  user.workEmail = _workEmail;
                   context.read<UserProvider>().updateUser(user.id, user);
                   Navigator.of(context).pop();
                 },

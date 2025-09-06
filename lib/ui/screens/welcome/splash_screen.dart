@@ -333,7 +333,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   child: Column(
                                     children: [
                                       Text(
-                                        'ELYO AI',
+                                        'Aixy',
                                         style: TextStyle(
                                           color: primaryTextColor,
                                           fontSize: titleSize,

@@ -24,7 +24,19 @@ class TaskService {
       return response;
     } on DioException catch (e) {
       print('Task failed: ${e.response?.statusCode} ${e.response?.data}');
-      return null;
+      return e.response;
+    }
+  }
+
+  Future<dynamic> getTasks() async {
+    try {
+      final response = await _dio.get("/api/tasks");
+      print(response.data);
+      print("got tasks");
+      return response;
+    } on DioException catch (e) {
+      print('Task failed: ${e.response?.statusCode} ${e.response?.data}');
+      return e.response;
     }
   }
 }

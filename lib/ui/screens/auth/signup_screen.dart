@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:frontend/ui/widgets/tab_switch.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:frontend/providers/auth_provider.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -11,16 +16,7 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final _formKey = GlobalKey<FormState>();
-
-  // Form controllers
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final _formKey = GlobalKey<FormBuilderState>();
 
   String _selectedCountryCode = '+212';
   String _selectedCountryFlag = '🇲🇦';
@@ -41,17 +37,6 @@ class _SignupScreenState extends State<SignupScreen> {
     {'name': 'Japan', 'code': '+81', 'flag': '🇯🇵'},
     {'name': 'Australia', 'code': '+61', 'flag': '🇦🇺'},
   ];
-
-  @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -279,7 +264,7 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         const SizedBox(width: 8),
         Text(
-          'ELYO AI',
+          'Aixy',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -367,7 +352,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ? 16.0
             : 15.0;
 
-    return Form(
+    return FormBuilder(
       key: _formKey,
       child: Column(
         children: [
@@ -376,21 +361,23 @@ class _SignupScreenState extends State<SignupScreen> {
             children: [
               Expanded(
                 child: _buildTextField(
-                  controller: _firstNameController,
+                  name: 'first_name',
                   labelText: 'First Name',
                   hintText: 'Enter first name',
                   isDark: isDark,
                   fontSize: fontSize,
+                  validators: [FormBuilderValidators.required()],
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildTextField(
-                  controller: _lastNameController,
+                  name: 'last_name',
                   labelText: 'Last Name',
                   hintText: 'Enter last name',
                   isDark: isDark,
                   fontSize: fontSize,
+                  validators: [FormBuilderValidators.required()],
                 ),
               ),
             ],
@@ -399,12 +386,16 @@ class _SignupScreenState extends State<SignupScreen> {
 
           // Email field
           _buildTextField(
-            controller: _emailController,
+            name: 'email',
             labelText: 'Email',
             hintText: 'Enter your email',
             keyboardType: TextInputType.emailAddress,
             isDark: isDark,
             fontSize: fontSize,
+            validators: [
+              FormBuilderValidators.required(),
+              FormBuilderValidators.email(),
+            ],
           ),
           const SizedBox(height: 16),
 
@@ -418,7 +409,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
           // Password field
           _buildTextField(
-            controller: _passwordController,
+            name: 'password',
             labelText: 'Password',
             hintText: 'Enter your password',
             isPassword: true,
@@ -427,12 +418,16 @@ class _SignupScreenState extends State<SignupScreen> {
                 () => setState(() => _obscurePassword = !_obscurePassword),
             isDark: isDark,
             fontSize: fontSize,
+            validators: [
+              FormBuilderValidators.required(),
+              FormBuilderValidators.minLength(6),
+            ],
           ),
           const SizedBox(height: 16),
 
           // Confirm password field
           _buildTextField(
-            controller: _confirmPasswordController,
+            name: 'confirm_password',
             labelText: 'Confirm Password',
             hintText: 'Confirm your password',
             isPassword: true,
@@ -443,6 +438,17 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
             isDark: isDark,
             fontSize: fontSize,
+            validators: [
+              FormBuilderValidators.required(),
+              (value) {
+                final password =
+                    _formKey.currentState?.fields['password']?.value;
+                if (value != password) {
+                  return 'Passwords do not match';
+                }
+                return null;
+              },
+            ],
           ),
           const SizedBox(height: 24),
 
@@ -478,11 +484,12 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _buildTextField({
-    required TextEditingController controller,
+    required String name,
     required String labelText,
     required String hintText,
     required bool isDark,
     required double fontSize,
+    required List<String? Function(String?)> validators,
     TextInputType? keyboardType,
     bool isPassword = false,
     bool obscureText = false,
@@ -490,8 +497,8 @@ class _SignupScreenState extends State<SignupScreen> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return TextFormField(
-      controller: controller,
+    return FormBuilderTextField(
+      name: name,
       keyboardType: keyboardType,
       obscureText: obscureText,
       textInputAction: TextInputAction.next,
@@ -547,66 +554,74 @@ class _SignupScreenState extends State<SignupScreen> {
                 )
                 : null,
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'This field is required';
-        }
-        if (labelText == 'Email' && !value.contains('@')) {
-          return 'Please enter a valid email';
-        }
-        if (labelText == 'Password' && value.length < 6) {
-          return 'Password must be at least 6 characters';
-        }
-        if (labelText == 'Confirm Password' &&
-            value != _passwordController.text) {
-          return 'Passwords do not match';
-        }
-        return null;
-      },
+      validator: FormBuilderValidators.compose(validators),
     );
   }
 
   Widget _buildDateField(bool isDark, double fontSize) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return GestureDetector(
-      onTap: _selectDate,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        decoration: BoxDecoration(
-          border: Border.all(
+    return FormBuilderDateTimePicker(
+      name: 'date_of_birth',
+      inputType: InputType.date,
+      format: DateFormat('dd/MM/yyyy'),
+      initialDate: DateTime.now().subtract(
+        const Duration(days: 6570),
+      ), // 18 years ago
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      onChanged: (value) {
+        setState(() {
+          _selectedDate = value;
+        });
+      },
+      style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
+      decoration: InputDecoration(
+        labelText: 'Date of Birth',
+        hintText: 'Select your date of birth',
+        labelStyle: TextStyle(
+          color: colorScheme.onSurface.withValues(alpha: 0.7),
+          fontSize: fontSize,
+        ),
+        hintStyle: TextStyle(
+          color: colorScheme.onSurface.withValues(alpha: 0.5),
+          fontSize: fontSize,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
             color:
                 isDark
                     ? const Color(0xFFD9D9D9).withValues(alpha: 0.3)
                     : const Color(0xFFD9D9D9),
           ),
-          borderRadius: BorderRadius.circular(12),
-          color: isDark ? const Color(0xFF141D2E) : Colors.white,
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                _selectedDate != null
-                    ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                    : 'Date of Birth',
-                style: TextStyle(
-                  color:
-                      _selectedDate != null
-                          ? colorScheme.onSurface
-                          : colorScheme.onSurface.withValues(alpha: 0.5),
-                  fontSize: fontSize,
-                ),
-              ),
-            ),
-            Icon(
-              Icons.calendar_today,
-              color: colorScheme.onSurface.withValues(alpha: 0.6),
-              size: 20,
-            ),
-          ],
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color:
+                isDark
+                    ? const Color(0xFFD9D9D9).withValues(alpha: 0.3)
+                    : const Color(0xFFD9D9D9),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF3B77D8), width: 2),
+        ),
+        filled: true,
+        fillColor: isDark ? const Color(0xFF141D2E) : Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        suffixIcon: Icon(
+          Icons.calendar_today,
+          color: colorScheme.onSurface.withValues(alpha: 0.6),
+          size: 20,
         ),
       ),
+      validator: FormBuilderValidators.required(),
     );
   }
 
@@ -666,8 +681,8 @@ class _SignupScreenState extends State<SignupScreen> {
         const SizedBox(width: 8),
         // Phone number input
         Expanded(
-          child: TextFormField(
-            controller: _phoneController,
+          child: FormBuilderTextField(
+            name: 'phone',
             keyboardType: TextInputType.phone,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
@@ -713,12 +728,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 vertical: 12,
               ),
             ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Phone number is required';
-              }
-              return null;
-            },
+            // validator: FormBuilderValidators.required(),
           ),
         ),
       ],
@@ -866,7 +876,7 @@ class _SignupScreenState extends State<SignupScreen> {
           height: buttonHeight,
           child: ElevatedButton(
             style: socialButtonStyle,
-            onPressed: () => _socialSignUp('Google'),
+            onPressed: () => {},
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -898,7 +908,7 @@ class _SignupScreenState extends State<SignupScreen> {
           height: buttonHeight,
           child: ElevatedButton(
             style: socialButtonStyle,
-            onPressed: () => _socialSignUp('Apple'),
+            onPressed: () {},
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -926,21 +936,6 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
       ],
     );
-  }
-
-  void _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().subtract(
-        const Duration(days: 6570),
-      ), // 18 years ago
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-    );
-
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
-    }
   }
 
   void _showCountryPicker() {
@@ -1016,47 +1011,61 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  void _handleSignUp() {
-    if (_formKey.currentState?.validate() ?? false) {
-      if (_selectedDate == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Please select your date of birth'),
-            backgroundColor:
-                Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF141D2E)
-                    : Colors.red,
-          ),
-        );
-        return;
-      }
+  void _handleSignUp() async {
+    if (_formKey.currentState != null &&
+        _formKey.currentState!.saveAndValidate()) {
+      final firstName = _formKey.currentState?.fields['first_name']?.value;
+      final lastName = _formKey.currentState?.fields['last_name']?.value;
+      final email = _formKey.currentState?.fields['email']?.value;
+      final password = _formKey.currentState?.fields['password']?.value;
+      final birthdayDate =
+          _formKey.currentState?.fields['date_of_birth']?.value;
+      final birthday =
+          "${birthdayDate.year.toString().padLeft(4, '0')}-"
+          "${birthdayDate.month.toString().padLeft(2, '0')}-"
+          "${birthdayDate.day.toString().padLeft(2, '0')}";
 
-      // Show success message and navigate
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Account created successfully!'),
-          backgroundColor: const Color(0xFF3B77D8),
-        ),
+      context.read<AuthProvider>().register(
+        email,
+        password,
+        firstName,
+        lastName,
+        birthday,
       );
-
-      context.go('/home');
     }
   }
+  //     // Show success message and navigate
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(
+  //         content: Text('Account created successfully!'),
+  //         backgroundColor: Color(0xFF3B77D8),
+  //       ),
+  //     );
 
-  void _socialSignUp(String provider) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Signing up with $provider...'),
-        backgroundColor: const Color(0xFF3B77D8),
-      ),
-    );
+  //     context.go('/home');
+  //   } else {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(
+  //         content: Text('Please fill in all fields correctly'),
+  //         backgroundColor: Color.fromARGB(255, 216, 59, 59),
+  //       ),
+  //     );
+  //   }
+  // }
 
-    // Simulate social signup
+  // void _socialSignUp(String provider) {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     SnackBar(
+  //       content: Text('Signing up with $provider...'),
+  //       backgroundColor: const Color(0xFF3B77D8),
+  //     ),
+  //   );
 
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        context.go('/home');
-      }
-    });
-  }
+  //   // Simulate social signup
+  //   Future.delayed(const Duration(seconds: 1), () {
+  //     if (mounted) {
+  //       context.go('/home');
+  //     }
+  //   });
+  // }
 }

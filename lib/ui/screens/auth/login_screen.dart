@@ -20,16 +20,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
 
-  Future<bool> handleLogin() async {
-    final email = _formKey.currentState?.fields['email']?.value;
-    final password = _formKey.currentState?.fields['password']?.value;
-    if (email != null && password != null) {
-      final success = await context.read<AuthProvider>().login(email, password);
-      return success;
-    }
-    return false;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -273,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(width: 8),
         Text(
-          'ELYO AI',
+          'Aixy',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -559,25 +549,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     email,
                     password,
                   );
-                  if (success && context.mounted) {
+                  if (success == 200 && context.mounted) {
                     context.goNamed('home');
                   } else if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          context.read<AuthProvider>().errorMessage!,
+                          context.read<AuthProvider>().errorMessage ?? "test",
                           style: TextStyle(color: Colors.red),
                         ),
                       ),
                     );
                   }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Please fill in all fields'),
-                      backgroundColor: Color.fromARGB(255, 216, 59, 59),
-                    ),
-                  );
                 }
               },
               child:
@@ -671,7 +654,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: ElevatedButton(
             style: socialButtonStyle,
             onPressed: () {
-              context.read<AuthProvider>().logout();
+              context.read<AuthProvider>().signInWithGoogle();
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/ui/screens/auth/resetpassword_screen.dart';
 import 'package:frontend/ui/screens/mail/maildetails_screen.dart' as mailDetail;
 import 'package:frontend/ui/screens/settings/setting_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -92,6 +93,14 @@ class AppRoutes {
           path: forgetPassword,
           name: 'forgetPassword',
           builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/reset-password',
+          name: 'resetPassword',
+          builder:
+              (context, state) => ResetPasswordScreen(
+                token: state.uri.queryParameters['token'],
+              ),
         ),
 
         // Main App Routes (Protected)

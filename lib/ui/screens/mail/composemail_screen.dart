@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 
 class ComposeMailScreen extends StatefulWidget {
@@ -31,7 +30,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   bool _isSending = false;
   bool _showCc = false;
   bool _showBcc = false;
-  final bool _showEmojiPicker = false;
   bool _isUploadingFile = false;
 
   final List<AttachmentItem> _attachments = [];
@@ -229,12 +227,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     );
   }
 
-  void _onEmojiSelected(Emoji emoji) {
-    final index = _bodyController.selection.baseOffset;
-    final length = _bodyController.selection.extentOffset - index;
-    _bodyController.replaceText(index, length, emoji.emoji, null);
-  }
-
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
@@ -424,17 +416,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
 
           // Send button
           _buildSendButton(isTablet, isLargeScreen),
-
-          // Emoji picker
-          if (_showEmojiPicker)
-            SizedBox(
-              height: 200, // Reduced height for mobile
-              child: EmojiPicker(
-                onEmojiSelected: (category, emoji) {
-                  _onEmojiSelected(emoji);
-                },
-              ),
-            ),
         ],
       ),
     );
