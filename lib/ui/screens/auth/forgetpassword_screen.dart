@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
@@ -18,6 +20,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
+  int _secondsLeft = 0;
+  Timer? _timer;
 
   bool _isLoading = false;
   bool _emailSent = false;
@@ -43,6 +47,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   void dispose() {
     _emailController.dispose();
     _slideController.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -692,14 +697,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
         // Resend button
         TextButton(
-          onPressed: _handleResendEmail,
+          onPressed: _secondsLeft > 0 ? null : _handleResendEmail,
           child: Text(
-            'Didn\'t receive the email? Resend',
+            _secondsLeft > 0
+                ? "Resend in $_secondsLeft s"
+                : "Didn't receive the email? Resend",
             style: TextStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.w500,
               color: const Color(0xFF3B77D8),
-              decoration: TextDecoration.underline,
             ),
           ),
         ),
@@ -826,11 +832,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   }
 
   void _handleResetPassword() async {
+    if (_secondsLeft > 0) return;
     final authProvider = context.read<AuthProvider>();
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
 
-      // Simulate network request
       await authProvider.forgotPassword(_emailController.text);
 
       setState(() {
@@ -849,9 +855,25 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         );
       }
     }
+    setState(() {
+      _secondsLeft = 60;
+    });
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsLeft == 1) {
+        timer.cancel();
+      }
+      setState(() {
+        _secondsLeft--;
+      });
+    });
   }
 
-  void _handleResendEmail() {
+  void _handleResendEmail() async {
+    final authProvider = context.read<AuthProvider>();
+
+    await authProvider.forgotPassword(_emailController.text);
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Reset link sent again. Please check your email.'),

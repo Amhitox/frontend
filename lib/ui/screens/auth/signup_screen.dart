@@ -419,8 +419,14 @@ class _SignupScreenState extends State<SignupScreen> {
             isDark: isDark,
             fontSize: fontSize,
             validators: [
-              FormBuilderValidators.required(),
-              FormBuilderValidators.minLength(6),
+              FormBuilderValidators.required(errorText: 'Password is required'),
+              FormBuilderValidators.match(
+                RegExp(
+                  r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#\$&*~]).{8,}$',
+                ),
+                errorText:
+                    'Password must be at least 8 characters and include uppercase, lowercase, number, and special character',
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -469,13 +475,23 @@ class _SignupScreenState extends State<SignupScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(
-                'Create Account',
-                style: TextStyle(
-                  fontSize: fontSize + 1,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child:
+                  context.watch<AuthProvider>().isLoading
+                      ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                      : Text(
+                        'Create Account',
+                        style: TextStyle(
+                          fontSize: fontSize + 1,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
             ),
           ),
         ],
@@ -1020,18 +1036,54 @@ class _SignupScreenState extends State<SignupScreen> {
       final password = _formKey.currentState?.fields['password']?.value;
       final birthdayDate =
           _formKey.currentState?.fields['date_of_birth']?.value;
-      final birthday =
-          "${birthdayDate.year.toString().padLeft(4, '0')}-"
-          "${birthdayDate.month.toString().padLeft(2, '0')}-"
-          "${birthdayDate.day.toString().padLeft(2, '0')}";
+      final formattedDate = DateFormat("yyyy-MM-dd").format(birthdayDate);
+      final rawPhone = _formKey.currentState?.fields['phone']?.value ?? '';
+      String cleanedPhone = rawPhone.trim();
 
-      context.read<AuthProvider>().register(
+      if (cleanedPhone.startsWith('0')) {
+        cleanedPhone = cleanedPhone.substring(1);
+      }
+
+      final fullPhone = '$_selectedCountryCode$cleanedPhone';
+      print(
+        "my phone number is :"
+        '$fullPhone',
+      );
+      print(
+        "my birthday is :"
+        '$formattedDate',
+      );
+      final authProvider = context.read<AuthProvider>();
+      final success = await authProvider.register(
         email,
         password,
         firstName,
         lastName,
-        birthday,
+        phone: fullPhone,
+        birthday: formattedDate,
       );
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? "test"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            context.go('/login');
+          }
+        });
+      } else if (mounted && success == false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authProvider.errorMessage ?? "test"),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
   //     // Show success message and navigate

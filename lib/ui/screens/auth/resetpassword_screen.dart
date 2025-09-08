@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
+import 'package:provider/provider.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key, this.token});
@@ -602,12 +604,24 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      if (widget.token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Password reset failed"),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final response = await context.read<AuthProvider>().resetPassword(
+        widget.token ?? "",
+        _passwordController.text,
+      );
 
       setState(() => _isLoading = false);
 
-      if (mounted) {
+      if (response && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Password reset successfully!'),
@@ -615,13 +629,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             behavior: SnackBarBehavior.floating,
           ),
         );
-
-        // Navigate to login after success
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
-            context.go('/login');
+            context.goNamed('login');
           }
         });
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Password reset failed"),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

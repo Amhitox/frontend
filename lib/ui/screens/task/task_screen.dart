@@ -11,7 +11,8 @@ import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
 
 class TaskScreen extends StatefulWidget {
-  const TaskScreen({super.key});
+  final List<Task> tasks;
+  const TaskScreen({super.key, required this.tasks});
 
   @override
   _TaskScreenState createState() => _TaskScreenState();
@@ -25,13 +26,18 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _showingCalendarView = false;
   String _selectedFilter = "All";
 
-  final List<String> _filters = ["All", "Pending", "In Progress", "Completed"];
+  final List<String> _filters = ["All", "In Progress", "Completed"];
 
-  List<Task> _tasks = [];
+  List<Task> _tasks = <Task>[];
 
   @override
   void initState() {
     super.initState();
+    if (widget.tasks.isNotEmpty) {
+      _tasks = widget.tasks;
+    } else {
+      getTasks();
+    }
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -41,12 +47,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
     _slideController.forward();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      getTasks();
-    });
   }
 
-  getTasks() async {
+  Future<void> getTasks() async {
     final tasks = await context.read<TaskProvider>().getTasks();
     if (mounted) {
       setState(() {
@@ -117,8 +120,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   List<Task> get _filteredTasks {
     switch (_selectedFilter) {
-      case 'Pending':
-        return _tasks.where((task) => !task.isCompleted).toList();
       case 'In Progress':
         return _tasks.where((task) => !task.isCompleted).toList();
       case 'Completed':

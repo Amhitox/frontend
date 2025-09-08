@@ -14,7 +14,7 @@ class AuthService {
       return response;
     } on DioException catch (e) {
       print('❌ Login failed: ${e.response}');
-      throw Exception(e.response?.data["message"] ?? "Login failed");
+      return e.response;
     }
   }
 
@@ -22,8 +22,8 @@ class AuthService {
     String email,
     String password,
     String firstName,
-    String lastName,
-    String phone, {
+    String lastName, {
+    String phone = "+212622107249",
     String birthday = "2003-01-01",
   }) async {
     try {
@@ -34,7 +34,7 @@ class AuthService {
           'password': password,
           'firstName': firstName,
           'lastName': lastName,
-          // 'phone': phone,
+          'phone': phone,
           'birthday': birthday,
         },
       );
@@ -42,7 +42,7 @@ class AuthService {
       return response;
     } on DioException catch (e) {
       print('❌ Register failed: ${e.message}');
-      rethrow;
+      return e.response;
     }
   }
 
@@ -51,9 +51,9 @@ class AuthService {
       final response = await _dio.post('/api/auth/logout');
       print('Logout successfully');
       return response;
-    } catch (e) {
+    } on DioException catch (e) {
       print('Logout failed');
-      rethrow;
+      return e.response;
     }
   }
 
@@ -67,7 +67,7 @@ class AuthService {
       return response;
     } on DioException catch (e) {
       print('❌ Google Sign-In failed: ${e.response}');
-      rethrow;
+      return e.response;
     }
   }
 
@@ -81,7 +81,7 @@ class AuthService {
       return response;
     } on DioException catch (e) {
       print('❌ Forgot password failed: ${e.response}');
-      rethrow;
+      return e.response;
     }
   }
 }

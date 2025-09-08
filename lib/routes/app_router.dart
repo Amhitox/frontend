@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:frontend/models/meeting.dart';
 import 'package:frontend/ui/screens/auth/resetpassword_screen.dart';
+import 'package:frontend/ui/screens/auth/emailverification_screen.dart';
 import 'package:frontend/ui/screens/mail/maildetails_screen.dart' as mailDetail;
 import 'package:frontend/ui/screens/settings/setting_screen.dart';
 import 'package:go_router/go_router.dart';
@@ -21,7 +25,6 @@ import '../ui/screens/settings/security_screen.dart';
 import '../ui/screens/welcome/splash_screen.dart';
 import '../ui/screens/welcome/onboarding_screen.dart';
 import '../ui/screens/auth/forgetpassword_screen.dart';
-import '../models/meeting.dart';
 import '../models/task.dart';
 
 class AppRoutes {
@@ -52,10 +55,24 @@ class AppRoutes {
   static const String security = '/security';
 
   bool firstOpen = true;
+  List<Task> tasks = <Task>[];
+  List<Meeting> meetings = <Meeting>[];
 
   Future<void> init() async {
     final pref = await SharedPreferences.getInstance();
     firstOpen = pref.getBool('firstOpen') ?? true;
+    tasks =
+        pref
+            .getStringList('tasks')
+            ?.map((e) => Task.fromJson(jsonDecode(e)))
+            .toList() ??
+        <Task>[];
+    meetings =
+        pref
+            .getStringList('meetings')
+            ?.map((e) => Meeting.fromJson(jsonDecode(e)))
+            .toList() ??
+        <Meeting>[];
   }
 
   // Go Router configuration
@@ -95,12 +112,18 @@ class AppRoutes {
           builder: (context, state) => const ForgotPasswordScreen(),
         ),
         GoRoute(
-          path: '/reset-password',
-          name: 'resetPassword',
-          builder:
-              (context, state) => ResetPasswordScreen(
-                token: state.uri.queryParameters['token'],
-              ),
+          path: '/__/auth/action',
+          name: 'handleEmailRedirecting',
+          builder: (context, state) {
+            var token = state.uri.queryParameters['oobCode'];
+            var mode = state.uri.queryParameters['mode'];
+            if (mode == 'resetPassword') {
+              return ResetPasswordScreen(token: token);
+            } else if (mode == 'verifyEmail') {
+              return EmailVerificationScreen(token: token);
+            }
+            return const LoginScreen();
+          },
         ),
 
         // Main App Routes (Protected)
@@ -117,7 +140,7 @@ class AppRoutes {
         GoRoute(
           path: task,
           name: 'task',
-          builder: (context, state) => const TaskScreen(),
+          builder: (context, state) => TaskScreen(tasks: tasks),
         ),
         GoRoute(
           path: mail,
@@ -216,17 +239,4 @@ class AppRoutes {
       debugLogDiagnostics: true,
     );
   }
-
-  // String _getInitialRoute(BuildContext context) {
-  //   if (firstOpen) {
-  //     return splash;
-  //   }
-
-  //   final auth = context.read<AuthProvider>();
-  //   if (!auth.isLoggedIn) {
-  //     return login;
-  //   }
-
-  //   return home;
-  // }
 }

@@ -13,7 +13,7 @@ import 'routes/app_router.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await Firebase.initializeApp();
+  await Firebase.initializeApp();
   // mobile version
   await dotenv.load(fileName: '.env');
   // await dotenv.load();

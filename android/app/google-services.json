@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1025295810293",
+    "project_id": "elyoai-999",
+    "storage_bucket": "elyoai-999.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1025295810293:android:7aa88bf7b6f67d141a8fbc",
+        "android_client_info": {
+          "package_name": "com.aixy.frontend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1025295810293-u860lppt8rbo4u0aqtnsbms70dp3oci7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aixy.frontend",
+            "certificate_hash": "5d3d67fb94853625248c0f207c70bb7582dbe774"
+          }
+        },
+        {
+          "client_id": "1025295810293-2ejl86hht9djdqgtu3b6s6r6a3jugkgl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDShlDX27xrpuPFKWPgZNQqORdqPgx9QmM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1025295810293-2ejl86hht9djdqgtu3b6s6r6a3jugkgl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

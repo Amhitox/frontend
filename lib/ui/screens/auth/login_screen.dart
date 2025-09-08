@@ -9,7 +9,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.token});
+  final String? token;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -205,15 +206,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            if (authProvider.isLoading)
-              Container(
-                color: Colors.black.withOpacity(0.5),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: Color.fromARGB(255, 134, 37, 224),
-                  ),
-                ),
-              ),
+            // if (authProvider.isLoading)
+            //   Container(
+            //     color: Colors.black.withOpacity(0.5),
+            //     child: Center(
+            //       child: CircularProgressIndicator(
+            //         color: Color.fromARGB(255, 134, 37, 224),
+            //       ),
+            //     ),
+            //   ),
           ],
         ),
       ),
@@ -540,24 +541,22 @@ class _LoginScreenState extends State<LoginScreen> {
             height: buttonHeight,
             child: ElevatedButton(
               onPressed: () async {
+                FocusScope.of(context).unfocus();
                 if (_formKey.currentState != null &&
                     _formKey.currentState!.saveAndValidate()) {
                   final email = _formKey.currentState?.fields['email']?.value;
                   final password =
                       _formKey.currentState?.fields['password']?.value;
-                  final success = await context.read<AuthProvider>().login(
-                    email,
-                    password,
-                  );
-                  if (success == 200 && context.mounted) {
+                  final authProvider = context.read<AuthProvider>();
+                  final success = await authProvider.login(email, password);
+                  if (success && context.mounted) {
                     context.goNamed('home');
                   } else if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
-                          context.read<AuthProvider>().errorMessage ?? "test",
-                          style: TextStyle(color: Colors.red),
-                        ),
+                        content: Text(authProvider.errorMessage ?? "test"),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
                       ),
                     );
                   }
@@ -565,8 +564,13 @@ class _LoginScreenState extends State<LoginScreen> {
               },
               child:
                   context.watch<AuthProvider>().isLoading
-                      ? CircularProgressIndicator(
-                        color: Color.fromARGB(255, 134, 37, 224),
+                      ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
                       : Text(
                         'Login',
@@ -653,8 +657,22 @@ class _LoginScreenState extends State<LoginScreen> {
           height: buttonHeight,
           child: ElevatedButton(
             style: socialButtonStyle,
-            onPressed: () {
-              context.read<AuthProvider>().signInWithGoogle();
+            onPressed: () async {
+              final success =
+                  await context.read<AuthProvider>().signInWithGoogle();
+              if (success && context.mounted) {
+                context.goNamed('home');
+              } else if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      context.watch<AuthProvider>().errorMessage ?? "test",
+                    ),
+                    backgroundColor: Colors.red,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -756,6 +774,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SnackBar(
                       content: Text('Terms of Service tapped'),
                       backgroundColor: Color(0xFF3B77D8),
+                      behavior: SnackBarBehavior.floating,
                     ),
                   );
                 },
@@ -779,6 +798,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SnackBar(
                       content: Text('Data Processing Agreement tapped'),
                       backgroundColor: Color(0xFF3B77D8),
+                      behavior: SnackBarBehavior.floating,
                     ),
                   );
                 },

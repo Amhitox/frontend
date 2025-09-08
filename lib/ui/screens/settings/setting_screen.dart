@@ -101,7 +101,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
     final theme = Theme.of(context);
-    var user = context.read<AuthProvider>().user ?? User();
+    var user = context.watch<AuthProvider>().user ?? User();
     setState(() {
       _selectedLanguage = currentLanguage(user);
     });

@@ -14,4 +14,14 @@ class Meeting {
     required this.attendees,
     required this.type,
   });
+
+  factory Meeting.fromJson(Map<String, dynamic> json) {
+    return Meeting(
+      title: json['title'],
+      time: json['time'],
+      duration: json['duration'],
+      attendees: [],
+      type: MeetingType.internal,
+    );
+  }
 }
