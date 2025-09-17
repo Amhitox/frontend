@@ -66,15 +66,13 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    _textSlide = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _logoController,
-        curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
-      ),
-    );
+    _textSlide = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _logoController,
+            curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
+          ),
+        );
 
     _startAnimations();
   }
@@ -137,71 +135,63 @@ class _SplashScreenState extends State<SplashScreen>
     final isMediumScreen = screenHeight >= 700 && screenHeight < 900;
 
     // Dynamic sizing based on screen size
-    final logoSize =
-        isSmallScreen
-            ? 100.0
-            : isMediumScreen
-            ? 120.0
-            : 140.0;
-    final breathingRing1 =
-        isSmallScreen
-            ? 160.0
-            : isMediumScreen
-            ? 200.0
-            : 220.0;
-    final breathingRing2 =
-        isSmallScreen
-            ? 200.0
-            : isMediumScreen
-            ? 240.0
-            : 260.0;
-    final titleSize =
-        isSmallScreen
-            ? 28.0
-            : isMediumScreen
-            ? 36.0
-            : 42.0;
-    final subtitleSize =
-        isSmallScreen
-            ? 14.0
-            : isMediumScreen
-            ? 16.0
-            : 18.0;
+    final logoSize = isSmallScreen
+        ? 100.0
+        : isMediumScreen
+        ? 120.0
+        : 140.0;
+    final breathingRing1 = isSmallScreen
+        ? 160.0
+        : isMediumScreen
+        ? 200.0
+        : 220.0;
+    final breathingRing2 = isSmallScreen
+        ? 200.0
+        : isMediumScreen
+        ? 240.0
+        : 260.0;
+    final titleSize = isSmallScreen
+        ? 28.0
+        : isMediumScreen
+        ? 36.0
+        : 42.0;
+    final subtitleSize = isSmallScreen
+        ? 14.0
+        : isMediumScreen
+        ? 16.0
+        : 18.0;
 
     // Theme-aware colors
     final isDark = theme.brightness == Brightness.dark;
-    final backgroundGradient =
-        isDark
-            ? const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0C1421), // deepDark
-                Color(0xFF141D2E), // darkBlue
-                Color(0xFF1A2332),
-              ],
-            )
-            : LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                const Color(
-                  0xFF3B77D8,
-                ).withValues(alpha: 0.05), // customBlue tint
-                const Color(0xFF3B77D8).withValues(alpha: 0.1),
-              ],
-            );
+    final backgroundGradient = isDark
+        ? const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0C1421), // deepDark
+              Color(0xFF141D2E), // darkBlue
+              Color(0xFF1A2332),
+            ],
+          )
+        : LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              const Color(
+                0xFF3B77D8,
+              ).withValues(alpha: 0.05), // customBlue tint
+              const Color(0xFF3B77D8).withValues(alpha: 0.1),
+            ],
+          );
 
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF141D2E);
-    final secondaryTextColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.7)
-            : const Color(0xFF141D2E).withValues(alpha: 0.7);
-    final particleColor =
-        isDark
-            ? Colors.white.withValues(alpha: 0.1)
-            : const Color(0xFF3B77D8).withValues(alpha: 0.1);
+    final secondaryTextColor = isDark
+        ? Colors.white.withValues(alpha: 0.7)
+        : const Color(0xFF141D2E).withValues(alpha: 0.7);
+    final particleColor = isDark
+        ? Colors.white.withValues(alpha: 0.1)
+        : const Color(0xFF3B77D8).withValues(alpha: 0.1);
 
     return Scaffold(
       body: Container(
@@ -305,8 +295,8 @@ class _SplashScreenState extends State<SplashScreen>
                                           opacity: _logoOpacity.value,
                                           child: Image.asset(
                                             'assets/images/logo1.png',
-                                            width: logoSize * 1.1,
-                                            height: logoSize * 1.1,
+                                            width: logoSize * 1.2,
+                                            height: logoSize * 1.2,
                                             fit: BoxFit.cover,
                                           ),
                                         ),
@@ -317,12 +307,11 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
 
                               SizedBox(
-                                height:
-                                    isSmallScreen
-                                        ? 30
-                                        : isMediumScreen
-                                        ? 40
-                                        : 50,
+                                height: isSmallScreen
+                                    ? 30
+                                    : isMediumScreen
+                                    ? 40
+                                    : 50,
                               ),
 
                               // App name and tagline
@@ -358,12 +347,11 @@ class _SplashScreenState extends State<SplashScreen>
                               ),
 
                               SizedBox(
-                                height:
-                                    isSmallScreen
-                                        ? 60
-                                        : isMediumScreen
-                                        ? 80
-                                        : 100,
+                                height: isSmallScreen
+                                    ? 60
+                                    : isMediumScreen
+                                    ? 80
+                                    : 100,
                               ),
 
                               // Loading indicator
@@ -372,12 +360,11 @@ class _SplashScreenState extends State<SplashScreen>
                                 child: Column(
                                   children: [
                                     SizedBox(
-                                      width:
-                                          isSmallScreen
-                                              ? 60
-                                              : isMediumScreen
-                                              ? 80
-                                              : 100,
+                                      width: isSmallScreen
+                                          ? 60
+                                          : isMediumScreen
+                                          ? 80
+                                          : 100,
                                       child: LinearProgressIndicator(
                                         backgroundColor: primaryTextColor
                                             .withValues(alpha: 0.1),

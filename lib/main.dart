@@ -3,9 +3,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/providers/user_provider.dart';
+import 'package:frontend/providers/sub_provider.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'utils/app_theme.dart';
@@ -17,7 +19,8 @@ Future<void> main() async {
   // mobile version
   await dotenv.load(fileName: '.env');
   // await dotenv.load();
-
+  // Stripe config
+  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
   final authProvider = AuthProvider();
   await authProvider.init();
   await AppRoutes().init();
@@ -31,6 +34,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => UserProvider(dio: authProvider.dio),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SubProvider(dio: authProvider.dio),
         ),
       ],
       child: MainApp(),

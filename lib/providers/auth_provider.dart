@@ -158,19 +158,22 @@ class AuthProvider extends ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       final idToken = await user!.getIdToken();
 
-      final response = await _authService.signInWithGoogle(idToken!);
-      print(response);
+      final googleResponse = await _authService.signInWithGoogle(idToken!);
 
-      if (response.statusCode == 200) {
+      if (googleResponse.statusCode == 200) {
+        final response = await _authService.getMe();
         _user = User.fromJson(response.data["user"]);
         _errorMessage = "nothing";
         final prefs = await SharedPreferences.getInstance();
         prefs.setString('user', jsonEncode(_user!.toJson()));
         notifyListeners();
         await _cookieJar.loadForRequest(Uri.parse(AppConstants.baseUrl));
+        print(response);
+        print(_user);
         return true;
       } else {
-        _errorMessage = response.data["message"] ?? "Google Sign-In failed";
+        _errorMessage =
+            googleResponse.data["message"] ?? "Google Sign-In failed";
         return false;
       }
     } catch (e) {

@@ -2,10 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:frontend/models/meeting.dart';
+import 'package:frontend/models/user.dart';
 import 'package:frontend/ui/screens/auth/resetpassword_screen.dart';
 import 'package:frontend/ui/screens/auth/emailverification_screen.dart';
 import 'package:frontend/ui/screens/mail/maildetails_screen.dart' as mailDetail;
 import 'package:frontend/ui/screens/settings/setting_screen.dart';
+import 'package:frontend/utils/data_key.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../ui/screens/welcome/home_screen.dart';
@@ -53,26 +55,15 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String profile = '/profile';
   static const String security = '/security';
+  static late SharedPreferences pref;
 
   bool firstOpen = true;
   List<Task> tasks = <Task>[];
   List<Meeting> meetings = <Meeting>[];
 
   Future<void> init() async {
-    final pref = await SharedPreferences.getInstance();
+    pref = await SharedPreferences.getInstance();
     firstOpen = pref.getBool('firstOpen') ?? true;
-    tasks =
-        pref
-            .getStringList('tasks')
-            ?.map((e) => Task.fromJson(jsonDecode(e)))
-            .toList() ??
-        <Task>[];
-    meetings =
-        pref
-            .getStringList('meetings')
-            ?.map((e) => Meeting.fromJson(jsonDecode(e)))
-            .toList() ??
-        <Meeting>[];
   }
 
   // Go Router configuration
@@ -140,7 +131,30 @@ class AppRoutes {
         GoRoute(
           path: task,
           name: 'task',
-          builder: (context, state) => TaskScreen(tasks: tasks),
+          builder: (context, state) {
+            final date = state.extra as DateTime? ?? DateTime.now();
+            final user = User.fromJson(jsonDecode(pref.getString('user')!));
+            final tasksJson = pref.getString('tasks_${user.id}');
+
+            final tasksMap =
+                tasksJson != null
+                    ? Map<String, List<String>>.from(
+                      jsonDecode(
+                        tasksJson,
+                      ).map((k, v) => MapEntry(k, List<String>.from(v))),
+                    )
+                    : <String, List<String>>{};
+
+            final selectedDateKey = DataKey.dateKey(date);
+
+            final filteredTasks =
+                tasksMap[selectedDateKey]
+                    ?.map((taskJson) => Task.fromJson(jsonDecode(taskJson)))
+                    .toList() ??
+                <Task>[];
+
+            return TaskScreen(tasks: filteredTasks, date: date);
+          },
         ),
         GoRoute(
           path: mail,

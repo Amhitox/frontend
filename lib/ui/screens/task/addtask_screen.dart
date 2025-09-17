@@ -1,13 +1,18 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend/models/user.dart';
 import 'package:frontend/providers/task_provider.dart';
+import 'package:frontend/utils/data_key.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
 
 class AddTaskScreen extends StatefulWidget {
-  final Task? editingTask; // null for new task, Task for editing
+  final Task? editingTask;
 
   const AddTaskScreen({super.key, this.editingTask});
 
@@ -32,6 +37,8 @@ class _AddTaskScreenState extends State<AddTaskScreen>
   TaskPriority _selectedPriority = TaskPriority.medium;
   String _selectedCategory = 'Work';
   bool _showCustomCategoryField = false;
+  Task newTask = Task();
+  bool isEditMode = false;
 
   final List<String> _categories = [
     'Work',
@@ -68,34 +75,32 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    // If editing an existing task, populate the fields
     if (widget.editingTask != null) {
-      _titleController.text = widget.editingTask!.title;
-      _selectedCategory = widget.editingTask!.category;
-      _selectedPriority = widget.editingTask!.priority;
+      isEditMode = true;
+      _titleController.text = widget.editingTask!.title!;
+      _descriptionController.text = widget.editingTask!.description ?? '';
+      _selectedCategory = widget.editingTask!.category!;
+      _selectedPriority = widget.editingTask!.priority!;
 
-      // Check if it's a custom category
       if (!_categories.contains(_selectedCategory)) {
         _showCustomCategoryField = true;
         _customCategoryController.text = _selectedCategory;
         _selectedCategory = 'Other';
       }
 
-      // Parse time from dueTime string (assuming format like "10:00 AM")
       try {
-        final timeStr = widget.editingTask!.dueTime;
-        final isPM = timeStr.contains('PM');
-        final timeParts = timeStr
-            .replaceAll(RegExp(r'[AP]M'), '')
-            .trim()
-            .split(':');
-        int hour = int.parse(timeParts[0]);
-        final minute = int.parse(timeParts[1]);
+        final isoString = widget.editingTask!.dueDate!;
+        DateTime utcDateTime = DateTime.parse(isoString);
+        _selectedDate = DateTime(
+          utcDateTime.year,
+          utcDateTime.month,
+          utcDateTime.day,
+        );
 
-        if (isPM && hour != 12) hour += 12;
-        if (!isPM && hour == 12) hour = 0;
-
-        _selectedTime = TimeOfDay(hour: hour, minute: minute);
+        _selectedTime = TimeOfDay(
+          hour: utcDateTime.hour,
+          minute: utcDateTime.minute,
+        );
       } catch (e) {
         _selectedTime = TimeOfDay.now();
       }
@@ -116,6 +121,9 @@ class _AddTaskScreenState extends State<AddTaskScreen>
   }
 
   void _saveTask() async {
+    final pref = await SharedPreferences.getInstance();
+    final user = User.fromJson(jsonDecode(pref.getString('user')!));
+
     if (_titleController.text.trim().isEmpty) {
       _showFeedback('Please enter a task title', isError: true);
       return;
@@ -127,22 +135,155 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       return;
     }
 
-    setState(() => _isSaving = true);
-    context.read<TaskProvider>().addTask(
-      "amhita",
-      "test desciption task",
-      "low",
+    final now = DateTime.now();
+    final combinedDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
     );
 
+    final today = DateTime(now.year, now.month, now.day);
+    final selectedDateOnly = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+
+    if (selectedDateOnly.isBefore(today)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task date cannot be in the past'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    if (selectedDateOnly.isAtSameMomentAs(today)) {
+      final oneHourFromNow = now.add(const Duration(hours: 1));
+      if (combinedDateTime.isBefore(oneHourFromNow)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task time must be at least 1 hour from now'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() => _isSaving = true);
+
+    if (!isEditMode) {
+      newTask = Task(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        category: _selectedCategory.toLowerCase(),
+        priority: _selectedPriority,
+        isCompleted: false,
+        dueDate: combinedDateTime.toUtc().toIso8601String(),
+      );
+
+      final taskId = await context.read<TaskProvider>().addTask(
+        newTask.title ?? '',
+        newTask.description ?? '',
+        newTask.priority!.toString().split('.').last,
+        newTask.dueDate!,
+        newTask.isCompleted!,
+        newTask.category!,
+      );
+
+      newTask.id = taskId;
+
+      final tasksJson = pref.getString('tasks_${user.id}');
+      Map<String, List<String>> tasksMap =
+          tasksJson != null
+              ? Map<String, List<String>>.from(
+                jsonDecode(
+                  tasksJson,
+                ).map((k, v) => MapEntry(k, List<String>.from(v))),
+              )
+              : {};
+
+      final dateKey = DataKey.dateKey(_selectedDate);
+      tasksMap.putIfAbsent(dateKey, () => []);
+      tasksMap[dateKey]!.add(jsonEncode(newTask.toJson()));
+
+      print("Tasks map added: $tasksMap");
+      await pref.setString('tasks_${user.id}', jsonEncode(tasksMap));
+    } else {
+      newTask = Task(
+        id: widget.editingTask!.id!,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        category: _selectedCategory.toLowerCase(),
+        priority: _selectedPriority,
+        isCompleted: widget.editingTask!.isCompleted,
+        dueDate: combinedDateTime.toUtc().toIso8601String(),
+      );
+
+      final tasksJson = pref.getString('tasks_${user.id}');
+      Map<String, List<String>> tasksMap =
+          tasksJson != null
+              ? Map<String, List<String>>.from(
+                jsonDecode(
+                  tasksJson,
+                ).map((k, v) => MapEntry(k, List<String>.from(v))),
+              )
+              : {};
+
+      String? oldDateKey;
+      for (String dateKey in tasksMap.keys.toList()) {
+        List<String> tasks = tasksMap[dateKey]!;
+        for (int i = 0; i < tasks.length; i++) {
+          Map<String, dynamic> taskJson = jsonDecode(tasks[i]);
+          if (taskJson['id'] == newTask.id) {
+            tasks.removeAt(i);
+            oldDateKey = dateKey;
+
+            if (tasks.isEmpty) {
+              tasksMap.remove(dateKey);
+            }
+            break;
+          }
+        }
+        if (oldDateKey != null) break;
+      }
+
+      final newDateKey = DataKey.dateKey(_selectedDate);
+      tasksMap.putIfAbsent(newDateKey, () => []);
+      tasksMap[newDateKey]!.add(jsonEncode(newTask.toJson()));
+
+      await pref.setString('tasks_${user.id}', jsonEncode(tasksMap));
+
+      await context.read<TaskProvider>().updateTask(
+        id: newTask.id!,
+        title: newTask.title!,
+        description: newTask.description!,
+        priority: newTask.priority!.toString().split('.').last,
+        dueDate: newTask.dueDate!,
+        isCompleted: newTask.isCompleted!,
+        category: newTask.category!,
+      );
+    }
+
     HapticFeedback.mediumImpact();
+
     await Future.delayed(const Duration(milliseconds: 1000));
+
     _showFeedback(
       widget.editingTask != null
           ? 'Task updated successfully'
           : 'Task created successfully',
     );
+
     await Future.delayed(const Duration(milliseconds: 600));
-    if (mounted) context.go('/task');
+
+    if (mounted) context.pop();
   }
 
   void _showFeedback(String message, {bool isError = false}) {
@@ -229,7 +370,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
               borderRadius: BorderRadius.circular(24),
               onTap: () {
                 HapticFeedback.lightImpact();
-                context.go('/task');
+                context.goNamed('task');
               },
               child: Container(
                 width: isTablet ? 48 : 40,
@@ -382,6 +523,10 @@ class _AddTaskScreenState extends State<AddTaskScreen>
           child: TextField(
             controller: controller,
             maxLines: maxLines,
+            onTapOutside: (event) {
+              FocusScope.of(context).unfocus();
+            },
+
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface,
               fontSize:
@@ -478,6 +623,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
         borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
         onTap: () async {
           HapticFeedback.lightImpact();
+          FocusScope.of(context).unfocus();
           final date = await showDatePicker(
             context: context,
             initialDate: _selectedDate,
@@ -576,6 +722,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
         borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
         onTap: () async {
           HapticFeedback.lightImpact();
+          FocusScope.of(context).unfocus();
           final time = await showTimePicker(
             context: context,
             initialTime: _selectedTime,
@@ -909,119 +1056,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       ],
     );
   }
-
-  // Widget _buildProgressSection(
-  //   ThemeData theme,
-  //   bool isTablet,
-  //   bool isLargeScreen,
-  // ) {
-  //   final padding =
-  //       isLargeScreen
-  //           ? 20.0
-  //           : isTablet
-  //           ? 18.0
-  //           : 16.0;
-
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Text(
-  //         'PROGRESS',
-  //         style: theme.textTheme.labelMedium?.copyWith(
-  //           color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-  //           fontSize:
-  //               isLargeScreen
-  //                   ? 14
-  //                   : isTablet
-  //                   ? 13
-  //                   : 12,
-  //           fontWeight: FontWeight.w600,
-  //           letterSpacing: 0.8,
-  //         ),
-  //       ),
-  //       SizedBox(height: isTablet ? 12 : 8),
-  //       Container(
-  //         padding: EdgeInsets.all(padding),
-  //         decoration: BoxDecoration(
-  //           color: theme.colorScheme.surface.withValues(alpha: 0.8),
-  //           borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
-  //           border: Border.all(
-  //             color: theme.colorScheme.outline.withValues(alpha: 0.1),
-  //             width: 1,
-  //           ),
-  //           boxShadow: [
-  //             BoxShadow(
-  //               color: Colors.black.withValues(alpha: 0.05),
-  //               blurRadius: 8,
-  //               offset: const Offset(0, 2),
-  //             ),
-  //           ],
-  //         ),
-  //         child: Column(
-  //           children: [
-  //             Row(
-  //               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //               children: [
-  //                 Text(
-  //                   'Task Progress',
-  //                   style: theme.textTheme.bodyMedium?.copyWith(
-  //                     color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-  //                     fontSize:
-  //                         isLargeScreen
-  //                             ? 15
-  //                             : isTablet
-  //                             ? 14
-  //                             : 13,
-  //                     fontWeight: FontWeight.w500,
-  //                   ),
-  //                 ),
-  //                 Text(
-  //                   '${(_progress * 100).toInt()}%',
-  //                   style: theme.textTheme.bodyMedium?.copyWith(
-  //                     color: theme.colorScheme.primary,
-  //                     fontSize:
-  //                         isLargeScreen
-  //                             ? 16
-  //                             : isTablet
-  //                             ? 15
-  //                             : 14,
-  //                     fontWeight: FontWeight.w600,
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //             SizedBox(height: isTablet ? 16 : 12),
-  //             SliderTheme(
-  //               data: SliderTheme.of(context).copyWith(
-  //                 activeTrackColor: theme.colorScheme.primary,
-  //                 inactiveTrackColor: theme.colorScheme.outline.withValues(
-  //                   alpha: 0.2,
-  //                 ),
-  //                 thumbColor: theme.colorScheme.primary,
-  //                 overlayColor: theme.colorScheme.primary.withValues(
-  //                   alpha: 0.1,
-  //                 ),
-  //                 thumbShape: RoundSliderThumbShape(
-  //                   enabledThumbRadius: isTablet ? 10 : 8,
-  //                 ),
-  //                 trackHeight: isTablet ? 6 : 4,
-  //               ),
-  //               child: Slider(
-  //                 value: _progress,
-  //                 onChanged: (value) {
-  //                   HapticFeedback.selectionClick();
-  //                   setState(() => _progress = value);
-  //                 },
-  //                 min: 0.0,
-  //                 max: 1.0,
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 
   Widget _buildSaveButton(ThemeData theme, bool isTablet, bool isLargeScreen) {
     final padding =

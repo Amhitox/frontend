@@ -84,4 +84,15 @@ class AuthService {
       return e.response;
     }
   }
+
+  Future<dynamic> getMe() async {
+    try {
+      final response = await _dio.get('/api/auth/me');
+      print('✅ Get me successful');
+      return response;
+    } on DioException catch (e) {
+      print('❌ Get me failed: ${e.response}');
+      return e.response;
+    }
+  }
 }

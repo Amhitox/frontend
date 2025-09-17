@@ -1,4 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:frontend/providers/sub_provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SubscriptionPlansScreen extends StatefulWidget {
   const SubscriptionPlansScreen({super.key});
@@ -13,17 +20,16 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
   late AnimationController _mainAnimationController;
   late AnimationController _floatingController;
   late AnimationController _pulseController;
+  bool _isLoading = false;
 
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _floatingAnimation;
 
   late PageController _pageController;
-  int selectedPlan =
-      1; // 0 = Essential, 1 = Premium (Premium selected by default)
+  int selectedPlan = 1;
 
-  // New billing toggle state
-  bool isAnnual = true; // Annual selected by default for better pricing
+  bool isAnnual = true;
 
   @override
   void initState() {
@@ -79,6 +85,143 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
     _pulseController.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleSubscription() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await context.read<SubProvider>().startSubscription(
+        "price_1S5SEtBRjJ0iyFv4sOXXH5KB",
+      );
+
+      final paymentIntentClientSecret =
+          response.data['payment_intent_client_secret'] as String?;
+      final setupIntentClientSecret =
+          response.data['setup_intent_client_secret'] as String?;
+
+      final ephemeralKey = response.data['ephemeral_key'] as String;
+      final customerId = response.data['customer_id'] as String;
+      final subscriptionStatus = response.data['status'] as String;
+
+      final subscriptionId = response.data['subscription_id'] as String;
+
+      if (paymentIntentClientSecret != null) {
+        await _initAndPresentPaymentSheet(
+          paymentIntentClientSecret,
+          null,
+          ephemeralKey,
+          customerId,
+          subscriptionId,
+        );
+      } else if (subscriptionStatus == 'incomplete' &&
+          setupIntentClientSecret != null) {
+        await _initAndPresentPaymentSheet(
+          null,
+          setupIntentClientSecret,
+          ephemeralKey,
+          customerId,
+          subscriptionId,
+        );
+      } else if (subscriptionStatus == 'active' ||
+          subscriptionStatus == 'trialing') {
+        _showSuccess('Subscription is active!');
+        if (mounted) context.goNamed('home');
+      } else {
+        _showError('Could not initialize payment. Please try again.');
+      }
+    } catch (e) {
+      _showError('Subscription failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _initAndPresentPaymentSheet(
+    String? paymentIntentClientSecret,
+    String? setupIntentClientSecret,
+    String ephemeralKey,
+    String customerId,
+    String subscriptionId,
+  ) async {
+    try {
+      await _initPaymentSheet(
+        paymentIntentClientSecret,
+        setupIntentClientSecret,
+        ephemeralKey,
+        customerId,
+      );
+
+      await Stripe.instance.presentPaymentSheet();
+
+      if (mounted) {
+        await context.read<SubProvider>().confirmSubscription(
+          subscriptionId,
+          customerId,
+        );
+      }
+
+      _showSuccess('Success! Your subscription is active.');
+
+      if (mounted) {
+        context.goNamed('home');
+      }
+    } on StripeException catch (e) {
+      if (e.error.code == FailureCode.Canceled) {
+        _showError('Payment process was canceled.');
+      } else {
+        _showError('Payment failed: ${e.error.message}');
+      }
+    } catch (e) {
+      _showError('An unexpected error occurred: $e');
+    }
+  }
+
+  Future<void> _initPaymentSheet(
+    String? paymentIntentClientSecret,
+    String? setupIntentClientSecret,
+    String ephemeralKey,
+    String customerId,
+  ) async {
+    try {
+      final pref = await SharedPreferences.getInstance();
+      final user = jsonDecode(pref.getString('user')!);
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: paymentIntentClientSecret,
+          setupIntentClientSecret: setupIntentClientSecret,
+          customerEphemeralKeySecret: ephemeralKey,
+          customerId: customerId,
+          merchantDisplayName: 'A I X Y',
+          style: ThemeMode.system,
+          billingDetails: BillingDetails(
+            email: user['email'],
+            name: user['name'],
+          ),
+        ),
+      );
+    } catch (e) {
+      throw Exception("Failed to initialize payment sheet: $e");
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
   }
 
   @override
@@ -878,17 +1021,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
           width: double.infinity,
           height: 47,
           child: ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Starting your 7-day free trial of the $planName plan ($billingPeriod billing)!',
-                  ),
-                  backgroundColor: const Color(0xFF667EEA),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
+            onPressed: _isLoading ? null : _handleSubscription,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF667EEA),
               foregroundColor: Colors.white,
@@ -898,14 +1031,24 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: Text(
-              'START ${planName.toUpperCase()} ${isAnnual ? '(ANNUAL)' : '(MONTHLY)'}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
-              ),
-            ),
+            child:
+                _isLoading
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                    : Text(
+                      'START ${planName.toUpperCase()} ${isAnnual ? '(ANNUAL)' : '(MONTHLY)'}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
           ),
         ),
         const SizedBox(height: 4),

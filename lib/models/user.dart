@@ -8,6 +8,7 @@ class User {
   final String? id;
   String? workEmail;
   DateTime? birthday;
+  String? subscriptionTier;
 
   User({
     this.uid,
@@ -19,6 +20,7 @@ class User {
     this.workEmail,
     this.birthday,
     this.status,
+    this.subscriptionTier,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -31,6 +33,7 @@ class User {
       firstName: json['firstName'] as String?,
       id: json['id'] as String?,
       workEmail: json['workEmail'] as String?,
+      subscriptionTier: json['subscriptionTier'] as String?,
     );
   }
 
@@ -44,6 +47,7 @@ class User {
       'firstName': firstName ?? '',
       'id': id ?? '',
       'workEmail': workEmail ?? '',
+      'subscriptionTier': subscriptionTier ?? '',
     };
   }
 }

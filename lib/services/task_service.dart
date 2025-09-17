@@ -7,9 +7,11 @@ class TaskService {
   Future<dynamic> addTask(
     String title,
     String description,
-    String priority, {
-    String dueDate = "2025-09-30T18:00:00.000Z",
-  }) async {
+    String priority,
+    String dueDate,
+    bool isCompleted,
+    String category,
+  ) async {
     try {
       final response = await _dio.post(
         "/api/tasks",
@@ -17,13 +19,13 @@ class TaskService {
           "title": title,
           "description": description,
           "priority": priority,
+          "category": category,
           "dueDate": dueDate,
+          "isCompleted": isCompleted,
         },
       );
-      print('task added success');
       return response;
     } on DioException catch (e) {
-      print('Task failed: ${e.response?.statusCode} ${e.response?.data}');
       return e.response;
     }
   }
@@ -36,6 +38,43 @@ class TaskService {
       return response;
     } on DioException catch (e) {
       print('Task failed: ${e.response?.statusCode} ${e.response?.data}');
+      return e.response;
+    }
+  }
+
+  Future<dynamic> updateTask(
+    String id,
+    String? title,
+    String? description,
+    String? priority,
+    String? dueDate,
+    bool? isCompleted,
+    String? category,
+  ) async {
+    try {
+      Map<String, dynamic> data = {
+        "title": title,
+        "description": description,
+        "priority": priority,
+        "dueDate": dueDate,
+        "isCompleted": isCompleted,
+        "category": category,
+      };
+
+      data.removeWhere((key, value) => value == null);
+
+      final response = await _dio.patch('/api/tasks/$id', data: data);
+      return response;
+    } on DioException catch (e) {
+      return e.response;
+    }
+  }
+
+  Future<dynamic> deleteTask(String id) async {
+    try {
+      final response = await _dio.delete('/api/tasks/$id');
+      return response;
+    } on DioException catch (e) {
       return e.response;
     }
   }

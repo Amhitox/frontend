@@ -10,14 +10,33 @@ class TaskProvider extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
 
-  Future<void> addTask(
+  Future<String> addTask(
     String title,
     String description,
-    String priority, {
-    String date = "2025-09-01T18:00:00.000Z",
-  }) async {
-    await task.addTask(title, description, priority);
-    notifyListeners();
+    String priority,
+    String dueDate,
+    bool isCompleted,
+    String category,
+  ) async {
+    try {
+      final response = await task.addTask(
+        title,
+        description,
+        priority,
+        dueDate,
+        isCompleted,
+        category,
+      );
+      if (response.statusCode == 201) {
+        print('task added success');
+        return response.data["taskId"];
+      }
+      notifyListeners();
+      return '';
+    } catch (e) {
+      print('task added failed');
+      return '';
+    }
   }
 
   Future<List<Task>> getTasks() async {
@@ -32,5 +51,31 @@ class TaskProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
     return tasks;
+  }
+
+  Future<void> updateTask({
+    required String id,
+    String? title,
+    String? description,
+    String? priority,
+    String? dueDate,
+    bool? isCompleted,
+    String? category,
+  }) async {
+    await task.updateTask(
+      id,
+      title,
+      description,
+      priority,
+      dueDate,
+      isCompleted,
+      category,
+    );
+    notifyListeners();
+  }
+
+  Future<void> deleteTask(String id) async {
+    await task.deleteTask(id);
+    notifyListeners();
   }
 }

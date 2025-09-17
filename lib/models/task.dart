@@ -1,94 +1,61 @@
 import 'taskpriority.dart';
 
 class Task {
-  final String id;
-  final String title;
-  final String description;
-  final String category;
-  TaskPriority priority;
-  bool isCompleted;
-  String dueTime;
-  final String status;
-  final bool reminderSent;
-  final String visibility;
-  final String recurrence;
-  final List<String> tags;
-  final List<String> attachments;
-  final String userId;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  String? id;
+  final String? title;
+  final String? description;
+  final String? category;
+  TaskPriority? priority;
+  bool? isCompleted;
+  String? dueDate;
 
   Task({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.category,
-    required this.priority,
-    required this.isCompleted,
-    required this.dueTime,
-    required this.status,
-    required this.reminderSent,
-    required this.visibility,
-    required this.recurrence,
-    required this.tags,
-    required this.attachments,
-    required this.userId,
-    required this.createdAt,
-    required this.updatedAt,
+    this.id,
+    this.title,
+    this.description,
+    this.category,
+    this.priority,
+    this.isCompleted,
+    this.dueDate,
   });
 
-  // Convert Task object to JSON
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'title': title,
       'description': description,
       'category': category,
-      'priority':
-          priority.toString().split('.').last, // Converts enum to string
+      'priority': priority.toString().split('.').last,
       'isCompleted': isCompleted,
-      'dueDate': dueTime,
-      'status': status,
-      'reminderSent': reminderSent,
-      'visibility': visibility,
-      'recurrence': recurrence,
-      'tags': tags,
-      'attachments': attachments,
-      'userId': userId,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'dueDate': dueDate,
     };
   }
 
-  // Create Task object from JSON
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      category:
-          json['category'] ??
-          '', // You might want to derive this from tags or set a default
+      category: json['category'] ?? '',
       priority: _parsePriority(json['priority']),
-      isCompleted: json['isCompleted'] ?? false,
-      dueTime: json['dueDate'] ?? '',
-      status: json['status'] ?? 'pending',
-      reminderSent: json['reminderSent'] ?? false,
-      visibility: json['visibility'] ?? 'private',
-      recurrence: json['recurrence'] ?? 'none',
-      tags: List<String>.from(json['tags'] ?? []),
-      attachments: List<String>.from(json['attachments'] ?? []),
-      userId: json['userId'] ?? '',
-      createdAt: DateTime.parse(
-        json['createdAt'] ?? DateTime.now().toIso8601String(),
-      ),
-      updatedAt: DateTime.parse(
-        json['updatedAt'] ?? DateTime.now().toIso8601String(),
-      ),
+      isCompleted: _parseBool(json['isCompleted']),
+      dueDate: json['dueDate'] ?? '',
     );
   }
 
-  // Helper method to parse priority string to TaskPriority enum
+  static bool? _parseBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is String) {
+      if (value.toLowerCase() == 'true') return true;
+      if (value.toLowerCase() == 'false') return false;
+    }
+    if (value is int) {
+      return value != 0;
+    }
+    return null;
+  }
+
   static TaskPriority _parsePriority(String? priorityString) {
     switch (priorityString?.toLowerCase()) {
       case 'high':
@@ -98,11 +65,10 @@ class Task {
       case 'low':
         return TaskPriority.low;
       default:
-        return TaskPriority.low; // Default to low priority
+        return TaskPriority.low;
     }
   }
 
-  // Helper method to create a copy of the task with updated fields
   Task copyWith({
     String? id,
     String? title,
@@ -110,16 +76,7 @@ class Task {
     String? category,
     TaskPriority? priority,
     bool? isCompleted,
-    String? dueTime,
-    String? status,
-    bool? reminderSent,
-    String? visibility,
-    String? recurrence,
-    List<String>? tags,
-    List<String>? attachments,
-    String? userId,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    String? dueDate,
   }) {
     return Task(
       id: id ?? this.id,
@@ -128,16 +85,7 @@ class Task {
       category: category ?? this.category,
       priority: priority ?? this.priority,
       isCompleted: isCompleted ?? this.isCompleted,
-      dueTime: dueTime ?? this.dueTime,
-      status: status ?? this.status,
-      reminderSent: reminderSent ?? this.reminderSent,
-      visibility: visibility ?? this.visibility,
-      recurrence: recurrence ?? this.recurrence,
-      tags: tags ?? this.tags,
-      attachments: attachments ?? this.attachments,
-      userId: userId ?? this.userId,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      dueDate: dueDate ?? this.dueDate,
     );
   }
 }

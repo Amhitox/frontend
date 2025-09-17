@@ -1,18 +1,24 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend/models/user.dart';
 import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/calendar_view.dart';
+import 'package:frontend/utils/data_key.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
 
 class TaskScreen extends StatefulWidget {
   final List<Task> tasks;
-  const TaskScreen({super.key, required this.tasks});
+  final DateTime date;
+  const TaskScreen({super.key, required this.tasks, required this.date});
 
   @override
   _TaskScreenState createState() => _TaskScreenState();
@@ -33,11 +39,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    if (widget.tasks.isNotEmpty) {
-      _tasks = widget.tasks;
-    } else {
-      getTasks();
-    }
+    _tasks = widget.tasks;
+    _selectedDate = widget.date;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getTasksForDate(_selectedDate);
+    });
+
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -47,13 +54,42 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
     _slideController.forward();
+    _getTasksForDate(_selectedDate);
   }
 
-  Future<void> getTasks() async {
-    final tasks = await context.read<TaskProvider>().getTasks();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getTasksForDate(_selectedDate);
+    });
+  }
+
+  Future<void> _getTasksForDate(DateTime date) async {
+    final pref = await SharedPreferences.getInstance();
+    final user = User.fromJson(jsonDecode(pref.getString('user')!));
+    final tasksJson = pref.getString('tasks_${user.id}');
+
+    final tasksMap =
+        tasksJson != null
+            ? Map<String, List<String>>.from(
+              jsonDecode(
+                tasksJson,
+              ).map((k, v) => MapEntry(k, List<String>.from(v))),
+            )
+            : <String, List<String>>{};
+
+    final selectedDateKey = DataKey.dateKey(date);
+
+    final filteredTasks =
+        tasksMap[selectedDateKey]
+            ?.map((taskJson) => Task.fromJson(jsonDecode(taskJson)))
+            .toList() ??
+        <Task>[];
+
     if (mounted) {
       setState(() {
-        _tasks = tasks;
+        _tasks = filteredTasks;
       });
     }
   }
@@ -70,60 +106,174 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     });
   }
 
-  void _selectDateFromCalendar(DateTime date) {
+  void _selectDateFromCalendar(DateTime date) async {
     setState(() {
       _selectedDate = date;
       _showingCalendarView = false;
     });
+
+    await _getTasksForDate(date);
   }
 
-  void _toggleTaskCompletion(Task task) {
+  void _toggleTaskCompletion(
+    Task task,
+    DateTime selectedDate,
+    bool isCompleted,
+  ) async {
     HapticFeedback.lightImpact();
-    setState(() {
-      task.isCompleted = !task.isCompleted;
-    });
+
+    final pref = await SharedPreferences.getInstance();
+    final user = User.fromJson(jsonDecode(pref.getString('user')!));
+    final tasksJson = pref.getString('tasks_${user.id}');
+    final selectedDateKey = DataKey.dateKey(selectedDate);
+
+    Map<String, List<String>> tasksMap =
+        tasksJson != null
+            ? Map<String, List<String>>.from(
+              jsonDecode(
+                tasksJson,
+              ).map((k, v) => MapEntry(k, List<String>.from(v))),
+            )
+            : {};
+
+    if (!tasksMap.containsKey(selectedDateKey)) {
+      return;
+    }
+
+    List<String> tasks = tasksMap[selectedDateKey]!;
+
+    bool taskFound = false;
+    for (int i = 0; i < tasks.length; i++) {
+      Map<String, dynamic> taskJson = jsonDecode(tasks[i]);
+
+      if (taskJson['id'] == task.id) {
+        taskJson['isCompleted'] = isCompleted;
+
+        tasks[i] = jsonEncode(taskJson);
+        taskFound = true;
+        break;
+      }
+    }
+
+    if (taskFound) {
+      final updatedTasksJson = jsonEncode(tasksMap);
+      await pref.setString('tasks_${user.id}', updatedTasksJson);
+      setState(() {
+        _tasks =
+            tasksMap[selectedDateKey]!
+                .map((taskJson) => Task.fromJson(jsonDecode(taskJson)))
+                .toList();
+      });
+    } else {
+      print('Task ${task.id} not found on $selectedDateKey');
+    }
+    await _getTasksForDate(_selectedDate);
+    await context.read<TaskProvider>().updateTask(
+      id: task.id!,
+      isCompleted: isCompleted,
+    );
   }
 
-  void _editTask(Task task) {
+  void _editTask(Task task) async {
     HapticFeedback.mediumImpact();
-    // Navigate to edit task screen with the task data
-    context.pushNamed('addTask', extra: task);
+    await context.pushNamed('addTask', extra: task);
+    await _getTasksForDate(_selectedDate);
   }
 
-  void _deleteTask(Task task) {
+  void _deleteTask(Task task, DateTime selectedDate) async {
     HapticFeedback.mediumImpact();
+
     setState(() {
-      _tasks.remove(task);
+      _tasks.removeWhere((t) => t.id == task.id);
     });
 
-    // Show confirmation snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Task "${task.title}" deleted'),
-        backgroundColor: Colors.red.withValues(alpha: 0.9),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 2),
-        action: SnackBarAction(
-          label: 'UNDO',
-          textColor: Colors.white,
-          onPressed: () {
-            setState(() {
-              _tasks.add(task);
-            });
-          },
-        ),
+    final snackBar = SnackBar(
+      content: Text('Task "${task.title}" deleted'),
+      backgroundColor: Colors.red.withValues(alpha: 0.9),
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      duration: const Duration(seconds: 3),
+      action: SnackBarAction(
+        label: 'UNDO',
+        textColor: Colors.white,
+        onPressed: () {
+          setState(() {
+            _tasks.add(task);
+            _tasks.sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+          });
+        },
       ),
     );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+    await Future.delayed(const Duration(seconds: 4));
+
+    bool taskStillDeleted = !_tasks.any((t) => t.id == task.id);
+
+    if (taskStillDeleted) {
+      await _permanentlyDeleteTask(task, selectedDate);
+      await context.read<TaskProvider>().deleteTask(task.id!);
+    }
+  }
+
+  Future<void> _permanentlyDeleteTask(Task task, DateTime selectedDate) async {
+    final pref = await SharedPreferences.getInstance();
+    final user = User.fromJson(jsonDecode(pref.getString('user')!));
+    final tasksJson = pref.getString('tasks_${user.id}');
+    final selectedDateKey = DataKey.dateKey(selectedDate);
+
+    Map<String, List<String>> tasksMap =
+        tasksJson != null
+            ? Map<String, List<String>>.from(
+              jsonDecode(
+                tasksJson,
+              ).map((k, v) => MapEntry(k, List<String>.from(v))),
+            )
+            : {};
+
+    if (!tasksMap.containsKey(selectedDateKey)) {
+      return;
+    }
+
+    List<String> tasks = tasksMap[selectedDateKey]!;
+
+    bool taskFound = false;
+    for (int i = 0; i < tasks.length; i++) {
+      Map<String, dynamic> taskJson = jsonDecode(tasks[i]);
+
+      if (taskJson['id'] == task.id) {
+        tasks.removeAt(i);
+        taskFound = true;
+        break;
+      }
+    }
+
+    if (tasks.isEmpty) {
+      tasksMap.remove(selectedDateKey);
+    }
+
+    if (taskFound) {
+      final updatedTasksJson = jsonEncode(tasksMap);
+      await pref.setString('tasks_${user.id}', updatedTasksJson);
+      setState(() {
+        _tasks =
+            tasksMap[selectedDateKey]!
+                .map((taskJson) => Task.fromJson(jsonDecode(taskJson)))
+                .toList();
+      });
+    } else {
+      print('Task $task.id not found on $selectedDateKey');
+    }
   }
 
   List<Task> get _filteredTasks {
     switch (_selectedFilter) {
       case 'In Progress':
-        return _tasks.where((task) => !task.isCompleted).toList();
+        return _tasks.where((task) => task.isCompleted != true).toList();
       case 'Completed':
-        return _tasks.where((task) => task.isCompleted).toList();
+        return _tasks.where((task) => task.isCompleted == true).toList();
       default:
         return _tasks;
     }
@@ -208,7 +358,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${_filteredTasks.length} tasks for ${_getDateLabel()}',
+                  '${_tasks.length} tasks for ${_getDateLabel()}',
                   style: TextStyle(
                     color: Theme.of(
                       context,
@@ -230,7 +380,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               SizedBox(width: isTablet ? 12 : 8),
               _buildHeaderButton(
                 Icons.add,
-                () => context.pushNamed('addTask'),
+                () async {
+                  await context.pushNamed('addTask');
+                  await _getTasksForDate(_selectedDate);
+                },
                 Theme.of(context),
                 isTablet,
               ),
@@ -286,7 +439,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildProgressCard(bool isTablet) {
-    final completedTasks = _tasks.where((task) => task.isCompleted).length;
+    final completedTasks = _tasks.where((task) => task.isCompleted!).length;
     final totalTasks = _tasks.length;
     final progress = totalTasks > 0 ? completedTasks / totalTasks : 0.0;
 
@@ -570,10 +723,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTasksList(bool isTablet) {
-    var isLoading = context.watch<TaskProvider>().isLoading;
-    if (isLoading) {
-      return _buildShimmerList(isTablet);
-    }
     return ListView.builder(
       padding: EdgeInsets.symmetric(
         horizontal: isTablet ? 20 : 16,
@@ -589,7 +738,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   Widget _buildTaskItem(Task task, bool isTablet) {
     return Dismissible(
-      key: Key(task.title + task.dueTime),
+      key: Key(task.title! + task.dueDate!),
       background: _buildSwipeBackground(isEdit: true, isTablet: isTablet),
       secondaryBackground: _buildSwipeBackground(
         isEdit: false,
@@ -599,12 +748,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         if (direction == DismissDirection.startToEnd) {
           _editTask(task);
         } else {
-          _deleteTask(task);
+          _deleteTask(task, _selectedDate);
         }
       },
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
-          // Edit action - don't dismiss, just trigger edit
           _editTask(task);
           return false;
         } else {
@@ -617,7 +765,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
         decoration: BoxDecoration(
           color:
-              task.isCompleted
+              task.isCompleted!
                   ? Theme.of(
                     context,
                   ).colorScheme.surface.withValues(alpha: 0.03)
@@ -627,7 +775,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color:
-                task.isCompleted
+                task.isCompleted!
                     ? Theme.of(
                       context,
                     ).colorScheme.primary.withValues(alpha: 0.1)
@@ -648,16 +796,19 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            onTap: () => _toggleTaskCompletion(task),
+            onTap:
+                () => _toggleTaskCompletion(
+                  task,
+                  _selectedDate,
+                  !task.isCompleted!,
+                ),
             child: Padding(
               padding: EdgeInsets.all(isTablet ? 20 : 16),
               child: Row(
                 children: [
-                  // Circular checkbox button
                   _buildCheckboxButton(task, isTablet),
                   SizedBox(width: isTablet ? 16 : 12),
 
-                  // Task content
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -667,10 +818,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                           children: [
                             Expanded(
                               child: Text(
-                                task.title,
+                                task.title!,
                                 style: TextStyle(
                                   color:
-                                      task.isCompleted
+                                      task.isCompleted!
                                           ? Theme.of(context)
                                               .colorScheme
                                               .onSurface
@@ -681,7 +832,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                                   fontSize: isTablet ? 16 : 14,
                                   fontWeight: FontWeight.w600,
                                   decoration:
-                                      task.isCompleted
+                                      task.isCompleted!
                                           ? TextDecoration.lineThrough
                                           : TextDecoration.none,
                                 ),
@@ -692,19 +843,19 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                         ),
 
                         // Description
-                        if (task.description.isNotEmpty) ...[
+                        if (task.description?.isNotEmpty ?? false) ...[
                           SizedBox(height: isTablet ? 6 : 4),
                           Text(
-                            task.description,
+                            task.description!,
                             style: TextStyle(
                               color: Theme.of(
                                 context,
                               ).colorScheme.onSurface.withValues(
-                                alpha: task.isCompleted ? 0.4 : 0.6,
+                                alpha: task.isCompleted! ? 0.4 : 0.6,
                               ),
                               fontSize: isTablet ? 14 : 12,
                               decoration:
-                                  task.isCompleted
+                                  task.isCompleted!
                                       ? TextDecoration.lineThrough
                                       : TextDecoration.none,
                             ),
@@ -728,18 +879,18 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.onSurface.withValues(
-                                    alpha: task.isCompleted ? 0.4 : 0.6,
+                                    alpha: task.isCompleted! ? 0.4 : 0.6,
                                   ),
                                   size: isTablet ? 16 : 14,
                                 ),
                                 SizedBox(width: isTablet ? 6 : 4),
                                 Text(
-                                  task.dueTime,
+                                  DataKey.formatTime(task.dueDate!),
                                   style: TextStyle(
                                     color: Theme.of(
                                       context,
                                     ).colorScheme.onSurface.withValues(
-                                      alpha: task.isCompleted ? 0.4 : 0.6,
+                                      alpha: task.isCompleted! ? 0.4 : 0.6,
                                     ),
                                     fontSize: isTablet ? 14 : 12,
                                     fontWeight: FontWeight.w500,
@@ -858,11 +1009,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: task.isCompleted ? Colors.green : Colors.transparent,
+        color: task.isCompleted! ? Colors.green : Colors.transparent,
         shape: BoxShape.circle,
         border: Border.all(
           color:
-              task.isCompleted
+              task.isCompleted!
                   ? Colors.green
                   : Theme.of(
                     context,
@@ -873,7 +1024,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child:
-            task.isCompleted
+            task.isCompleted!
                 ? Icon(
                   Icons.check,
                   color: Colors.white,
@@ -895,7 +1046,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         break;
       case TaskPriority.medium:
         color = Colors.orange.shade400;
-        label = 'MED';
+        label = 'MEDIUM';
         break;
       default:
         color = Colors.green.shade400;
@@ -909,13 +1060,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
       decoration: BoxDecoration(
         color:
-            (task.isCompleted
+            (task.isCompleted!
                 ? color.withValues(alpha: 0.2)
                 : color.withValues(alpha: 0.15)),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color:
-              task.isCompleted
+              task.isCompleted!
                   ? color.withValues(alpha: 0.3)
                   : color.withValues(alpha: 0.4),
           width: 1,
@@ -924,7 +1075,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       child: Text(
         label,
         style: TextStyle(
-          color: task.isCompleted ? color.withValues(alpha: 0.6) : color,
+          color: task.isCompleted! ? color.withValues(alpha: 0.6) : color,
           fontSize: isTablet ? 11 : 9,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.5,
@@ -942,21 +1093,21 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: Theme.of(
           context,
-        ).colorScheme.primary.withValues(alpha: task.isCompleted ? 0.1 : 0.15),
+        ).colorScheme.primary.withValues(alpha: task.isCompleted! ? 0.1 : 0.15),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: task.isCompleted ? 0.2 : 0.3),
+          color: Theme.of(context).colorScheme.primary.withValues(
+            alpha: task.isCompleted! ? 0.2 : 0.3,
+          ),
           width: 1,
         ),
       ),
       child: Text(
-        task.category,
+        task.category!,
         style: TextStyle(
-          color: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: task.isCompleted ? 0.6 : 0.8),
+          color: Theme.of(context).colorScheme.primary.withValues(
+            alpha: task.isCompleted! ? 0.6 : 0.8,
+          ),
           fontSize: isTablet ? 12 : 10,
           fontWeight: FontWeight.w600,
         ),
