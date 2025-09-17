@@ -1,14 +1,17 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:frontend/helpers/cache_manager.dart' hide DataKey;
 import 'package:frontend/models/meeting.dart';
 import 'package:frontend/models/user.dart';
+import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/ui/screens/auth/resetpassword_screen.dart';
 import 'package:frontend/ui/screens/auth/emailverification_screen.dart';
 import 'package:frontend/ui/screens/mail/maildetails_screen.dart' as mailDetail;
 import 'package:frontend/ui/screens/settings/setting_screen.dart';
 import 'package:frontend/utils/data_key.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../ui/screens/welcome/home_screen.dart';
 import '../ui/screens/auth/login_screen.dart';
@@ -121,7 +124,13 @@ class AppRoutes {
         GoRoute(
           path: home,
           name: 'home',
-          builder: (context, state) => const HomeScreen(),
+          builder: (context, state) {
+            final mustSync = pref.getBool('mustSync') ?? false;
+            print('mustSync: $mustSync');
+            pref.setBool('mustSync', false);
+            print('LAST_CLEANUP_KEY: ${pref.getString('last_cache_cleanup')}');
+            return const HomeScreen();
+          },
         ),
         GoRoute(
           path: calendar,
@@ -250,7 +259,7 @@ class AppRoutes {
           ),
 
       // Debug logging (remove in production)
-      debugLogDiagnostics: true,
+      debugLogDiagnostics: false,
     );
   }
 }

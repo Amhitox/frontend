@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/helpers/cache_manager.dart';
+import 'package:frontend/providers/task_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -62,6 +65,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
     _slideController.forward();
     _breathingController.repeat(reverse: true);
+    initCache();
+  }
+
+  void initCache() async {
+    final taskprovider = context.read<TaskProvider>();
+    CacheManager(taskprovider).runCacheManager();
   }
 
   @override

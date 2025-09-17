@@ -8,10 +8,19 @@ class DataKey {
 
   static String formatTime(String dateTimeString) {
     try {
-      final dateTime = DateTime.parse(dateTimeString);
+      final dateTime = DateTime.parse(
+        dateTimeString,
+      ).add(const Duration(hours: 1));
       return DateFormat('HH:mm').format(dateTime);
     } catch (e) {
       return dateTimeString.split('T')[1].substring(0, 5);
     }
+  }
+
+  static bool shouldCacheTask(DateTime taskDate) {
+    final now = DateTime.now();
+    final start = now.subtract(const Duration(days: 7));
+    final end = now.add(const Duration(days: 7));
+    return taskDate.isAfter(start) && taskDate.isBefore(end);
   }
 }

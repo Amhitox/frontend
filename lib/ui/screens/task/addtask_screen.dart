@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend/models/user.dart';
 import 'package:frontend/providers/task_provider.dart';
+import 'package:frontend/helpers/local_tasks.dart';
 import 'package:frontend/utils/data_key.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -199,22 +200,14 @@ class _AddTaskScreenState extends State<AddTaskScreen>
 
       newTask.id = taskId;
 
-      final tasksJson = pref.getString('tasks_${user.id}');
-      Map<String, List<String>> tasksMap =
-          tasksJson != null
-              ? Map<String, List<String>>.from(
-                jsonDecode(
-                  tasksJson,
-                ).map((k, v) => MapEntry(k, List<String>.from(v))),
-              )
-              : {};
-
-      final dateKey = DataKey.dateKey(_selectedDate);
-      tasksMap.putIfAbsent(dateKey, () => []);
-      tasksMap[dateKey]!.add(jsonEncode(newTask.toJson()));
-
-      print("Tasks map added: $tasksMap");
-      await pref.setString('tasks_${user.id}', jsonEncode(tasksMap));
+      if (DataKey.shouldCacheTask(_selectedDate)) {
+        await addLocalTasks(
+          user.id!,
+          newTask,
+          _selectedDate,
+          newTask.isCompleted!,
+        );
+      }
     } else {
       newTask = Task(
         id: widget.editingTask!.id!,
@@ -226,39 +219,9 @@ class _AddTaskScreenState extends State<AddTaskScreen>
         dueDate: combinedDateTime.toUtc().toIso8601String(),
       );
 
-      final tasksJson = pref.getString('tasks_${user.id}');
-      Map<String, List<String>> tasksMap =
-          tasksJson != null
-              ? Map<String, List<String>>.from(
-                jsonDecode(
-                  tasksJson,
-                ).map((k, v) => MapEntry(k, List<String>.from(v))),
-              )
-              : {};
-
-      String? oldDateKey;
-      for (String dateKey in tasksMap.keys.toList()) {
-        List<String> tasks = tasksMap[dateKey]!;
-        for (int i = 0; i < tasks.length; i++) {
-          Map<String, dynamic> taskJson = jsonDecode(tasks[i]);
-          if (taskJson['id'] == newTask.id) {
-            tasks.removeAt(i);
-            oldDateKey = dateKey;
-
-            if (tasks.isEmpty) {
-              tasksMap.remove(dateKey);
-            }
-            break;
-          }
-        }
-        if (oldDateKey != null) break;
+      if (DataKey.shouldCacheTask(_selectedDate)) {
+        await updateLocalTasks(user.id!, newTask, _selectedDate);
       }
-
-      final newDateKey = DataKey.dateKey(_selectedDate);
-      tasksMap.putIfAbsent(newDateKey, () => []);
-      tasksMap[newDateKey]!.add(jsonEncode(newTask.toJson()));
-
-      await pref.setString('tasks_${user.id}', jsonEncode(tasksMap));
 
       await context.read<TaskProvider>().updateTask(
         id: newTask.id!,

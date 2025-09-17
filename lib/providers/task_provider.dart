@@ -39,15 +39,21 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<Task>> getTasks() async {
+  Future<List<Task>> getTasks(String date) async {
     _isLoading = true;
     notifyListeners();
-    final response = await task.getTasks();
+
+    final response = await task.getTasks(date);
     late List<Task> tasks;
+
     if (response.statusCode == 200) {
-      List<dynamic> jsonList = response.data["data"] as List<dynamic>;
-      tasks = jsonList.map((json) => Task.fromJson(json)).toList();
+      final data = response.data["data"];
+      if (data != null && data["tasks"] != null) {
+        final jsonList = data["tasks"] as List<dynamic>;
+        tasks = jsonList.map((json) => Task.fromJson(json)).toList();
+      }
     }
+
     _isLoading = false;
     notifyListeners();
     return tasks;

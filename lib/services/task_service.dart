@@ -2,6 +2,9 @@ import 'package:dio/dio.dart';
 
 class TaskService {
   final Dio _dio;
+  // ignore: constant_identifier_names
+  static const int CACHE_DAYS = 14;
+
   TaskService({required Dio dio}) : _dio = dio;
 
   Future<dynamic> addTask(
@@ -30,9 +33,12 @@ class TaskService {
     }
   }
 
-  Future<dynamic> getTasks() async {
+  Future<dynamic> getTasks(String date) async {
     try {
-      final response = await _dio.get("/api/tasks");
+      final response = await _dio.get(
+        "/api/tasks",
+        queryParameters: {"date": date},
+      );
       print(response.data);
       print("got tasks");
       return response;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:frontend/helpers/cache_manager.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/ui/widgets/tab_switch.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:go_router/go_router.dart';
@@ -30,17 +32,20 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleFirstLaunch() async {
     try {
       final pref = await SharedPreferences.getInstance();
-      await pref.setBool("firstOpen", false);
-
-      print('SplashScreen: Updated firstOpen to false');
+      if (pref.getBool("firstOpen") == null ||
+          pref.getBool("firstOpen") == true) {
+        await pref.setBool("mustSync", true);
+        await pref.setBool("firstOpen", false);
+        print('LoginScreen: Updated firstOpen to false');
+      }
+      print('LoginScreen: firstOpen: ${pref.getBool("firstOpen")}');
     } catch (e) {
-      print('SplashScreen: Error updating firstOpen: $e');
+      print('LoginScreen: Error updating firstOpen: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final screenSize = MediaQuery.of(context).size;
@@ -550,6 +555,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   final authProvider = context.read<AuthProvider>();
                   final success = await authProvider.login(email, password);
                   if (success && context.mounted) {
+                    CacheManager(
+                      context.read<TaskProvider>(),
+                    ).runCacheManager();
+                    await Future.delayed(const Duration(milliseconds: 500));
                     context.goNamed('home');
                   } else if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -661,6 +670,8 @@ class _LoginScreenState extends State<LoginScreen> {
               final success =
                   await context.read<AuthProvider>().signInWithGoogle();
               if (success && context.mounted) {
+                CacheManager(context.read<TaskProvider>()).runCacheManager();
+                await Future.delayed(const Duration(milliseconds: 500));
                 context.goNamed('home');
               } else if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(

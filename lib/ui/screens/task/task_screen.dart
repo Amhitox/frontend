@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend/helpers/local_tasks.dart';
 import 'package:frontend/models/user.dart';
 import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
@@ -31,6 +32,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   DateTime _selectedDate = DateTime.now();
   bool _showingCalendarView = false;
   String _selectedFilter = "All";
+  bool _isLoading = false;
 
   final List<String> _filters = ["All", "In Progress", "Completed"];
 
@@ -41,9 +43,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     super.initState();
     _tasks = widget.tasks;
     _selectedDate = widget.date;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _getTasksForDate(_selectedDate);
-    });
 
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -53,44 +52,53 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       begin: const Offset(0, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-    _slideController.forward();
-    _getTasksForDate(_selectedDate);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _slideController.forward();
+      _getTasksForDate(_selectedDate);
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _getTasksForDate(_selectedDate);
-    });
   }
 
   Future<void> _getTasksForDate(DateTime date) async {
-    final pref = await SharedPreferences.getInstance();
-    final user = User.fromJson(jsonDecode(pref.getString('user')!));
-    final tasksJson = pref.getString('tasks_${user.id}');
-
-    final tasksMap =
-        tasksJson != null
-            ? Map<String, List<String>>.from(
-              jsonDecode(
-                tasksJson,
-              ).map((k, v) => MapEntry(k, List<String>.from(v))),
-            )
-            : <String, List<String>>{};
-
-    final selectedDateKey = DataKey.dateKey(date);
-
-    final filteredTasks =
-        tasksMap[selectedDateKey]
-            ?.map((taskJson) => Task.fromJson(jsonDecode(taskJson)))
-            .toList() ??
-        <Task>[];
-
     if (mounted) {
       setState(() {
-        _tasks = filteredTasks;
+        _isLoading = true;
       });
+    }
+    final selectedDateKey = DataKey.dateKey(date);
+    final now = DateTime.now();
+
+    final start = now.subtract(const Duration(days: 7));
+    final end = now.add(const Duration(days: 7));
+
+    if (!date.isBefore(start) && !date.isAfter(end)) {
+      final tasksMap = await getLocalTasks(date);
+
+      final filteredTasks =
+          tasksMap[selectedDateKey]
+              ?.map((taskJson) => Task.fromJson(jsonDecode(taskJson)))
+              .toList() ??
+          <Task>[];
+      if (mounted) {
+        setState(() {
+          _tasks = filteredTasks;
+          _isLoading = false;
+        });
+      }
+    } else {
+      final tasks = await context.read<TaskProvider>().getTasks(
+        selectedDateKey,
+      );
+      if (mounted) {
+        setState(() {
+          _tasks = tasks;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -723,6 +731,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildTasksList(bool isTablet) {
+    if (_isLoading) {
+      return _buildShimmerList(isTablet);
+    }
     return ListView.builder(
       padding: EdgeInsets.symmetric(
         horizontal: isTablet ? 20 : 16,
