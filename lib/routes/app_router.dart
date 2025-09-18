@@ -1,17 +1,12 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:frontend/helpers/cache_manager.dart' hide DataKey;
+import 'package:frontend/managers/task_manager.dart';
 import 'package:frontend/models/meeting.dart';
-import 'package:frontend/models/user.dart';
-import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/ui/screens/auth/resetpassword_screen.dart';
 import 'package:frontend/ui/screens/auth/emailverification_screen.dart';
 import 'package:frontend/ui/screens/mail/maildetails_screen.dart' as mailDetail;
 import 'package:frontend/ui/screens/settings/setting_screen.dart';
-import 'package:frontend/utils/data_key.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../ui/screens/welcome/home_screen.dart';
 import '../ui/screens/auth/login_screen.dart';
@@ -124,13 +119,7 @@ class AppRoutes {
         GoRoute(
           path: home,
           name: 'home',
-          builder: (context, state) {
-            final mustSync = pref.getBool('mustSync') ?? false;
-            print('mustSync: $mustSync');
-            pref.setBool('mustSync', false);
-            print('LAST_CLEANUP_KEY: ${pref.getString('last_cache_cleanup')}');
-            return const HomeScreen();
-          },
+          builder: (context, state) => const HomeScreen(),
         ),
         GoRoute(
           path: calendar,
@@ -138,31 +127,26 @@ class AppRoutes {
           builder: (context, state) => const CalendarPage(),
         ),
         GoRoute(
-          path: task,
+          path: '/task',
           name: 'task',
           builder: (context, state) {
             final date = state.extra as DateTime? ?? DateTime.now();
-            final user = User.fromJson(jsonDecode(pref.getString('user')!));
-            final tasksJson = pref.getString('tasks_${user.id}');
+            final manager = TaskManager();
 
-            final tasksMap =
-                tasksJson != null
-                    ? Map<String, List<String>>.from(
-                      jsonDecode(
-                        tasksJson,
-                      ).map((k, v) => MapEntry(k, List<String>.from(v))),
-                    )
-                    : <String, List<String>>{};
-
-            final selectedDateKey = DataKey.dateKey(date);
-
-            final filteredTasks =
-                tasksMap[selectedDateKey]
-                    ?.map((taskJson) => Task.fromJson(jsonDecode(taskJson)))
-                    .toList() ??
-                <Task>[];
-
-            return TaskScreen(tasks: filteredTasks, date: date);
+            return ValueListenableBuilder(
+              valueListenable: manager.listenable(),
+              builder: (context, Box<Task> box, _) {
+                final cachedTasks =
+                    box.values.where((task) {
+                      if (task.dueDate == null) return false;
+                      final taskDate = DateTime.parse(task.dueDate!).toLocal();
+                      return taskDate.year == date.year &&
+                          taskDate.month == date.month &&
+                          taskDate.day == date.day;
+                    }).toList();
+                return TaskScreen(tasks: cachedTasks, date: date);
+              },
+            );
           },
         ),
         GoRoute(

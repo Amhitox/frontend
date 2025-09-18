@@ -1,13 +1,30 @@
-import 'taskpriority.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-class Task {
+import 'taskpriority.dart';
+part 'task.g.dart';
+
+@HiveType(typeId: 0)
+class Task extends HiveObject {
+  @HiveField(0)
   String? id;
+
+  @HiveField(1)
   final String? title;
+
+  @HiveField(2)
   final String? description;
-  final String? category;
-  TaskPriority? priority;
-  bool? isCompleted;
+
+  @HiveField(3)
   String? dueDate;
+
+  @HiveField(4)
+  final String? category;
+
+  @HiveField(5)
+  TaskPriority? priority;
+
+  @HiveField(6)
+  bool? isCompleted;
 
   Task({
     this.id,

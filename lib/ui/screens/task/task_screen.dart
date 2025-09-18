@@ -1,9 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:frontend/helpers/local_tasks.dart';
-import 'package:frontend/models/user.dart';
+import 'package:frontend/managers/task_manager.dart';
 import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
@@ -11,7 +8,6 @@ import 'package:frontend/ui/widgets/calendar_view.dart';
 import 'package:frontend/utils/data_key.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
@@ -52,8 +48,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       begin: const Offset(0, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+    _slideController.forward();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _slideController.forward();
       _getTasksForDate(_selectedDate);
     });
   }
@@ -69,36 +65,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         _isLoading = true;
       });
     }
-    final selectedDateKey = DataKey.dateKey(date);
-    final now = DateTime.now();
-
-    final start = now.subtract(const Duration(days: 7));
-    final end = now.add(const Duration(days: 7));
-
-    if (!date.isBefore(start) && !date.isAfter(end)) {
-      final tasksMap = await getLocalTasks(date);
-
-      final filteredTasks =
-          tasksMap[selectedDateKey]
-              ?.map((taskJson) => Task.fromJson(jsonDecode(taskJson)))
-              .toList() ??
-          <Task>[];
-      if (mounted) {
-        setState(() {
-          _tasks = filteredTasks;
-          _isLoading = false;
-        });
-      }
-    } else {
-      final tasks = await context.read<TaskProvider>().getTasks(
-        selectedDateKey,
-      );
-      if (mounted) {
-        setState(() {
-          _tasks = tasks;
-          _isLoading = false;
-        });
-      }
+    final tasks = await TaskManager().getTaskOfDate(date);
+    if (mounted) {
+      setState(() {
+        _tasks = tasks;
+        _isLoading = false;
+      });
     }
   }
 
@@ -130,52 +102,16 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   ) async {
     HapticFeedback.lightImpact();
 
-    final pref = await SharedPreferences.getInstance();
-    final user = User.fromJson(jsonDecode(pref.getString('user')!));
-    final tasksJson = pref.getString('tasks_${user.id}');
-    final selectedDateKey = DataKey.dateKey(selectedDate);
-
-    Map<String, List<String>> tasksMap =
-        tasksJson != null
-            ? Map<String, List<String>>.from(
-              jsonDecode(
-                tasksJson,
-              ).map((k, v) => MapEntry(k, List<String>.from(v))),
-            )
-            : {};
-
-    if (!tasksMap.containsKey(selectedDateKey)) {
-      return;
-    }
-
-    List<String> tasks = tasksMap[selectedDateKey]!;
-
-    bool taskFound = false;
-    for (int i = 0; i < tasks.length; i++) {
-      Map<String, dynamic> taskJson = jsonDecode(tasks[i]);
-
-      if (taskJson['id'] == task.id) {
-        taskJson['isCompleted'] = isCompleted;
-
-        tasks[i] = jsonEncode(taskJson);
-        taskFound = true;
-        break;
-      }
-    }
-
-    if (taskFound) {
-      final updatedTasksJson = jsonEncode(tasksMap);
-      await pref.setString('tasks_${user.id}', updatedTasksJson);
-      setState(() {
-        _tasks =
-            tasksMap[selectedDateKey]!
-                .map((taskJson) => Task.fromJson(jsonDecode(taskJson)))
-                .toList();
-      });
-    } else {
-      print('Task ${task.id} not found on $selectedDateKey');
-    }
-    await _getTasksForDate(_selectedDate);
+    await TaskManager().addOrUpdateTask(
+      task.copyWith(
+        isCompleted: isCompleted,
+        dueDate: selectedDate.toUtc().toIso8601String(),
+      ),
+    );
+    final filteredTasks = await TaskManager().getTaskOfDate(selectedDate);
+    setState(() {
+      _tasks = filteredTasks;
+    });
     await context.read<TaskProvider>().updateTask(
       id: task.id!,
       isCompleted: isCompleted,
@@ -227,53 +163,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _permanentlyDeleteTask(Task task, DateTime selectedDate) async {
-    final pref = await SharedPreferences.getInstance();
-    final user = User.fromJson(jsonDecode(pref.getString('user')!));
-    final tasksJson = pref.getString('tasks_${user.id}');
-    final selectedDateKey = DataKey.dateKey(selectedDate);
-
-    Map<String, List<String>> tasksMap =
-        tasksJson != null
-            ? Map<String, List<String>>.from(
-              jsonDecode(
-                tasksJson,
-              ).map((k, v) => MapEntry(k, List<String>.from(v))),
-            )
-            : {};
-
-    if (!tasksMap.containsKey(selectedDateKey)) {
-      return;
-    }
-
-    List<String> tasks = tasksMap[selectedDateKey]!;
-
-    bool taskFound = false;
-    for (int i = 0; i < tasks.length; i++) {
-      Map<String, dynamic> taskJson = jsonDecode(tasks[i]);
-
-      if (taskJson['id'] == task.id) {
-        tasks.removeAt(i);
-        taskFound = true;
-        break;
-      }
-    }
-
-    if (tasks.isEmpty) {
-      tasksMap.remove(selectedDateKey);
-    }
-
-    if (taskFound) {
-      final updatedTasksJson = jsonEncode(tasksMap);
-      await pref.setString('tasks_${user.id}', updatedTasksJson);
-      setState(() {
-        _tasks =
-            tasksMap[selectedDateKey]!
-                .map((taskJson) => Task.fromJson(jsonDecode(taskJson)))
-                .toList();
-      });
-    } else {
-      print('Task $task.id not found on $selectedDateKey');
-    }
+    await TaskManager().deleteTask(task.id!);
+    setState(() {
+      _tasks.removeWhere((t) => t.id == task.id);
+    });
+    await context.read<TaskProvider>().deleteTask(task.id!);
   }
 
   List<Task> get _filteredTasks {

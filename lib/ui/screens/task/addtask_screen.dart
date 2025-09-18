@@ -1,14 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:frontend/models/user.dart';
+import 'package:frontend/managers/task_manager.dart';
 import 'package:frontend/providers/task_provider.dart';
-import 'package:frontend/helpers/local_tasks.dart';
-import 'package:frontend/utils/data_key.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
 
@@ -122,9 +117,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
   }
 
   void _saveTask() async {
-    final pref = await SharedPreferences.getInstance();
-    final user = User.fromJson(jsonDecode(pref.getString('user')!));
-
     if (_titleController.text.trim().isEmpty) {
       _showFeedback('Please enter a task title', isError: true);
       return;
@@ -200,14 +192,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
 
       newTask.id = taskId;
 
-      if (DataKey.shouldCacheTask(_selectedDate)) {
-        await addLocalTasks(
-          user.id!,
-          newTask,
-          _selectedDate,
-          newTask.isCompleted!,
-        );
-      }
+      await TaskManager().addOrUpdateTask(newTask);
     } else {
       newTask = Task(
         id: widget.editingTask!.id!,
@@ -219,9 +204,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
         dueDate: combinedDateTime.toUtc().toIso8601String(),
       );
 
-      if (DataKey.shouldCacheTask(_selectedDate)) {
-        await updateLocalTasks(user.id!, newTask, _selectedDate);
-      }
+      await TaskManager().addOrUpdateTask(newTask);
 
       await context.read<TaskProvider>().updateTask(
         id: newTask.id!,

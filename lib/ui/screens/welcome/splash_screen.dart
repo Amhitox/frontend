@@ -113,7 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
     } else {
       if (auth.isLoggedIn) {
         print(pref.getBool('mustSync'));
-        await Future.delayed(const Duration(milliseconds: 2500));
+        // await Future.delayed(const Duration(milliseconds: 2500));
         if (mounted) {
           context.go('/');
         }

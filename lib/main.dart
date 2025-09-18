@@ -4,11 +4,13 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:frontend/helpers/cache_manager.dart';
+import 'package:frontend/models/task.dart';
+import 'package:frontend/models/taskpriority.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/providers/user_provider.dart';
 import 'package:frontend/providers/sub_provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'utils/app_theme.dart';
@@ -18,20 +20,25 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
+  await Hive.initFlutter();
+  Hive.registerAdapter(TaskAdapter());
+  Hive.registerAdapter(TaskPriorityAdapter());
+
   await dotenv.load(fileName: '.env');
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
 
   final authProvider = AuthProvider();
   await authProvider.init();
   await AppRoutes().init();
-  final taskprovider = TaskProvider(dio: authProvider.dio);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider.value(value: authProvider),
-        ChangeNotifierProvider(create: (_) => taskprovider),
+        ChangeNotifierProvider(
+          create: (_) => TaskProvider(dio: authProvider.dio),
+        ),
         ChangeNotifierProvider(
           create: (_) => UserProvider(dio: authProvider.dio),
         ),
