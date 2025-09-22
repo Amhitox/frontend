@@ -5,41 +5,34 @@ import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/calendar_view.dart';
+import 'package:frontend/ui/widgets/sync_status_indicator.dart';
 import 'package:frontend/utils/data_key.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
-
 class TaskScreen extends StatefulWidget {
   final List<Task> tasks;
   final DateTime date;
   const TaskScreen({super.key, required this.tasks, required this.date});
-
   @override
   _TaskScreenState createState() => _TaskScreenState();
 }
-
 class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-
   DateTime _selectedDate = DateTime.now();
   bool _showingCalendarView = false;
   String _selectedFilter = "All";
   bool _isLoading = false;
-
   final List<String> _filters = ["All", "In Progress", "Completed"];
-
   List<Task> _tasks = <Task>[];
-
   @override
   void initState() {
     super.initState();
     _tasks = widget.tasks;
     _selectedDate = widget.date;
-
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -51,86 +44,116 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     _slideController.forward();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getTasksForDate(_selectedDate);
+      _setupTaskListener();
     });
   }
-
+  void _setupTaskListener() {
+    final manager = TaskManager();
+    if (manager.isInitialized) {
+      final listenable = manager.listenable();
+      if (listenable != null) {
+        listenable.addListener(() {
+          if (mounted) {
+            _getTasksForDate(_selectedDate);
+          }
+        });
+      }
+    }
+  }
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
   }
-
   Future<void> _getTasksForDate(DateTime date) async {
     if (mounted) {
       setState(() {
         _isLoading = true;
       });
     }
-    final tasks = await TaskManager().getTaskOfDate(date);
-    if (mounted) {
-      setState(() {
-        _tasks = tasks;
-        _isLoading = false;
-      });
+    try {
+      final manager = TaskManager();
+      if (manager.isInitialized) {
+        final tasks = manager.getTaskOfDate(date);
+        if (mounted) {
+          setState(() {
+            _tasks = tasks;
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _tasks = [];
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _tasks = [];
+          _isLoading = false;
+        });
+      }
     }
   }
-
   @override
   void dispose() {
     _slideController.dispose();
     super.dispose();
   }
-
   void _toggleCalendarView() {
     setState(() {
       _showingCalendarView = !_showingCalendarView;
     });
   }
-
   void _selectDateFromCalendar(DateTime date) async {
     setState(() {
       _selectedDate = date;
       _showingCalendarView = false;
     });
-
     await _getTasksForDate(date);
   }
-
   void _toggleTaskCompletion(
     Task task,
     DateTime selectedDate,
     bool isCompleted,
   ) async {
     HapticFeedback.lightImpact();
-
-    await TaskManager().addOrUpdateTask(
-      task.copyWith(
-        isCompleted: isCompleted,
-        dueDate: selectedDate.toUtc().toIso8601String(),
-      ),
-    );
-    final filteredTasks = await TaskManager().getTaskOfDate(selectedDate);
-    setState(() {
-      _tasks = filteredTasks;
-    });
-    await context.read<TaskProvider>().updateTask(
-      id: task.id!,
-      isCompleted: isCompleted,
-    );
+    try {
+      final manager = TaskManager();
+      if (manager.isInitialized) {
+        await manager.addOrUpdateTask(
+          task.copyWith(
+            isCompleted: isCompleted,
+            dueDate: selectedDate.toIso8601String(),
+          ),
+        );
+        final filteredTasks = manager.getTaskOfDate(selectedDate);
+        setState(() {
+          _tasks = filteredTasks;
+        });
+      }
+      try {
+        await context.read<TaskProvider>().updateTask(
+          id: task.id!,
+          isCompleted: isCompleted,
+        );
+      } catch (e) {
+      }
+    } catch (e) {
+    }
   }
-
   void _editTask(Task task) async {
     HapticFeedback.mediumImpact();
     await context.pushNamed('addTask', extra: task);
     await _getTasksForDate(_selectedDate);
   }
-
   void _deleteTask(Task task, DateTime selectedDate) async {
     HapticFeedback.mediumImpact();
-
     setState(() {
       _tasks.removeWhere((t) => t.id == task.id);
     });
-
     final snackBar = SnackBar(
       content: Text('Task "${task.title}" deleted'),
       backgroundColor: Colors.red.withValues(alpha: 0.9),
@@ -149,27 +172,22 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         },
       ),
     );
-
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
     await Future.delayed(const Duration(seconds: 4));
-
     bool taskStillDeleted = !_tasks.any((t) => t.id == task.id);
-
     if (taskStillDeleted) {
       await _permanentlyDeleteTask(task, selectedDate);
-      await context.read<TaskProvider>().deleteTask(task.id!);
     }
   }
-
   Future<void> _permanentlyDeleteTask(Task task, DateTime selectedDate) async {
-    await TaskManager().deleteTask(task.id!);
-    setState(() {
-      _tasks.removeWhere((t) => t.id == task.id);
-    });
-    await context.read<TaskProvider>().deleteTask(task.id!);
+    try {
+      await context.read<TaskProvider>().deleteTask(task.id!);
+      setState(() {
+        _tasks.removeWhere((t) => t.id == task.id);
+      });
+    } catch (e) {
+    }
   }
-
   List<Task> get _filteredTasks {
     switch (_selectedFilter) {
       case 'In Progress':
@@ -180,13 +198,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         return _tasks;
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
-
     return Scaffold(
       drawer: const SideMenu(),
       body: Container(
@@ -229,7 +245,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildHeader(bool isTablet, bool isLargeScreen) {
     return Padding(
       padding: EdgeInsets.all(
@@ -259,14 +274,20 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '${_tasks.length} tasks for ${_getDateLabel()}',
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontSize: isTablet ? 16 : 14,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      '${_tasks.length} tasks for ${_getDateLabel()}',
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        fontSize: isTablet ? 16 : 14,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const SyncStatusIndicator(),
+                  ],
                 ),
               ],
             ),
@@ -295,13 +316,13 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildHeaderButton(
     IconData icon,
     VoidCallback onTap,
     ThemeData theme,
-    bool isTablet,
-  ) {
+    bool isTablet, {
+    VoidCallback? onLongPress,
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -310,6 +331,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           HapticFeedback.lightImpact();
           onTap();
         },
+        onLongPress: onLongPress,
         child: Container(
           width: isTablet ? 48 : 40,
           height: isTablet ? 48 : 40,
@@ -330,7 +352,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildCalendarView() {
     return CalendarView(
       key: const ValueKey('calendar'),
@@ -339,12 +360,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       onBack: _toggleCalendarView,
     );
   }
-
   Widget _buildProgressCard(bool isTablet) {
     final completedTasks = _tasks.where((task) => task.isCompleted!).length;
     final totalTasks = _tasks.length;
     final progress = totalTasks > 0 ? completedTasks / totalTasks : 0.0;
-
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: isTablet ? 20 : 16,
@@ -398,7 +417,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildStatChip(String label, int count, Color color, bool isTablet) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -433,7 +451,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ],
     );
   }
-
   Widget _buildProgressCircle(double progress) {
     return Stack(
       alignment: Alignment.center,
@@ -463,7 +480,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ],
     );
   }
-
   Widget _buildFilterTabs(bool isTablet) {
     return Container(
       height: 50,
@@ -474,7 +490,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         itemBuilder: (context, index) {
           final filter = _filters[index];
           final isSelected = _selectedFilter == filter;
-
           return GestureDetector(
             onTap: () => setState(() => _selectedFilter = filter),
             child: AnimatedContainer(
@@ -524,7 +539,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildShimmerList(bool isTablet) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(
@@ -537,7 +551,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       },
     );
   }
-
   Widget _buildShimmerItem(context, bool isTablet) {
     return Shimmer.fromColors(
       baseColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
@@ -623,7 +636,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildTasksList(bool isTablet) {
     if (_isLoading) {
       return _buildShimmerList(isTablet);
@@ -640,7 +652,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       },
     );
   }
-
   Widget _buildTaskItem(Task task, bool isTablet) {
     return Dismissible(
       key: Key(task.title! + task.dueDate!),
@@ -661,7 +672,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           _editTask(task);
           return false;
         } else {
-          // Delete action - show confirmation
           return await _showDeleteConfirmation(task);
         }
       },
@@ -713,12 +723,10 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 children: [
                   _buildCheckboxButton(task, isTablet),
                   SizedBox(width: isTablet ? 16 : 12),
-
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Title and Priority
                         Row(
                           children: [
                             Expanded(
@@ -746,8 +754,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                             _buildPriorityChip(task, isTablet),
                           ],
                         ),
-
-                        // Description
                         if (task.description?.isNotEmpty ?? false) ...[
                           SizedBox(height: isTablet ? 6 : 4),
                           Text(
@@ -768,10 +774,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
-
                         SizedBox(height: isTablet ? 12 : 8),
-
-                        // Category and Due Time
                         Row(
                           children: [
                             _buildCategoryChip(task, isTablet),
@@ -816,7 +819,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildSwipeBackground({required bool isEdit, required bool isTablet}) {
     return Container(
       margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
@@ -854,7 +856,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Future<bool> _showDeleteConfirmation(Task task) async {
     return await showDialog<bool>(
           context: context,
@@ -906,10 +907,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         ) ??
         false;
   }
-
   Widget _buildCheckboxButton(Task task, bool isTablet) {
     final size = isTablet ? 28.0 : 24.0;
-
     return Container(
       width: size,
       height: size,
@@ -940,7 +939,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildPriorityChip(Task task, bool isTablet) {
     Color color;
     String label;
@@ -957,7 +955,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         color = Colors.green.shade400;
         label = 'LOW';
     }
-
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isTablet ? 8 : 6,
@@ -988,7 +985,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildCategoryChip(Task task, bool isTablet) {
     return Container(
       padding: EdgeInsets.symmetric(
@@ -1019,11 +1015,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   String _getDateLabel() {
     return '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}';
   }
-
   int _getHighPriorityCount() =>
       _tasks.where((t) => t.priority == TaskPriority.high).length;
 }

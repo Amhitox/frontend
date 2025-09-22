@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
-
 class EmailVerificationScreen extends StatefulWidget {
   final String? token;
-
   const EmailVerificationScreen({super.key, this.token});
-
   @override
   State<EmailVerificationScreen> createState() =>
       _EmailVerificationScreenState();
 }
-
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   bool _isVerifying = true;
   bool _isVerified = false;
   String _message = 'Verifying your email...';
-
   @override
   void initState() {
     super.initState();
@@ -29,17 +24,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       });
     }
   }
-
   Future<void> _verifyEmail() async {
     try {
       await FirebaseAuth.instance.applyActionCode(widget.token!);
-
       setState(() {
         _isVerifying = false;
         _isVerified = true;
         _message = 'Email verified successfully!';
       });
-
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
           context.go('/login');
@@ -54,7 +46,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       });
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

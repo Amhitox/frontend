@@ -4,37 +4,27 @@ import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:file_picker/file_picker.dart';
-
 class ComposeMailScreen extends StatefulWidget {
   final MailItem? editingMail;
-
   const ComposeMailScreen({super.key, this.editingMail});
-
   @override
   _ComposeMailScreenState createState() => _ComposeMailScreenState();
 }
-
 class _ComposeMailScreenState extends State<ComposeMailScreen>
     with TickerProviderStateMixin {
   final TextEditingController _toController = TextEditingController();
   final TextEditingController _subjectController = TextEditingController();
   final quill.QuillController _bodyController = quill.QuillController.basic();
-
   final FocusNode _toFocus = FocusNode();
   final FocusNode _subjectFocus = FocusNode();
   final FocusNode _bodyFocus = FocusNode();
-
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-
   bool _isSending = false;
   bool _showCc = false;
   bool _showBcc = false;
   bool _isUploadingFile = false;
-
   final List<AttachmentItem> _attachments = [];
-
-  // Predefined recipients for auto-completion
   final List<String> _suggestions = [
     'john.doe@company.com',
     'sarah.chen@company.com',
@@ -43,30 +33,24 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     'david.park@company.com',
     'emma.wilson@company.com',
   ];
-
   @override
   void initState() {
     super.initState();
-
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-
     if (widget.editingMail != null) {
       _toController.text = widget.editingMail!.sender;
       _subjectController.text = widget.editingMail!.subject;
       _bodyController.document.insert(0, widget.editingMail!.preview);
     }
-
     _slideController.forward();
   }
-
   @override
   void dispose() {
     _slideController.dispose();
@@ -78,7 +62,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     _bodyFocus.dispose();
     super.dispose();
   }
-
   void _sendMail() async {
     if (_toController.text.isEmpty ||
         _subjectController.text.isEmpty ||
@@ -86,63 +69,45 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       _showFeedback('Please complete all required fields', isError: true);
       return;
     }
-
     setState(() => _isSending = true);
-
-    // Simulate API call with attachments
     await Future.delayed(const Duration(milliseconds: 1500));
-
-    // Here you would upload attachments to your server
-    // for (var attachment in _attachments) {
-    //   await uploadAttachment(attachment);
-    // }
-
     _showFeedback(
       'Message sent successfully with ${_attachments.length} attachments',
     );
     await Future.delayed(const Duration(milliseconds: 800));
-
     if (mounted) context.go('/mail');
   }
-
   void _saveDraft() async {
     _showFeedback('Draft saved with ${_attachments.length} attachments');
     HapticFeedback.lightImpact();
   }
-
   Future<void> _pickFiles() async {
     try {
       setState(() => _isUploadingFile = true);
-
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.any,
         allowedExtensions: null,
       );
-
       if (result != null) {
         for (PlatformFile file in result.files) {
           if (file.size > 25 * 1024 * 1024) {
-            // 25MB limit
             _showFeedback(
               'File "${file.name}" is too large (max 25MB)',
               isError: true,
             );
             continue;
           }
-
           final attachment = AttachmentItem(
             name: file.name,
             path: file.path,
             size: file.size,
             bytes: file.bytes,
           );
-
           setState(() {
             _attachments.add(attachment);
           });
         }
-
         if (result.files.isNotEmpty) {
           _showFeedback('Added ${result.files.length} file(s)');
           HapticFeedback.lightImpact();
@@ -154,27 +119,22 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       setState(() => _isUploadingFile = false);
     }
   }
-
   Future<void> _pickImages() async {
     try {
       setState(() => _isUploadingFile = true);
-
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.image,
       );
-
       if (result != null) {
         for (PlatformFile file in result.files) {
           if (file.size > 10 * 1024 * 1024) {
-            // 10MB limit for images
             _showFeedback(
               'Image "${file.name}" is too large (max 10MB)',
               isError: true,
             );
             continue;
           }
-
           final attachment = AttachmentItem(
             name: file.name,
             path: file.path,
@@ -182,12 +142,10 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             bytes: file.bytes,
             isImage: true,
           );
-
           setState(() {
             _attachments.add(attachment);
           });
         }
-
         if (result.files.isNotEmpty) {
           _showFeedback('Added ${result.files.length} image(s)');
           HapticFeedback.lightImpact();
@@ -199,7 +157,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       setState(() => _isUploadingFile = false);
     }
   }
-
   void _removeAttachment(int index) {
     setState(() {
       _attachments.removeAt(index);
@@ -207,7 +164,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     HapticFeedback.lightImpact();
     _showFeedback('Attachment removed');
   }
-
   void _showFeedback(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -226,7 +182,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
-
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
@@ -235,13 +190,11 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
-
     return Scaffold(
       drawer: const SideMenu(),
       body: Container(
@@ -274,7 +227,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
-
   Widget _buildHeader(bool isTablet, bool isLargeScreen) {
     return Padding(
       padding: EdgeInsets.all(
@@ -336,7 +288,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
-
   Widget _buildHeaderButton(
     IconData icon,
     VoidCallback onTap,
@@ -371,7 +322,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
-
   Widget _buildContent(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.fromLTRB(
@@ -398,29 +348,19 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
       child: Column(
         children: [
-          // Compact input fields section
           _buildCompactInputFields(isTablet, isLargeScreen),
-
-          // Attachments section (if any)
           if (_attachments.isNotEmpty)
             _buildAttachmentsSection(isTablet, isLargeScreen),
-
-          // Compact toolbar
           _buildCompactToolbar(isTablet, isLargeScreen),
-
-          // Expanded body input - takes most of the space
           Expanded(
-            flex: 3, // Give more weight to the body
+            flex: 3, 
             child: _buildMessageField(isTablet, isLargeScreen),
           ),
-
-          // Send button
           _buildSendButton(isTablet, isLargeScreen),
         ],
       ),
     );
   }
-
   Widget _buildCompactInputFields(bool isTablet, bool isLargeScreen) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -431,7 +371,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
       child: Column(
         children: [
-          // Compact To field
           _buildCompactTextField(
             controller: _toController,
             focusNode: _toFocus,
@@ -441,8 +380,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             suggestions: _suggestions,
           ),
           SizedBox(height: isTablet ? 8 : 6),
-
-          // CC/BCC buttons row
           if (!_showCc || !_showBcc)
             Row(
               children: [
@@ -462,8 +399,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               ],
             ),
           if (!_showCc || !_showBcc) SizedBox(height: isTablet ? 8 : 6),
-
-          // Show CC field if enabled
           if (_showCc) ...[
             _buildCompactTextField(
               controller: TextEditingController(),
@@ -474,8 +409,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             ),
             SizedBox(height: isTablet ? 8 : 6),
           ],
-
-          // Show BCC field if enabled
           if (_showBcc) ...[
             _buildCompactTextField(
               controller: TextEditingController(),
@@ -486,8 +419,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             ),
             SizedBox(height: isTablet ? 8 : 6),
           ],
-
-          // Compact Subject field
           _buildCompactTextField(
             controller: _subjectController,
             focusNode: _subjectFocus,
@@ -499,7 +430,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
-
   Widget _buildSmallButton(String text, VoidCallback onTap, bool isTablet) {
     return GestureDetector(
       onTap: onTap,
@@ -523,7 +453,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
-
   Widget _buildCompactTextField({
     required TextEditingController controller,
     required FocusNode focusNode,
@@ -536,7 +465,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       animation: focusNode,
       builder: (context, child) {
         return Container(
-          height: isTablet ? 42 : 36, // Fixed compact height
+          height: isTablet ? 42 : 36, 
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface.withValues(
               alpha: focusNode.hasFocus ? 0.1 : 0.03,
@@ -569,7 +498,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       },
     );
   }
-
   Widget _buildAttachmentsSection(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.fromLTRB(isTablet ? 24 : 16, 0, isTablet ? 24 : 16, 0),
@@ -690,7 +618,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
-
   Widget _buildCompactToolbar(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.fromLTRB(
@@ -713,7 +640,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
       child: Row(
         children: [
-          // Minimal QuillToolbar for basic formatting
           Flexible(
             child: quill.QuillSimpleToolbar(
               controller: _bodyController,
@@ -749,8 +675,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               ),
             ),
           ),
-
-          // Divider
           Container(
             height: 16,
             width: 1,
@@ -759,8 +683,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             ).colorScheme.onSurface.withValues(alpha: 0.2),
             margin: const EdgeInsets.symmetric(horizontal: 6),
           ),
-
-          // Attach files button
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -790,8 +712,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               ),
             ),
           ),
-
-          // Attach images button
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -813,7 +733,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
-
   Widget _buildMessageField(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.fromLTRB(isTablet ? 24 : 16, 0, isTablet ? 24 : 16, 0),
@@ -841,7 +760,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
-
   Widget _buildSendButton(bool isTablet, bool isLargeScreen) {
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -915,14 +833,12 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     );
   }
 }
-
 class AttachmentItem {
   final String name;
   final String? path;
   final int size;
   final List<int>? bytes;
   final bool isImage;
-
   AttachmentItem({
     required this.name,
     this.path,
@@ -931,7 +847,6 @@ class AttachmentItem {
     this.isImage = false,
   });
 }
-
 class MailItem {
   final String sender;
   final String subject;
@@ -939,7 +854,6 @@ class MailItem {
   final String time;
   final bool isUnread;
   final MailPriority priority;
-
   MailItem({
     required this.sender,
     required this.subject,
@@ -949,5 +863,4 @@ class MailItem {
     required this.priority,
   });
 }
-
 enum MailPriority { high, normal, low }

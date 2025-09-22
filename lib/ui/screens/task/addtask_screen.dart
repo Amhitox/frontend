@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:frontend/managers/task_manager.dart';
 import 'package:frontend/providers/task_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -9,9 +8,7 @@ import '../../../models/taskpriority.dart';
 
 class AddTaskScreen extends StatefulWidget {
   final Task? editingTask;
-
   const AddTaskScreen({super.key, this.editingTask});
-
   @override
   _AddTaskScreenState createState() => _AddTaskScreenState();
 }
@@ -22,12 +19,10 @@ class _AddTaskScreenState extends State<AddTaskScreen>
   late AnimationController _fadeController;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
-
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _customCategoryController =
       TextEditingController();
-
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   TaskPriority _selectedPriority = TaskPriority.medium;
@@ -35,7 +30,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
   bool _showCustomCategoryField = false;
   Task newTask = Task();
   bool isEditMode = false;
-
   final List<String> _categories = [
     'Work',
     'Personal',
@@ -44,13 +38,10 @@ class _AddTaskScreenState extends State<AddTaskScreen>
     'Education',
     'Other',
   ];
-
   bool _isSaving = false;
-
   @override
   void initState() {
     super.initState();
-
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -59,31 +50,26 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.1),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
     );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
-
     if (widget.editingTask != null) {
       isEditMode = true;
       _titleController.text = widget.editingTask!.title!;
       _descriptionController.text = widget.editingTask!.description ?? '';
       _selectedCategory = widget.editingTask!.category!;
       _selectedPriority = widget.editingTask!.priority!;
-
       if (!_categories.contains(_selectedCategory)) {
         _showCustomCategoryField = true;
         _customCategoryController.text = _selectedCategory;
         _selectedCategory = 'Other';
       }
-
       try {
         final isoString = widget.editingTask!.dueDate!;
         DateTime utcDateTime = DateTime.parse(isoString);
@@ -92,7 +78,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
           utcDateTime.month,
           utcDateTime.day,
         );
-
         _selectedTime = TimeOfDay(
           hour: utcDateTime.hour,
           minute: utcDateTime.minute,
@@ -101,7 +86,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
         _selectedTime = TimeOfDay.now();
       }
     }
-
     _slideController.forward();
     _fadeController.forward();
   }
@@ -121,13 +105,11 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       _showFeedback('Please enter a task title', isError: true);
       return;
     }
-
     if (_showCustomCategoryField &&
         _customCategoryController.text.trim().isEmpty) {
       _showFeedback('Please enter a custom category name', isError: true);
       return;
     }
-
     final now = DateTime.now();
     final combinedDateTime = DateTime(
       _selectedDate.year,
@@ -136,14 +118,12 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       _selectedTime.hour,
       _selectedTime.minute,
     );
-
     final today = DateTime(now.year, now.month, now.day);
     final selectedDateOnly = DateTime(
       _selectedDate.year,
       _selectedDate.month,
       _selectedDate.day,
     );
-
     if (selectedDateOnly.isBefore(today)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -154,7 +134,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       );
       return;
     }
-
     if (selectedDateOnly.isAtSameMomentAs(today)) {
       final oneHourFromNow = now.add(const Duration(hours: 1));
       if (combinedDateTime.isBefore(oneHourFromNow)) {
@@ -168,67 +147,37 @@ class _AddTaskScreenState extends State<AddTaskScreen>
         return;
       }
     }
-
     setState(() => _isSaving = true);
-
     if (!isEditMode) {
-      newTask = Task(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        category: _selectedCategory.toLowerCase(),
-        priority: _selectedPriority,
-        isCompleted: false,
-        dueDate: combinedDateTime.toUtc().toIso8601String(),
+      await context.read<TaskProvider>().addTask(
+        _titleController.text.trim(),
+        _descriptionController.text.trim(),
+        _selectedPriority.toString().split('.').last,
+        _selectedDate,
+        _selectedTime,
+        false,
+        _selectedCategory.toLowerCase(),
       );
-
-      final taskId = await context.read<TaskProvider>().addTask(
-        newTask.title ?? '',
-        newTask.description ?? '',
-        newTask.priority!.toString().split('.').last,
-        newTask.dueDate!,
-        newTask.isCompleted!,
-        newTask.category!,
-      );
-
-      newTask.id = taskId;
-
-      await TaskManager().addOrUpdateTask(newTask);
     } else {
-      newTask = Task(
+      await context.read<TaskProvider>().updateTask(
         id: widget.editingTask!.id!,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        category: _selectedCategory.toLowerCase(),
-        priority: _selectedPriority,
+        priority: _selectedPriority.toString().split('.').last,
+        date: _selectedDate,
+        time: _selectedTime,
         isCompleted: widget.editingTask!.isCompleted,
-        dueDate: combinedDateTime.toUtc().toIso8601String(),
-      );
-
-      await TaskManager().addOrUpdateTask(newTask);
-
-      await context.read<TaskProvider>().updateTask(
-        id: newTask.id!,
-        title: newTask.title!,
-        description: newTask.description!,
-        priority: newTask.priority!.toString().split('.').last,
-        dueDate: newTask.dueDate!,
-        isCompleted: newTask.isCompleted!,
-        category: newTask.category!,
+        category: _selectedCategory.toLowerCase(),
       );
     }
-
     HapticFeedback.mediumImpact();
-
     await Future.delayed(const Duration(milliseconds: 1000));
-
     _showFeedback(
       widget.editingTask != null
           ? 'Task updated successfully'
           : 'Task created successfully',
     );
-
     await Future.delayed(const Duration(milliseconds: 600));
-
     if (mounted) context.pop();
   }
 
@@ -260,7 +209,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
-
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
@@ -301,7 +249,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
             : isTablet
             ? 24.0
             : 20.0;
-
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
@@ -365,7 +312,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
             : isTablet
             ? 24.0
             : 20.0;
-
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: padding),
       child: Column(
@@ -431,7 +377,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
             : isTablet
             ? 18.0
             : 16.0;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -472,7 +417,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
             onTapOutside: (event) {
               FocusScope.of(context).unfocus();
             },
-
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface,
               fontSize:
@@ -562,7 +506,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
             : isTablet
             ? 18.0
             : 16.0;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -661,7 +604,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
             : isTablet
             ? 14.0
             : 12.0;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -894,7 +836,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
               TaskPriority.values.map((priority) {
                 final isSelected = _selectedPriority == priority;
                 final color = _getPriorityColor(priority);
-
                 return Expanded(
                   child: Material(
                     color: Colors.transparent,
@@ -1010,7 +951,6 @@ class _AddTaskScreenState extends State<AddTaskScreen>
             : isTablet
             ? 24.0
             : 20.0;
-
     return Container(
       padding: EdgeInsets.all(padding),
       child: Material(

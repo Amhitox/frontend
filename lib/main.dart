@@ -6,8 +6,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:frontend/models/task.dart';
 import 'package:frontend/models/taskpriority.dart';
+import 'package:frontend/models/meeting.dart';
+import 'package:frontend/models/meeting_location.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/task_provider.dart';
+import 'package:frontend/providers/meeting_provider.dart';
 import 'package:frontend/providers/user_provider.dart';
 import 'package:frontend/providers/sub_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -15,22 +18,19 @@ import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'utils/app_theme.dart';
 import 'routes/app_router.dart';
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-
   await Hive.initFlutter();
   Hive.registerAdapter(TaskAdapter());
   Hive.registerAdapter(TaskPriorityAdapter());
-
+  Hive.registerAdapter(MeetingAdapter());
+  Hive.registerAdapter(MeetingLocationAdapter());
   await dotenv.load(fileName: '.env');
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
-
   final authProvider = AuthProvider();
   await authProvider.init();
   await AppRoutes().init();
-
   runApp(
     MultiProvider(
       providers: [
@@ -38,6 +38,9 @@ Future<void> main() async {
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(
           create: (_) => TaskProvider(dio: authProvider.dio),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => MeetingProvider(dio: authProvider.dio),
         ),
         ChangeNotifierProvider(
           create: (_) => UserProvider(dio: authProvider.dio),
@@ -50,15 +53,12 @@ Future<void> main() async {
     ),
   );
 }
-
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final router = AppRoutes().createRouter(context);
-
     return MaterialApp.router(
       title: 'Aixy',
       theme: AppTheme.light,

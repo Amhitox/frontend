@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/helpers/cache_manager.dart';
 import 'package:frontend/providers/auth_provider.dart';
-import 'package:frontend/providers/task_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
@@ -9,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
-
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
@@ -20,54 +17,44 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _breathingController;
   late AnimationController _particleController;
   late AnimationController _fadeController;
-
   late Animation<double> _logoScale;
   late Animation<double> _logoOpacity;
   late Animation<double> _textOpacity;
   late Animation<Offset> _textSlide;
-
   @override
   void initState() {
     super.initState();
-
     _logoController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-
     _breathingController = AnimationController(
       duration: const Duration(milliseconds: 3000),
       vsync: this,
     );
-
     _particleController = AnimationController(
       duration: const Duration(milliseconds: 8000),
       vsync: this,
     );
-
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-
     _logoScale = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _logoController, curve: Curves.elasticOut),
     );
-
     _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _logoController,
         curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
       ),
     );
-
     _textOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _logoController,
         curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
       ),
     );
-
     _textSlide = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
@@ -77,19 +64,16 @@ class _SplashScreenState extends State<SplashScreen>
         curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
       ),
     );
-
     _startAnimations();
   }
 
   void _startAnimations() async {
     _logoController.forward();
     _particleController.repeat();
-
     await Future.delayed(const Duration(milliseconds: 800));
     if (mounted) {
       _breathingController.repeat(reverse: true);
     }
-
     await Future.delayed(const Duration(milliseconds: 2500));
     if (mounted) {
       _fadeController.forward().then((_) {
@@ -104,16 +88,12 @@ class _SplashScreenState extends State<SplashScreen>
     final auth = context.read<AuthProvider>();
     final pref = await SharedPreferences.getInstance();
     final firstOpen = pref.getBool("firstOpen") ?? true;
-    print('firstOpen: $firstOpen');
-
     if (firstOpen) {
       if (mounted) {
         context.go('/onboarding');
       }
     } else {
       if (auth.isLoggedIn) {
-        print(pref.getBool('mustSync'));
-        // await Future.delayed(const Duration(milliseconds: 2500));
         if (mounted) {
           context.go('/');
         }
@@ -136,18 +116,12 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    print('SplashScreen: Building splash screen');
-
     final theme = Theme.of(context);
     final screenSize = MediaQuery.of(context).size;
     final screenHeight = screenSize.height;
     final screenWidth = screenSize.width;
-
-    // Responsive breakpoints
     final isSmallScreen = screenHeight < 700 || screenWidth < 400;
     final isMediumScreen = screenHeight >= 700 && screenHeight < 900;
-
-    // Dynamic sizing based on screen size
     final logoSize =
         isSmallScreen
             ? 100.0
@@ -178,32 +152,23 @@ class _SplashScreenState extends State<SplashScreen>
             : isMediumScreen
             ? 16.0
             : 18.0;
-
-    // Theme-aware colors
     final isDark = theme.brightness == Brightness.dark;
     final backgroundGradient =
         isDark
             ? const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0C1421), // deepDark
-                Color(0xFF141D2E), // darkBlue
-                Color(0xFF1A2332),
-              ],
+              colors: [Color(0xFF0C1421), Color(0xFF141D2E), Color(0xFF1A2332)],
             )
             : LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
                 Colors.white,
-                const Color(
-                  0xFF3B77D8,
-                ).withValues(alpha: 0.05), // customBlue tint
+                const Color(0xFF3B77D8).withValues(alpha: 0.05),
                 const Color(0xFF3B77D8).withValues(alpha: 0.1),
               ],
             );
-
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF141D2E);
     final secondaryTextColor =
         isDark
@@ -213,22 +178,16 @@ class _SplashScreenState extends State<SplashScreen>
         isDark
             ? Colors.white.withValues(alpha: 0.1)
             : const Color(0xFF3B77D8).withValues(alpha: 0.1);
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(gradient: backgroundGradient),
         child: SafeArea(
           child: Stack(
             children: [
-              // Floating particles
               ...List.generate(
-                screenWidth > 600
-                    ? 20
-                    : 15, // Fewer particles on smaller screens
+                screenWidth > 600 ? 20 : 15,
                 (index) => _buildFloatingParticle(index, particleColor),
               ),
-
-              // Main content
               Center(
                 child: FadeTransition(
                   opacity: Tween<double>(
@@ -251,7 +210,6 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Logo section
                               AnimatedBuilder(
                                 animation: Listenable.merge([
                                   _logoController,
@@ -261,7 +219,6 @@ class _SplashScreenState extends State<SplashScreen>
                                   return Stack(
                                     alignment: Alignment.center,
                                     children: [
-                                      // Breathing rings
                                       Transform.scale(
                                         scale:
                                             1.0 +
@@ -308,8 +265,6 @@ class _SplashScreenState extends State<SplashScreen>
                                           ),
                                         ),
                                       ),
-
-                                      // Main logo
                                       Transform.scale(
                                         scale: _logoScale.value,
                                         child: Opacity(
@@ -326,7 +281,6 @@ class _SplashScreenState extends State<SplashScreen>
                                   );
                                 },
                               ),
-
                               SizedBox(
                                 height:
                                     isSmallScreen
@@ -335,8 +289,6 @@ class _SplashScreenState extends State<SplashScreen>
                                         ? 40
                                         : 50,
                               ),
-
-                              // App name and tagline
                               SlideTransition(
                                 position: _textSlide,
                                 child: FadeTransition(
@@ -367,7 +319,6 @@ class _SplashScreenState extends State<SplashScreen>
                                   ),
                                 ),
                               ),
-
                               SizedBox(
                                 height:
                                     isSmallScreen
@@ -376,8 +327,6 @@ class _SplashScreenState extends State<SplashScreen>
                                         ? 80
                                         : 100,
                               ),
-
-                              // Loading indicator
                               FadeTransition(
                                 opacity: _textOpacity,
                                 child: Column(
@@ -437,15 +386,12 @@ class _SplashScreenState extends State<SplashScreen>
         final offset = (_particleController.value + (index * 0.1)) % 1.0;
         final screenHeight = MediaQuery.of(context).size.height;
         final screenWidth = MediaQuery.of(context).size.width;
-
         final x =
             (math.sin(offset * 2 * math.pi + index) * 50) +
             ((index * 80.0) % screenWidth);
         final y = screenHeight * offset;
-
         final particleSize = 2.0 + (index % 4);
         final opacity = 0.1 + (index % 3) * 0.05;
-
         return Positioned(
           left: x,
           top: y,

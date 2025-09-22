@@ -1,48 +1,37 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
-
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
-
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
-
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
-
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
   int _secondsLeft = 0;
   Timer? _timer;
-
   bool _isLoading = false;
   bool _emailSent = false;
-
   @override
   void initState() {
     super.initState();
-
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-
     _slideController.forward();
   }
-
   @override
   void dispose() {
     _emailController.dispose();
@@ -50,7 +39,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     _timer?.cancel();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -58,18 +46,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     final screenSize = MediaQuery.of(context).size;
     final screenHeight = screenSize.height;
     final screenWidth = screenSize.width;
-
-    // Responsive breakpoints
     final isSmallScreen = screenHeight < 700 || screenWidth < 400;
     final isTablet = screenWidth > 600;
     final isLandscape = screenWidth > screenHeight;
-
-    // Theme-aware colors
     final isDark = theme.brightness == Brightness.dark;
     final headerTextColor = isDark ? Colors.white : Colors.white;
     final containerColor = isDark ? const Color(0xFF141D2E) : Colors.white;
-
-    // Responsive sizing
     final headerTopPercent =
         isLandscape
             ? 0.03
@@ -89,17 +71,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ? 0.22
             : 0.25;
     final horizontalPadding = isTablet ? 48.0 : 32.0;
-
     return Scaffold(
       backgroundColor: colorScheme.surface,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Stack(
           children: [
-            // Background
             const CosmicBackground(),
-
-            // Back button
             Positioned(
               top: screenHeight * headerTopPercent,
               left: screenWidth * 0.05,
@@ -142,8 +120,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 ),
               ),
             ),
-
-            // Header section
             Positioned(
               top: screenHeight * headerTopPercent,
               left: screenWidth * 0.07,
@@ -155,8 +131,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 headerTextColor,
               ),
             ),
-
-            // Title section
             Positioned(
               top: screenHeight * titleTopPercent,
               left: screenWidth * 0.07,
@@ -168,8 +142,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 headerTextColor,
               ),
             ),
-
-            // Main content container
             Positioned(
               top: screenHeight * containerTopPercent,
               left: 0,
@@ -210,10 +182,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                   ? 50
                                   : 40,
                         ),
-
-                        // Icon section
                         _buildIconSection(isSmallScreen, isTablet),
-
                         SizedBox(
                           height:
                               isSmallScreen
@@ -222,9 +191,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                   ? 28
                                   : 24,
                         ),
-
                         if (!_emailSent) ...[
-                          // Form section
                           Padding(
                             padding: EdgeInsets.symmetric(
                               horizontal: horizontalPadding,
@@ -237,7 +204,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                             ),
                           ),
                         ] else ...[
-                          // Success section
                           Padding(
                             padding: EdgeInsets.symmetric(
                               horizontal: horizontalPadding,
@@ -250,7 +216,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                             ),
                           ),
                         ],
-
                         SizedBox(
                           height:
                               isSmallScreen
@@ -259,8 +224,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                   ? 50
                                   : 40,
                         ),
-
-                        // Additional help section
                         if (!_emailSent)
                           Padding(
                             padding: EdgeInsets.symmetric(
@@ -273,7 +236,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                               isDark,
                             ),
                           ),
-
                         SizedBox(
                           height:
                               isSmallScreen
@@ -293,7 +255,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       ),
     );
   }
-
   Widget _buildHeader(
     BuildContext context,
     bool isSmallScreen,
@@ -313,7 +274,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       ],
     );
   }
-
   Widget _buildTitle(
     BuildContext context,
     bool isSmallScreen,
@@ -332,7 +292,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             : isTablet
             ? 16.0
             : 15.0;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -359,7 +318,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       ],
     );
   }
-
   Widget _buildIconSection(bool isSmallScreen, bool isTablet) {
     final iconSize =
         isSmallScreen
@@ -373,7 +331,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             : isTablet
             ? 45.0
             : 40.0;
-
     return Container(
       width: iconSize,
       height: iconSize,
@@ -395,7 +352,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       ),
     );
   }
-
   Widget _buildForm(
     BuildContext context,
     bool isSmallScreen,
@@ -422,7 +378,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             : isTablet
             ? 20.0
             : 18.0;
-
     return Form(
       key: _formKey,
       child: Column(
@@ -445,8 +400,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ),
           ),
           const SizedBox(height: 24),
-
-          // Email field
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -510,10 +463,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               return null;
             },
           ),
-
           const SizedBox(height: 24),
-
-          // Reset password button
           SizedBox(
             width: double.infinity,
             height: buttonHeight,
@@ -546,10 +496,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                       ),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Back to login button
           SizedBox(
             width: double.infinity,
             height: buttonHeight - 4,
@@ -582,7 +529,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       ),
     );
   }
-
   Widget _buildSuccessSection(
     BuildContext context,
     bool isSmallScreen,
@@ -609,7 +555,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             : isTablet
             ? 22.0
             : 20.0;
-
     return Column(
       children: [
         Text(
@@ -621,7 +566,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           ),
         ),
         const SizedBox(height: 12),
-
         Text(
           'We\'ve sent a password reset link to:',
           style: TextStyle(
@@ -631,7 +575,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
-
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
@@ -661,9 +604,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ],
           ),
         ),
-
         const SizedBox(height: 24),
-
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -692,10 +633,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ],
           ),
         ),
-
         const SizedBox(height: 24),
-
-        // Resend button
         TextButton(
           onPressed: _secondsLeft > 0 ? null : _handleResendEmail,
           child: Text(
@@ -709,10 +647,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ),
           ),
         ),
-
         const SizedBox(height: 16),
-
-        // Back to login button
         SizedBox(
           width: double.infinity,
           height: buttonHeight,
@@ -738,7 +673,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       ],
     );
   }
-
   Widget _buildHelpSection(
     BuildContext context,
     bool isSmallScreen,
@@ -758,7 +692,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             : isTablet
             ? 15.0
             : 14.0;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -790,7 +723,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ],
           ),
           const SizedBox(height: 12),
-
           Text(
             '• Make sure you enter the email address you used to create your account\n'
             '• Check your spam or junk folder if you don\'t see the email\n'
@@ -801,9 +733,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               height: 1.5,
             ),
           ),
-
           const SizedBox(height: 16),
-
           GestureDetector(
             onTap: () => context.go('/support'),
             child: Row(
@@ -830,21 +760,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       ),
     );
   }
-
   void _handleResetPassword() async {
     if (_secondsLeft > 0) return;
     final authProvider = context.read<AuthProvider>();
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
-
       await authProvider.forgotPassword(_emailController.text);
-
       setState(() {
         _isLoading = false;
         _emailSent = true;
       });
-
-      // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -868,12 +793,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       });
     });
   }
-
   void _handleResendEmail() async {
     final authProvider = context.read<AuthProvider>();
-
     await authProvider.forgotPassword(_emailController.text);
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('Reset link sent again. Please check your email.'),

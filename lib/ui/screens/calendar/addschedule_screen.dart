@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:frontend/providers/meeting_provider.dart';
+import 'package:provider/provider.dart';
 import '../../../models/meeting.dart';
-import '../../../models/meetingtype.dart';
+import '../../../models/meeting_location.dart';
 
 class AddScheduleScreen extends StatefulWidget {
   final Meeting? meeting;
   const AddScheduleScreen({super.key, this.meeting});
-
   @override
   _AddScheduleScreenState createState() => _AddScheduleScreenState();
 }
@@ -18,25 +19,20 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
   late AnimationController _fadeController;
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
-
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _attendeesController = TextEditingController();
-
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
   TimeOfDay _endTime = TimeOfDay.now().replacing(
     hour: TimeOfDay.now().hour + 1,
   );
-  MeetingType _selectedType = MeetingType.internal;
-
+  MeetingLocation _selectedType = MeetingLocation.onsite;
   bool _isSaving = false;
   bool _isEditMode = false;
-
   @override
   void initState() {
     super.initState();
-
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -45,83 +41,48 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.1),
       end: Offset.zero,
     ).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
     );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
-
-    // Populate form if editing existing meeting
     if (widget.meeting != null) {
       _isEditMode = true;
       _populateFormWithMeetingData();
     }
-
     _slideController.forward();
     _fadeController.forward();
   }
 
   void _populateFormWithMeetingData() {
     final meeting = widget.meeting!;
-    _titleController.text = meeting.title;
-    _attendeesController.text = meeting.attendees.join(', ');
-    _selectedType = meeting.type;
-
-    // Parse time from meeting.time string (e.g., "09:00 AM")
-    _startTime = _parseTimeString(meeting.time);
-
-    // Parse duration and calculate end time
-    _endTime = _calculateEndTime(_startTime, meeting.duration);
+    _titleController.text = meeting.title ?? '';
+    _descriptionController.text = meeting.description ?? '';
+    _selectedDate = DateTime.parse(meeting.date ?? '');
+    _attendeesController.text = meeting.attendees?.join(', ') ?? '';
+    _selectedType = meeting.location ?? MeetingLocation.online;
+    _startTime = _parseTimeString(meeting.startTime ?? '');
+    _endTime = _parseTimeString(meeting.endTime ?? '');
   }
 
   TimeOfDay _parseTimeString(String timeStr) {
-    // Parse "09:00 AM" format
     try {
       final parts = timeStr.split(' ');
       final timeParts = parts[0].split(':');
       int hour = int.parse(timeParts[0]);
       int minute = int.parse(timeParts[1]);
-
       if (parts[1].toUpperCase() == 'PM' && hour != 12) {
         hour += 12;
       } else if (parts[1].toUpperCase() == 'AM' && hour == 12) {
         hour = 0;
       }
-
       return TimeOfDay(hour: hour, minute: minute);
     } catch (e) {
       return TimeOfDay.now();
-    }
-  }
-
-  TimeOfDay _calculateEndTime(TimeOfDay startTime, String duration) {
-    // Parse duration like "2h", "1h 30m", "45m"
-    try {
-      int totalMinutes = 0;
-      final regex = RegExp(r'(\d+)([hm])');
-      final matches = regex.allMatches(duration);
-
-      for (final match in matches) {
-        final value = int.parse(match.group(1)!);
-        final unit = match.group(2)!;
-
-        if (unit == 'h') {
-          totalMinutes += value * 60;
-        } else if (unit == 'm') {
-          totalMinutes += value;
-        }
-      }
-
-      final endMinutes = startTime.hour * 60 + startTime.minute + totalMinutes;
-      return TimeOfDay(hour: endMinutes ~/ 60, minute: endMinutes % 60);
-    } catch (e) {
-      return startTime.replacing(hour: startTime.hour + 1);
     }
   }
 
@@ -140,64 +101,55 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
       _showFeedback('Please enter a title', isError: true);
       return;
     }
-
     setState(() => _isSaving = true);
     HapticFeedback.mediumImpact();
-    await Future.delayed(const Duration(milliseconds: 1000));
-    Meeting? meeting;
-    // Create the meeting object with form data
-    if (mounted) {
-      meeting = Meeting(
-        title: _titleController.text.trim(),
-        time: _startTime.format(context),
-        duration: _calculateDuration(),
-        attendees:
-            _attendeesController.text
-                .split(',')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList(),
-        type: _selectedType,
+    try {
+      final meetingProvider = context.read<MeetingProvider>();
+      if (_isEditMode && widget.meeting != null) {
+        await meetingProvider.updateMeeting(
+          widget.meeting!.id ?? '',
+          _titleController.text.trim(),
+          _descriptionController.text.trim(),
+          _selectedDate,
+          _startTime,
+          _endTime,
+          _attendeesController.text
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList(),
+          _selectedType,
+        );
+      } else {
+        await meetingProvider.addMeeting(
+          _titleController.text.trim(),
+          _descriptionController.text.trim(),
+          _selectedDate,
+          _startTime,
+          _endTime,
+          _attendeesController.text
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList(),
+          _selectedType,
+        );
+      }
+      _showFeedback(
+        _isEditMode
+            ? 'Meeting updated successfully'
+            : 'Schedule added successfully',
       );
-    }
-
-    _showFeedback(
-      _isEditMode
-          ? 'Meeting updated successfully'
-          : 'Schedule added successfully',
-    );
-
-    await Future.delayed(const Duration(milliseconds: 600));
-
-    if (mounted) {
-      // Pass the meeting data back when navigating
-      context.go(
-        '/calendar',
-        extra: {
-          'action': _isEditMode ? 'update' : 'add',
-          'meeting': meeting,
-          'originalMeeting': widget.meeting, // For update operations
-        },
-      );
-    }
-  }
-
-  String _calculateDuration() {
-    final startMinutes = _startTime.hour * 60 + _startTime.minute;
-    final endMinutes = _endTime.hour * 60 + _endTime.minute;
-    final durationMinutes = endMinutes - startMinutes;
-
-    if (durationMinutes <= 0) return "0m";
-
-    final hours = durationMinutes ~/ 60;
-    final minutes = durationMinutes % 60;
-
-    if (hours > 0 && minutes > 0) {
-      return "${hours}h ${minutes}m";
-    } else if (hours > 0) {
-      return "${hours}h";
-    } else {
-      return "${minutes}m";
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (mounted) {
+        context.go('/calendar');
+      }
+    } catch (e) {
+      _showFeedback('Failed to save meeting: $e', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -229,7 +181,6 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
-
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
@@ -270,7 +221,6 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
             : isTablet
             ? 24.0
             : 20.0;
-
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
@@ -334,7 +284,6 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
             : isTablet
             ? 24.0
             : 20.0;
-
     return SingleChildScrollView(
       padding: EdgeInsets.symmetric(horizontal: padding),
       child: Column(
@@ -396,7 +345,6 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
             : isTablet
             ? 18.0
             : 16.0;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -523,7 +471,6 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
             : isTablet
             ? 18.0
             : 16.0;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -656,7 +603,6 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
             : isTablet
             ? 12.0
             : 10.0;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -762,7 +708,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           spacing: isTablet ? 12 : 8,
           runSpacing: isTablet ? 8 : 6,
           children:
-              MeetingType.values.map((type) {
+              MeetingLocation.values.map((type) {
                 final isSelected = _selectedType == type;
                 return Material(
                   color: Colors.transparent,
@@ -863,7 +809,6 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
             : isTablet
             ? 24.0
             : 20.0;
-
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
@@ -956,16 +901,12 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
     );
   }
 
-  String _getTypeLabel(MeetingType type) {
+  String _getTypeLabel(MeetingLocation type) {
     switch (type) {
-      case MeetingType.boardMeeting:
-        return 'Board Meeting';
-      case MeetingType.client:
-        return 'Client';
-      case MeetingType.internal:
-        return 'Internal';
-      case MeetingType.strategy:
-        return 'Strategy';
+      case MeetingLocation.online:
+        return 'Online';
+      case MeetingLocation.onsite:
+        return 'Onsite';
     }
   }
 }

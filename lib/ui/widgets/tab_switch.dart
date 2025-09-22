@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
-
 enum AuthTab { login, signup }
-
 class AuthTabSwitch extends StatelessWidget {
   const AuthTabSwitch({
     super.key,
     required this.selected,
     required this.onChanged,
   });
-
   final AuthTab selected;
   final ValueChanged<AuthTab> onChanged;
-
   @override
   Widget build(BuildContext context) {
     final isLogin = selected == AuthTab.login;
@@ -40,13 +36,10 @@ class AuthTabSwitch extends StatelessWidget {
     );
   }
 }
-
 class _TabItem extends StatelessWidget {
   const _TabItem({required this.text, required this.selected});
-
   final String text;
   final bool selected;
-
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/task_provider.dart';
+import 'package:frontend/providers/meeting_provider.dart';
+import 'package:frontend/services/connectivity_service.dart';
+import 'package:frontend/services/firabasesync_service.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'dart:math' as math;
 import 'package:go_router/go_router.dart';
@@ -7,7 +11,6 @@ import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
-
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -15,18 +18,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isListening = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
   late AnimationController _breathingController;
   late AnimationController _waveController;
   late AnimationController _subtleController;
   late AnimationController _pulseController;
   late AnimationController _orbitalController;
   late AnimationController _glowController;
-
+  late ConnectivityService connectivityService;
+  late FirebaseSyncService firebaseSyncService;
   @override
   void initState() {
     super.initState();
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeServices();
+    });
     _breathingController = AnimationController(
       duration: const Duration(milliseconds: 4000),
       vsync: this,
@@ -51,7 +56,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 3000),
       vsync: this,
     );
-
     _breathingController.repeat(reverse: true);
     _subtleController.repeat();
     _pulseController.repeat(reverse: true);
@@ -80,12 +84,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _initializeServices() async {
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final taskProvider = context.read<TaskProvider>();
+      final meetingProvider = context.read<MeetingProvider>();
+      if (authProvider.user?.id != null) {
+        await taskProvider.init(authProvider.user!.id!);
+        await meetingProvider.init(authProvider.user!.id!);
+        firebaseSyncService = FirebaseSyncService(
+          userId: authProvider.user!.id!,
+        );
+        connectivityService = ConnectivityService(
+          syncService: firebaseSyncService,
+          onConnectivityRestored: () {
+            if (mounted) {
+              firebaseSyncService.fullSync(context);
+            }
+          },
+        );
+        connectivityService.setContext(context);
+      }
+    } catch (e) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
-
     return Scaffold(
       key: _scaffoldKey,
       drawer: const SideMenu(),
@@ -103,9 +130,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         child: Stack(
           children: [
-            // Enhanced background elements
             _buildBackgroundElements(screenSize),
-
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -133,16 +158,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Widget _buildBackgroundElements(Size screenSize) {
     return Stack(
       children: [
-        // Floating particles with improved distribution
         ...List.generate(
           20,
           (index) => _buildFloatingParticle(index, screenSize),
         ),
-
-        // Orbital elements
         _buildOrbitalElements(screenSize),
-
-        // Ambient glow effects
         _buildAmbientGlow(screenSize),
       ],
     );
@@ -155,7 +175,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final offset = (_subtleController.value + (index * 0.05)) % 1.0;
         final horizontalOffset = math.sin(offset * 2 * math.pi + index) * 50;
         final baseX = (index * 67.0) % screenSize.width;
-
         return Positioned(
           left: (baseX + horizontalOffset).clamp(0, screenSize.width - 10),
           top: screenSize.height * offset,
@@ -195,7 +214,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             final radius = 120.0 + (index * 40);
             final centerX = screenSize.width / 2;
             final centerY = screenSize.height / 2;
-
             return Positioned(
               left: centerX + math.cos(angle) * radius - 3,
               top: centerY + math.sin(angle) * radius - 3,
@@ -303,69 +321,132 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildPremiumBadge(bool isTablet, bool isLargeScreen) {
-    return GestureDetector(
-      onTap: () => context.pushNamed('subscription'),
-      child: AnimatedBuilder(
-        animation: _pulseController,
-        builder: (context, child) {
-          return Container(
-            padding: EdgeInsets.symmetric(
-              horizontal:
-                  isLargeScreen
-                      ? 18
-                      : isTablet
-                      ? 16
-                      : 14,
-              vertical: isTablet ? 10 : 8,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.primary.withValues(
-                    alpha: 0.8 + (_pulseController.value * 0.2),
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final subscriptionTier =
+            authProvider.user?.subscriptionTier ?? 'FREE_TRIAL';
+        if (subscriptionTier == 'ESSENTIAL' || subscriptionTier == 'PREMIUM') {
+          return GestureDetector(
+            onTap: () => context.pushNamed('currentPlan'),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal:
+                    isLargeScreen
+                        ? 18
+                        : isTablet
+                        ? 16
+                        : 14,
+                vertical: isTablet ? 10 : 8,
+              ),
+              decoration: BoxDecoration(
+                gradient:
+                    subscriptionTier == 'ESSENTIAL'
+                        ? const LinearGradient(
+                          colors: [Color(0xFF6B7280), Color(0xFF4B5563)],
+                        )
+                        : const LinearGradient(
+                          colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                        ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: (subscriptionTier == 'ESSENTIAL'
+                            ? const Color(0xFF4B5563)
+                            : const Color(0xFF667EEA))
+                        .withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1,
                   ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 8 + (_pulseController.value * 4),
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.diamond_rounded,
-                  color: Colors.white,
-                  size: isTablet ? 16 : 14,
-                ),
-                SizedBox(width: isTablet ? 8 : 6),
-                Text(
-                  'Premium',
-                  style: TextStyle(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    subscriptionTier == 'ESSENTIAL'
+                        ? Icons.mic
+                        : Icons.auto_awesome,
                     color: Colors.white,
-                    fontSize:
-                        isLargeScreen
-                            ? 13
-                            : isTablet
-                            ? 12
-                            : 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
+                    size: isTablet ? 16 : 14,
                   ),
-                ),
-              ],
+                  SizedBox(width: isTablet ? 8 : 6),
+                  Text(
+                    subscriptionTier,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize:
+                          isLargeScreen
+                              ? 13
+                              : isTablet
+                              ? 12
+                              : 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
-        },
-      ),
+        }
+        return GestureDetector(
+          onTap: () => context.pushNamed('subscription'),
+          child: AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              return Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal:
+                      isLargeScreen
+                          ? 18
+                          : isTablet
+                          ? 16
+                          : 14,
+                  vertical: isTablet ? 10 : 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF10B981), Color(0xFF059669)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                      blurRadius: 8 + (_pulseController.value * 4),
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.star_rounded,
+                      color: Colors.white,
+                      size: isTablet ? 16 : 14,
+                    ),
+                    SizedBox(width: isTablet ? 8 : 6),
+                    Text(
+                      'Free Trial',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize:
+                            isLargeScreen
+                                ? 13
+                                : isTablet
+                                ? 12
+                                : 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -380,7 +461,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             : isTablet
             ? 70.0
             : 60.0;
-
     return ConstrainedBox(
       constraints: BoxConstraints(minHeight: constraints.maxHeight),
       child: Column(
@@ -521,18 +601,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             : isTablet
             ? 120.0
             : 110.0;
-
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Enhanced breathing rings with multiple layers
         AnimatedBuilder(
           animation: _breathingController,
           builder: (context, child) {
             return Stack(
               alignment: Alignment.center,
               children: [
-                // Outermost ring
                 Transform.scale(
                   scale: 1.0 + (_breathingController.value * 0.15),
                   child: Container(
@@ -549,7 +626,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                // Middle ring
                 Transform.scale(
                   scale: 1.0 + (_breathingController.value * 0.12),
                   child: Container(
@@ -566,7 +642,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                // Inner ring
                 Transform.scale(
                   scale: 1.0 + (_breathingController.value * 0.08),
                   child: Container(
@@ -587,7 +662,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             );
           },
         ),
-        // Main microphone button with enhanced design
         GestureDetector(
           onTap: _toggleListening,
           child: AnimatedContainer(
@@ -734,30 +808,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildActionButton(
-            'Emails',
-            Icons.email_rounded,
-            () {
-              context.pushNamed('mail');
-            }, // Add functionality
-            isTablet,
-          ),
-          _buildActionButton(
-            'Calendar',
-            Icons.calendar_month_rounded,
-            () {
-              context.pushNamed('calendar');
-            }, // Add functionality
-            isTablet,
-          ),
-          _buildActionButton(
-            'Tasks',
-            Icons.task_alt_rounded,
-            () {
-              context.pushNamed('task');
-            }, // Add functionality
-            isTablet,
-          ),
+          _buildActionButton('Emails', Icons.email_rounded, () {
+            context.pushNamed('mail');
+          }, isTablet),
+          _buildActionButton('Calendar', Icons.calendar_month_rounded, () {
+            context.pushNamed('calendar');
+          }, isTablet),
+          _buildActionButton('Tasks', Icons.task_alt_rounded, () {
+            context.pushNamed('task');
+          }, isTablet),
         ],
       ),
     );

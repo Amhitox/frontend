@@ -1,14 +1,10 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
-
 class CosmicBackground extends StatefulWidget {
   const CosmicBackground({super.key});
-
   @override
   State<CosmicBackground> createState() => _CosmicBackgroundState();
 }
-
 class _CosmicBackgroundState extends State<CosmicBackground> {
   @override
   Widget build(BuildContext context) {
@@ -24,12 +20,10 @@ class _CosmicBackgroundState extends State<CosmicBackground> {
     );
   }
 }
-
 class StarsPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.white.withValues(alpha: 0.8);
-
     final random = Random(42);
     for (int i = 0; i < 50; i++) {
       canvas.drawCircle(
@@ -42,7 +36,6 @@ class StarsPainter extends CustomPainter {
       );
     }
   }
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -2,12 +2,11 @@ import 'package:dio/dio.dart';
 
 class TaskService {
   final Dio _dio;
-  // ignore: constant_identifier_names
   static const int CACHE_DAYS = 14;
 
   TaskService({required Dio dio}) : _dio = dio;
 
-  Future<dynamic> addTask(
+  Future<Response> addTask(
     String title,
     String description,
     String priority,
@@ -29,26 +28,46 @@ class TaskService {
       );
       return response;
     } on DioException catch (e) {
-      return e.response;
+      return Response(
+        data: e.response?.data ?? {'error': 'Network error'},
+        statusCode: e.response?.statusCode ?? 500,
+        requestOptions: e.requestOptions,
+      );
     }
   }
 
-  Future<dynamic> getTasks(String date) async {
+  Future<Response> getAllTasks() async {
+    try {
+      final response = await _dio.get("/api/tasks");
+      return response;
+    } on DioException catch (e) {
+      return e.response ??
+          Response(
+            data: {'error': 'Network error'},
+            statusCode: 500,
+            requestOptions: RequestOptions(path: '/api/tasks'),
+          );
+    }
+  }
+
+  Future<Response> getTasks(String date) async {
     try {
       final response = await _dio.get(
         "/api/tasks",
         queryParameters: {"date": date},
       );
-      print(response.data);
-      print("got tasks");
       return response;
     } on DioException catch (e) {
-      print('Task failed: ${e.response?.statusCode} ${e.response?.data}');
-      return e.response;
+      return e.response ??
+          Response(
+            data: {'error': 'Network error'},
+            statusCode: 500,
+            requestOptions: RequestOptions(path: '/api/tasks'),
+          );
     }
   }
 
-  Future<dynamic> updateTask(
+  Future<Response> updateTask(
     String id,
     String? title,
     String? description,
@@ -72,16 +91,24 @@ class TaskService {
       final response = await _dio.patch('/api/tasks/$id', data: data);
       return response;
     } on DioException catch (e) {
-      return e.response;
+      return Response(
+        data: e.response?.data ?? {'error': 'Network error'},
+        statusCode: e.response?.statusCode ?? 500,
+        requestOptions: e.requestOptions,
+      );
     }
   }
 
-  Future<dynamic> deleteTask(String id) async {
+  Future<Response> deleteTask(String id) async {
     try {
       final response = await _dio.delete('/api/tasks/$id');
       return response;
     } on DioException catch (e) {
-      return e.response;
+      return Response(
+        data: e.response?.data ?? {'error': 'Network error'},
+        statusCode: e.response?.statusCode ?? 500,
+        requestOptions: e.requestOptions,
+      );
     }
   }
 }

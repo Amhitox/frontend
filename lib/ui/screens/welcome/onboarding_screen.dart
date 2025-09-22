@@ -1,25 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/helpers/cache_manager.dart';
-import 'package:frontend/providers/task_provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
-
   @override
   _OnboardingScreenState createState() => _OnboardingScreenState();
 }
-
 class _OnboardingScreenState extends State<OnboardingScreen>
     with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-
   late AnimationController _slideController;
   late AnimationController _breathingController;
   late Animation<Offset> _slideAnimation;
-
   final List<OnboardingPage> _pages = [
     OnboardingPage(
       icon: Icons.mic,
@@ -43,36 +35,24 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           'Your data is encrypted and secure. Experience powerful features while maintaining complete privacy.',
     ),
   ];
-
   @override
   void initState() {
     super.initState();
-
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
     _breathingController = AnimationController(
       duration: const Duration(milliseconds: 3000),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-
     _slideController.forward();
     _breathingController.repeat(reverse: true);
-    initCache();
   }
-
-  void initCache() async {
-    final taskprovider = context.read<TaskProvider>();
-    CacheManager(taskprovider).runCacheManager();
-  }
-
   @override
   void dispose() {
     _pageController.dispose();
@@ -80,7 +60,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _breathingController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -88,14 +67,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final screenSize = MediaQuery.of(context).size;
     final screenHeight = screenSize.height;
     final screenWidth = screenSize.width;
-
-    // Enhanced responsive breakpoints with iPhone 8 specific handling
-    final isVerySmallScreen = screenHeight < 680; // iPhone 8 and smaller
+    final isVerySmallScreen = screenHeight < 680; 
     final isSmallScreen = screenHeight < 750 || screenWidth < 400;
     final isMediumScreen = screenHeight >= 700 && screenHeight < 900;
     final isTablet = screenWidth > 600;
-
-    // Theme-aware colors
     final isDark = theme.brightness == Brightness.dark;
     final backgroundGradient =
         isDark
@@ -103,8 +78,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF0C1421), // deepDark
-                Color(0xFF141D2E), // darkBlue
+                Color(0xFF0C1421), 
+                Color(0xFF141D2E), 
                 Color(0xFF1A2332),
               ],
             )
@@ -115,11 +90,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 Colors.white,
                 const Color(
                   0xFF3B77D8,
-                ).withValues(alpha: 0.05), // customBlue tint
+                ).withValues(alpha: 0.05), 
                 const Color(0xFF3B77D8).withValues(alpha: 0.08),
               ],
             );
-
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF141D2E);
     final secondaryTextColor =
         isDark
@@ -129,7 +103,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         isDark
             ? Colors.white.withValues(alpha: 0.6)
             : const Color(0xFF141D2E).withValues(alpha: 0.6);
-
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: Container(
@@ -182,7 +155,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       ),
     );
   }
-
   Widget _buildHeader(
     bool isVerySmallScreen,
     bool isSmallScreen,
@@ -192,7 +164,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   ) {
     final logoSize =
         isVerySmallScreen
-            ? 28.0 // Much smaller for iPhone 8
+            ? 28.0 
             : isSmallScreen
             ? 36.0
             : isTablet
@@ -200,7 +172,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 40.0;
     final titleSize =
         isVerySmallScreen
-            ? 16.0 // Smaller title for iPhone 8
+            ? 16.0 
             : isSmallScreen
             ? 18.0
             : isTablet
@@ -208,17 +180,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 20.0;
     final skipButtonPadding =
         isVerySmallScreen
-            ? 12.0 // Smaller padding for iPhone 8
+            ? 12.0 
             : isSmallScreen
             ? 16.0
             : isTablet
             ? 24.0
             : 20.0;
-
     return Padding(
       padding: EdgeInsets.all(
         isVerySmallScreen
-            ? 12.0 // Reduced padding for iPhone 8
+            ? 12.0 
             : isSmallScreen
             ? 16.0
             : isTablet
@@ -240,7 +211,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(width: 8), // Reduced spacing
+                const SizedBox(width: 8), 
                 Text(
                   'Aixy',
                   style: TextStyle(
@@ -260,7 +231,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 horizontal: skipButtonPadding,
                 vertical:
                     isVerySmallScreen
-                        ? 6 // Smaller vertical padding
+                        ? 6 
                         : isSmallScreen
                         ? 8
                         : isTablet
@@ -290,7 +261,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           : const Color(0xFF3B77D8),
                   fontSize:
                       isVerySmallScreen
-                          ? 11 // Even smaller font
+                          ? 11 
                           : isSmallScreen
                           ? 12
                           : isTablet
@@ -305,7 +276,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       ),
     );
   }
-
   Widget _buildPage(
     OnboardingPage page,
     int index,
@@ -317,10 +287,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     Color secondaryTextColor,
     Color subtitleTextColor,
   ) {
-    // Responsive sizing with iPhone 8 specific adjustments
     final horizontalPadding =
         isVerySmallScreen
-            ? 20.0 // Reduced padding for iPhone 8
+            ? 20.0 
             : isSmallScreen
             ? 24.0
             : isTablet
@@ -328,7 +297,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 32.0;
     final baseIconSize =
         isVerySmallScreen
-            ? 140.0 // Much smaller icon area for iPhone 8
+            ? 140.0 
             : isSmallScreen
             ? 200.0
             : isTablet
@@ -338,7 +307,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 220.0;
     final iconContainerSize =
         isVerySmallScreen
-            ? 80.0 // Smaller container for iPhone 8
+            ? 80.0 
             : isSmallScreen
             ? 120.0
             : isTablet
@@ -346,7 +315,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 140.0;
     final iconSize =
         isVerySmallScreen
-            ? 40.0 // Smaller icon for iPhone 8
+            ? 40.0 
             : isSmallScreen
             ? 60.0
             : isTablet
@@ -354,7 +323,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 70.0;
     final titleSize =
         isVerySmallScreen
-            ? 22.0 // Smaller title for iPhone 8
+            ? 22.0 
             : isSmallScreen
             ? 28.0
             : isTablet
@@ -362,7 +331,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 32.0;
     final descriptionSize =
         isVerySmallScreen
-            ? 13.0 // Smaller description for iPhone 8
+            ? 13.0 
             : isSmallScreen
             ? 15.0
             : isTablet
@@ -370,26 +339,23 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 16.0;
     final subtitleSize =
         isVerySmallScreen
-            ? 10.0 // Smaller subtitle for iPhone 8
+            ? 10.0 
             : isSmallScreen
             ? 11.0
             : isTablet
             ? 14.0
             : 12.0;
-
     return SingleChildScrollView(
-      // Added scroll capability
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
         child: ConstrainedBox(
           constraints: BoxConstraints(
             minHeight:
-                MediaQuery.of(context).size.height * 0.6, // Minimum height
+                MediaQuery.of(context).size.height * 0.6, 
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon section
               TweenAnimationBuilder<double>(
                 key: ValueKey(index),
                 duration: const Duration(milliseconds: 800),
@@ -402,8 +368,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Breathing circle - reduced for iPhone 8
-                          if (!isVerySmallScreen) // Skip breathing circle on very small screens
+                          if (!isVerySmallScreen) 
                             AnimatedBuilder(
                               animation: _breathingController,
                               builder: (context, child) {
@@ -436,7 +401,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                 );
                               },
                             ),
-                          // Main icon
                           Container(
                             width: iconContainerSize,
                             height: iconContainerSize,
@@ -484,19 +448,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   );
                 },
               ),
-
               SizedBox(
                 height:
                     isVerySmallScreen
-                        ? 30 // Much smaller spacing for iPhone 8
+                        ? 30 
                         : isSmallScreen
                         ? 50
                         : isTablet
                         ? 70
                         : 60,
               ),
-
-              // Text content
               Text(
                 page.subtitle.toUpperCase(),
                 style: TextStyle(
@@ -504,21 +465,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   fontSize: subtitleSize,
                   fontWeight: FontWeight.w700,
                   letterSpacing:
-                      isVerySmallScreen ? 1.5 : 2, // Reduced letter spacing
+                      isVerySmallScreen ? 1.5 : 2, 
                 ),
               ),
-
               SizedBox(
                 height:
                     isVerySmallScreen
-                        ? 6 // Smaller spacing for iPhone 8
+                        ? 6 
                         : isSmallScreen
                         ? 10
                         : isTablet
                         ? 16
                         : 12,
               ),
-
               ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: isTablet ? 500 : double.infinity,
@@ -530,23 +489,21 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     fontSize: titleSize,
                     fontWeight: FontWeight.w800,
                     letterSpacing:
-                        isVerySmallScreen ? -0.5 : -1, // Reduced letter spacing
+                        isVerySmallScreen ? -0.5 : -1, 
                   ),
                   textAlign: TextAlign.center,
                 ),
               ),
-
               SizedBox(
                 height:
                     isVerySmallScreen
-                        ? 12 // Smaller spacing for iPhone 8
+                        ? 12 
                         : isSmallScreen
                         ? 20
                         : isTablet
                         ? 28
                         : 24,
               ),
-
               ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: isTablet ? 400 : double.infinity,
@@ -557,7 +514,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     color: secondaryTextColor,
                     fontSize: descriptionSize,
                     height:
-                        isVerySmallScreen ? 1.4 : 1.6, // Reduced line height
+                        isVerySmallScreen ? 1.4 : 1.6, 
                     fontWeight: FontWeight.w400,
                   ),
                   textAlign: TextAlign.center,
@@ -569,7 +526,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       ),
     );
   }
-
   Widget _buildBottomSection(
     bool isVerySmallScreen,
     bool isSmallScreen,
@@ -581,7 +537,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   ) {
     final bottomPadding =
         isVerySmallScreen
-            ? 16.0 // Reduced padding for iPhone 8
+            ? 16.0 
             : isSmallScreen
             ? 24.0
             : isTablet
@@ -589,7 +545,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 32.0;
     final buttonHeight =
         isVerySmallScreen
-            ? 44.0 // Smaller button for iPhone 8
+            ? 44.0 
             : isSmallScreen
             ? 52.0
             : isTablet
@@ -597,7 +553,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 56.0;
     final backButtonHeight =
         isVerySmallScreen
-            ? 36.0 // Smaller back button for iPhone 8
+            ? 36.0 
             : isSmallScreen
             ? 44.0
             : isTablet
@@ -605,20 +561,18 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             : 48.0;
     final buttonFontSize =
         isVerySmallScreen
-            ? 14.0 // Smaller font for iPhone 8
+            ? 14.0 
             : isSmallScreen
             ? 15.0
             : isTablet
             ? 18.0
             : 16.0;
-
     return Padding(
       padding: EdgeInsets.all(bottomPadding),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: isTablet ? 400 : double.infinity),
         child: Column(
           children: [
-            // Page indicators
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
@@ -631,14 +585,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   width:
                       _currentPage == index
                           ? (isVerySmallScreen
-                              ? 24 // Smaller indicator for iPhone 8
+                              ? 24 
                               : isSmallScreen
                               ? 28
                               : isTablet
                               ? 36
                               : 32)
-                          : 6, // Smaller inactive indicator
-                  height: isVerySmallScreen ? 6 : 8, // Thinner for iPhone 8
+                          : 6, 
+                  height: isVerySmallScreen ? 6 : 8, 
                   decoration: BoxDecoration(
                     gradient:
                         _currentPage == index
@@ -658,19 +612,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
               ),
             ),
-
             SizedBox(
               height:
                   isVerySmallScreen
-                      ? 20 // Much smaller spacing for iPhone 8
+                      ? 20 
                       : isSmallScreen
                       ? 32
                       : isTablet
                       ? 48
                       : 40,
             ),
-
-            // Main button
             SizedBox(
               width: double.infinity,
               height: buttonHeight,
@@ -702,12 +653,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
               ),
             ),
-
             if (_currentPage > 0) ...[
               SizedBox(
                 height:
                     isVerySmallScreen
-                        ? 8 // Smaller spacing for iPhone 8
+                        ? 8 
                         : isSmallScreen
                         ? 12
                         : isTablet
@@ -740,13 +690,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 }
-
 class OnboardingPage {
   final IconData icon;
   final String title;
   final String subtitle;
   final String description;
-
   OnboardingPage({
     required this.icon,
     required this.title,

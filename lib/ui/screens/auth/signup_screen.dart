@@ -7,24 +7,19 @@ import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
-
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
-
   @override
   State<SignupScreen> createState() => _SignupScreenState();
 }
-
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormBuilderState>();
-
   String _selectedCountryCode = '+212';
   String _selectedCountryFlag = '🇲🇦';
   DateTime? _selectedDate;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
-
   final List<Map<String, String>> _countries = [
     {'name': 'Morocco', 'code': '+212', 'flag': '🇲🇦'},
     {'name': 'United States', 'code': '+1', 'flag': '🇺🇸'},
@@ -37,7 +32,6 @@ class _SignupScreenState extends State<SignupScreen> {
     {'name': 'Japan', 'code': '+81', 'flag': '🇯🇵'},
     {'name': 'Australia', 'code': '+61', 'flag': '🇦🇺'},
   ];
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -45,18 +39,12 @@ class _SignupScreenState extends State<SignupScreen> {
     final screenSize = MediaQuery.of(context).size;
     final screenHeight = screenSize.height;
     final screenWidth = screenSize.width;
-
-    // Responsive breakpoints
     final isSmallScreen = screenHeight < 700 || screenWidth < 400;
     final isTablet = screenWidth > 600;
     final isLandscape = screenWidth > screenHeight;
-
-    // Theme-aware colors
     final isDark = theme.brightness == Brightness.dark;
     final headerTextColor = isDark ? Colors.white : Colors.white;
     final containerColor = isDark ? const Color(0xFF141D2E) : Colors.white;
-
-    // Responsive sizing
     final headerTopPercent =
         isLandscape
             ? 0.03
@@ -76,17 +64,13 @@ class _SignupScreenState extends State<SignupScreen> {
             ? 0.22
             : 0.25;
     final horizontalPadding = isTablet ? 48.0 : 32.0;
-
     return Scaffold(
       backgroundColor: colorScheme.surface,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Stack(
           children: [
-            // Background
             const CosmicBackground(),
-
-            // Header section
             Positioned(
               top: screenHeight * headerTopPercent,
               left: screenWidth * 0.07,
@@ -98,8 +82,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 headerTextColor,
               ),
             ),
-
-            // Title section
             Positioned(
               top: screenHeight * titleTopPercent,
               left: screenWidth * 0.07,
@@ -111,8 +93,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 headerTextColor,
               ),
             ),
-
-            // Main content container
             Positioned(
               top: screenHeight * containerTopPercent,
               left: 0,
@@ -139,7 +119,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Tab Switch
                     Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: horizontalPadding,
@@ -147,8 +126,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       child: _buildTabSwitch(context),
                     ),
-
-                    // Scrollable content
                     Expanded(
                       child: SingleChildScrollView(
                         padding: EdgeInsets.only(
@@ -156,7 +133,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         child: Column(
                           children: [
-                            // Form Section
                             Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: horizontalPadding,
@@ -169,8 +145,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                 isDark,
                               ),
                             ),
-
-                            // Terms section
                             Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: horizontalPadding,
@@ -182,8 +156,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                 isDark,
                               ),
                             ),
-
-                            // Divider section
                             Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: horizontalPadding,
@@ -191,8 +163,6 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               child: _buildDivider(context, isDark),
                             ),
-
-                            // Social Login Buttons
                             Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: horizontalPadding,
@@ -205,7 +175,6 @@ class _SignupScreenState extends State<SignupScreen> {
                                 isDark,
                               ),
                             ),
-
                             SizedBox(height: isSmallScreen ? 30 : 40),
                           ],
                         ),
@@ -220,7 +189,6 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     );
   }
-
   Widget _buildHeader(
     BuildContext context,
     bool isSmallScreen,
@@ -239,7 +207,6 @@ class _SignupScreenState extends State<SignupScreen> {
             : isTablet
             ? 20.0
             : 18.0;
-
     return Row(
       children: [
         SizedBox(
@@ -275,7 +242,6 @@ class _SignupScreenState extends State<SignupScreen> {
       ],
     );
   }
-
   Widget _buildTitle(
     BuildContext context,
     bool isSmallScreen,
@@ -294,7 +260,6 @@ class _SignupScreenState extends State<SignupScreen> {
             : isTablet
             ? 16.0
             : 15.0;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -319,7 +284,6 @@ class _SignupScreenState extends State<SignupScreen> {
       ],
     );
   }
-
   Widget _buildTabSwitch(BuildContext context) {
     return AuthTabSwitch(
       selected: AuthTab.signup,
@@ -330,7 +294,6 @@ class _SignupScreenState extends State<SignupScreen> {
       },
     );
   }
-
   Widget _buildForm(
     BuildContext context,
     bool isSmallScreen,
@@ -351,12 +314,10 @@ class _SignupScreenState extends State<SignupScreen> {
             : isTablet
             ? 16.0
             : 15.0;
-
     return FormBuilder(
       key: _formKey,
       child: Column(
         children: [
-          // Name fields
           Row(
             children: [
               Expanded(
@@ -383,8 +344,6 @@ class _SignupScreenState extends State<SignupScreen> {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Email field
           _buildTextField(
             name: 'email',
             labelText: 'Email',
@@ -398,16 +357,10 @@ class _SignupScreenState extends State<SignupScreen> {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Date of birth field
           _buildDateField(isDark, fontSize),
           const SizedBox(height: 16),
-
-          // Phone number field
           _buildPhoneField(isDark, fontSize),
           const SizedBox(height: 16),
-
-          // Password field
           _buildTextField(
             name: 'password',
             labelText: 'Password',
@@ -430,8 +383,6 @@ class _SignupScreenState extends State<SignupScreen> {
             ],
           ),
           const SizedBox(height: 16),
-
-          // Confirm password field
           _buildTextField(
             name: 'confirm_password',
             labelText: 'Confirm Password',
@@ -457,8 +408,6 @@ class _SignupScreenState extends State<SignupScreen> {
             ],
           ),
           const SizedBox(height: 24),
-
-          // Create Account button
           SizedBox(
             width: double.infinity,
             height: buttonHeight,
@@ -498,7 +447,6 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
     );
   }
-
   Widget _buildTextField({
     required String name,
     required String labelText,
@@ -512,7 +460,6 @@ class _SignupScreenState extends State<SignupScreen> {
     VoidCallback? onToggleVisibility,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return FormBuilderTextField(
       name: name,
       keyboardType: keyboardType,
@@ -573,17 +520,15 @@ class _SignupScreenState extends State<SignupScreen> {
       validator: FormBuilderValidators.compose(validators),
     );
   }
-
   Widget _buildDateField(bool isDark, double fontSize) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return FormBuilderDateTimePicker(
       name: 'date_of_birth',
       inputType: InputType.date,
       format: DateFormat('dd/MM/yyyy'),
       initialDate: DateTime.now().subtract(
         const Duration(days: 6570),
-      ), // 18 years ago
+      ), 
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       onChanged: (value) {
@@ -640,13 +585,10 @@ class _SignupScreenState extends State<SignupScreen> {
       validator: FormBuilderValidators.required(),
     );
   }
-
   Widget _buildPhoneField(bool isDark, double fontSize) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return Row(
       children: [
-        // Country selector
         Container(
           height: 52,
           decoration: BoxDecoration(
@@ -695,7 +637,6 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        // Phone number input
         Expanded(
           child: FormBuilderTextField(
             name: 'phone',
@@ -744,13 +685,11 @@ class _SignupScreenState extends State<SignupScreen> {
                 vertical: 12,
               ),
             ),
-            // validator: FormBuilderValidators.required(),
           ),
         ),
       ],
     );
   }
-
   Widget _buildTermsSection(
     BuildContext context,
     bool isSmallScreen,
@@ -758,7 +697,6 @@ class _SignupScreenState extends State<SignupScreen> {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final fontSize = isSmallScreen ? 11.0 : 12.0;
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -826,10 +764,8 @@ class _SignupScreenState extends State<SignupScreen> {
       ],
     );
   }
-
   Widget _buildDivider(BuildContext context, bool isDark) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return Row(
       children: [
         Expanded(
@@ -856,7 +792,6 @@ class _SignupScreenState extends State<SignupScreen> {
       ],
     );
   }
-
   Widget _buildSocialButtons(
     BuildContext context,
     bool isSmallScreen,
@@ -876,7 +811,6 @@ class _SignupScreenState extends State<SignupScreen> {
             : isTablet
             ? 16.0
             : 15.0;
-
     final socialButtonStyle = ElevatedButton.styleFrom(
       backgroundColor: colorScheme.surface,
       foregroundColor: colorScheme.onSurface,
@@ -884,7 +818,6 @@ class _SignupScreenState extends State<SignupScreen> {
       side: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.2)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
-
     return Column(
       children: [
         SizedBox(
@@ -953,11 +886,9 @@ class _SignupScreenState extends State<SignupScreen> {
       ],
     );
   }
-
   void _showCountryPicker() {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -971,7 +902,6 @@ class _SignupScreenState extends State<SignupScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Handle bar
                 Container(
                   width: 40,
                   height: 4,
@@ -1026,7 +956,6 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
     );
   }
-
   void _handleSignUp() async {
     if (_formKey.currentState != null &&
         _formKey.currentState!.saveAndValidate()) {
@@ -1039,20 +968,10 @@ class _SignupScreenState extends State<SignupScreen> {
       final formattedDate = DateFormat("yyyy-MM-dd").format(birthdayDate);
       final rawPhone = _formKey.currentState?.fields['phone']?.value ?? '';
       String cleanedPhone = rawPhone.trim();
-
       if (cleanedPhone.startsWith('0')) {
         cleanedPhone = cleanedPhone.substring(1);
       }
-
       final fullPhone = '$_selectedCountryCode$cleanedPhone';
-      print(
-        "my phone number is :"
-        '$fullPhone',
-      );
-      print(
-        "my birthday is :"
-        '$formattedDate',
-      );
       final authProvider = context.read<AuthProvider>();
       final success = await authProvider.register(
         email,
@@ -1086,38 +1005,4 @@ class _SignupScreenState extends State<SignupScreen> {
       }
     }
   }
-  //     // Show success message and navigate
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(
-  //         content: Text('Account created successfully!'),
-  //         backgroundColor: Color(0xFF3B77D8),
-  //       ),
-  //     );
-
-  //     context.go('/home');
-  //   } else {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(
-  //         content: Text('Please fill in all fields correctly'),
-  //         backgroundColor: Color.fromARGB(255, 216, 59, 59),
-  //       ),
-  //     );
-  //   }
-  // }
-
-  // void _socialSignUp(String provider) {
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     SnackBar(
-  //       content: Text('Signing up with $provider...'),
-  //       backgroundColor: const Color(0xFF3B77D8),
-  //     ),
-  //   );
-
-  //   // Simulate social signup
-  //   Future.delayed(const Duration(seconds: 1), () {
-  //     if (mounted) {
-  //       context.go('/home');
-  //     }
-  //   });
-  // }
 }

@@ -3,46 +3,36 @@ import 'package:frontend/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:provider/provider.dart';
-
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key, this.token});
   final String? token;
-
   @override
   State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
-
 class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
-
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-
   bool _isLoading = false;
   bool _showPassword = false;
   bool _showConfirmPassword = false;
-
   @override
   void initState() {
     super.initState();
-
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.3),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-
     _slideController.forward();
   }
-
   @override
   void dispose() {
     _passwordController.dispose();
@@ -50,7 +40,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     _slideController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -58,18 +47,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     final screenSize = MediaQuery.of(context).size;
     final screenHeight = screenSize.height;
     final screenWidth = screenSize.width;
-
-    // Responsive breakpoints
     final isSmallScreen = screenHeight < 700 || screenWidth < 400;
     final isTablet = screenWidth > 600;
     final isLandscape = screenWidth > screenHeight;
-
-    // Theme-aware colors
     final isDark = theme.brightness == Brightness.dark;
     final headerTextColor = isDark ? Colors.white : Colors.white;
     final containerColor = isDark ? const Color(0xFF141D2E) : Colors.white;
-
-    // Responsive sizing
     final headerTopPercent =
         isLandscape
             ? 0.03
@@ -89,17 +72,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             ? 0.22
             : 0.25;
     final horizontalPadding = isTablet ? 48.0 : 32.0;
-
     return Scaffold(
       backgroundColor: colorScheme.surface,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Stack(
           children: [
-            // Background
             const CosmicBackground(),
-
-            // Back button
             Positioned(
               top: screenHeight * headerTopPercent,
               left: screenWidth * 0.05,
@@ -142,8 +121,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                 ),
               ),
             ),
-
-            // Title section
             Positioned(
               top: screenHeight * titleTopPercent,
               left: screenWidth * 0.07,
@@ -155,8 +132,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                 headerTextColor,
               ),
             ),
-
-            // Main content container
             Positioned(
               top: screenHeight * containerTopPercent,
               left: 0,
@@ -197,10 +172,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                                   ? 50
                                   : 40,
                         ),
-
-                        // Icon section
                         _buildIconSection(isSmallScreen, isTablet),
-
                         SizedBox(
                           height:
                               isSmallScreen
@@ -209,8 +181,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                                   ? 28
                                   : 24,
                         ),
-
-                        // Form section
                         Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: horizontalPadding,
@@ -222,7 +192,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                             isDark,
                           ),
                         ),
-
                         SizedBox(
                           height:
                               isSmallScreen
@@ -242,7 +211,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       ),
     );
   }
-
   Widget _buildTitle(
     BuildContext context,
     bool isSmallScreen,
@@ -261,7 +229,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             : isTablet
             ? 16.0
             : 15.0;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -286,7 +253,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       ],
     );
   }
-
   Widget _buildIconSection(bool isSmallScreen, bool isTablet) {
     final iconSize =
         isSmallScreen
@@ -300,7 +266,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             : isTablet
             ? 45.0
             : 40.0;
-
     return Container(
       width: iconSize,
       height: iconSize,
@@ -319,7 +284,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       ),
     );
   }
-
   Widget _buildForm(
     BuildContext context,
     bool isSmallScreen,
@@ -346,7 +310,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             : isTablet
             ? 20.0
             : 18.0;
-
     return Form(
       key: _formKey,
       child: Column(
@@ -369,8 +332,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             ),
           ),
           const SizedBox(height: 24),
-
-          // New Password field
           TextFormField(
             controller: _passwordController,
             obscureText: !_showPassword,
@@ -446,10 +407,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
               return null;
             },
           ),
-
           const SizedBox(height: 16),
-
-          // Confirm Password field
           TextFormField(
             controller: _confirmPasswordController,
             obscureText: !_showConfirmPassword,
@@ -527,10 +485,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
               return null;
             },
           ),
-
           const SizedBox(height: 24),
-
-          // Reset Password button
           SizedBox(
             width: double.infinity,
             height: buttonHeight,
@@ -563,10 +518,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                       ),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Back to Login button
           SizedBox(
             width: double.infinity,
             height: buttonHeight - 4,
@@ -599,11 +551,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       ),
     );
   }
-
   void _handleResetPassword() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
-
       if (widget.token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -613,14 +563,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         );
         return;
       }
-
       final response = await context.read<AuthProvider>().resetPassword(
         widget.token ?? "",
         _passwordController.text,
       );
-
       setState(() => _isLoading = false);
-
       if (response && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

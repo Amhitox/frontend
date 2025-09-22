@@ -9,7 +9,6 @@ class User {
   String? workEmail;
   DateTime? birthday;
   String? subscriptionTier;
-
   User({
     this.uid,
     this.email,
@@ -22,7 +21,6 @@ class User {
     this.status,
     this.subscriptionTier,
   });
-
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       uid: json['uid'] as String?,
@@ -36,18 +34,18 @@ class User {
       subscriptionTier: json['subscriptionTier'] as String?,
     );
   }
-
   Map<String, dynamic> toJson() {
-    return {
-      'uid': uid ?? '',
-      'email': email ?? '',
-      'lang': lang ?? '',
-      'lastName': lastName ?? '',
-      'status': status ?? '',
-      'firstName': firstName ?? '',
-      'id': id ?? '',
-      'workEmail': workEmail ?? '',
-      'subscriptionTier': subscriptionTier ?? '',
-    };
+    final json = <String, dynamic>{};
+    if (uid != null) json['uid'] = uid;
+    if (email != null) json['email'] = email;
+    if (lang != null) json['lang'] = lang;
+    if (lastName != null) json['lastName'] = lastName;
+    if (status != null) json['status'] = status;
+    if (firstName != null) json['firstName'] = firstName;
+    if (id != null) json['id'] = id;
+    if (workEmail != null && workEmail!.isNotEmpty)
+      json['workEmail'] = workEmail;
+    if (subscriptionTier != null) json['subscriptionTier'] = subscriptionTier;
+    return json;
   }
 }

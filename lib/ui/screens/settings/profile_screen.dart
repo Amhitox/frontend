@@ -1,57 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:provider/provider.dart';
+import 'package:frontend/providers/user_provider.dart';
+import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/models/user.dart';
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
-
   @override
   _ProfileScreenState createState() => _ProfileScreenState();
 }
-
 class _ProfileScreenState extends State<ProfileScreen>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-
-  // User data
-  String _firstName = 'Amhita';
-  String _lastName = 'Marouane';
-  String _jobTitle = 'Software Engineer';
-  String _department = 'IT';
-  String _phoneNumber = '+212 622107249';
-  String _location = 'Casablanca, Morocco';
-  String _bio =
-      'Passionate about building innovative products that solve real-world problems.';
-
+  late UserProvider _userProvider;
+  late AuthProvider _authProvider;
+  bool _isLoading = false;
+  bool _isSaving = false;
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _workEmailController = TextEditingController();
+  final _langController = TextEditingController();
   @override
   void initState() {
     super.initState();
+    _userProvider = Provider.of<UserProvider>(context, listen: false);
+    _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-
     _slideController.forward();
+    _loadUserData();
   }
-
+  Future<void> _loadUserData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final user = _authProvider.user;
+      if (user != null) {
+        _firstNameController.text = user.firstName ?? '';
+        _lastNameController.text = user.lastName ?? '';
+        _emailController.text = user.email ?? '';
+        _workEmailController.text = user.workEmail ?? '';
+        _langController.text = user.lang ?? 'en';
+      }
+    } catch (e) {
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
   @override
   void dispose() {
     _slideController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _workEmailController.dispose();
+    _langController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
     final theme = Theme.of(context);
-
+    if (_isLoading) {
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: theme.colorScheme.primary),
+        ),
+      );
+    }
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -90,8 +119,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                           isLargeScreen,
                           theme,
                         ),
-                        SizedBox(height: isTablet ? 20 : 16),
-                        _buildWorkInfoSection(isTablet, isLargeScreen, theme),
                         SizedBox(height: isTablet ? 48 : 40),
                       ],
                     ),
@@ -104,7 +131,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-
   Widget _buildHeader(bool isTablet, bool isLargeScreen, ThemeData theme) {
     return Padding(
       padding: EdgeInsets.all(
@@ -154,35 +180,52 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
           GestureDetector(
-            onTap: () => {_saveProfile(), context.goNamed('settings')},
+            onTap: _isSaving ? null : () => _saveProfile(),
             child: Container(
               padding: EdgeInsets.symmetric(
                 horizontal: isTablet ? 18 : 16,
                 vertical: isTablet ? 10 : 8,
               ),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                color:
+                    _isSaving
+                        ? theme.colorScheme.outline.withValues(alpha: 0.2)
+                        : theme.colorScheme.primary.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
                 border: Border.all(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  color:
+                      _isSaving
+                          ? theme.colorScheme.outline.withValues(alpha: 0.3)
+                          : theme.colorScheme.primary.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
-              child: Text(
-                'Save',
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontSize: isTablet ? 15 : 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child:
+                  _isSaving
+                      ? SizedBox(
+                        width: isTablet ? 20 : 16,
+                        height: isTablet ? 20 : 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                      )
+                      : Text(
+                        'Save',
+                        style: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontSize: isTablet ? 15 : 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
             ),
           ),
         ],
       ),
     );
   }
-
   Widget _buildProfileCard(bool isTablet, bool isLargeScreen, ThemeData theme) {
     return Container(
       width: double.infinity,
@@ -233,7 +276,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           SizedBox(height: isTablet ? 20 : 16),
           Text(
-            '$_firstName $_lastName',
+            '${_firstNameController.text} ${_lastNameController.text}',
             style: TextStyle(
               color: theme.colorScheme.onSurface,
               fontSize:
@@ -248,26 +291,17 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           SizedBox(height: isTablet ? 6 : 4),
           Text(
-            _jobTitle,
+            _emailController.text,
             style: TextStyle(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: isTablet ? 18 : 16,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: isTablet ? 4 : 2),
-          Text(
-            _department,
-            style: TextStyle(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              fontSize: isTablet ? 15 : 14,
-            ),
-          ),
         ],
       ),
     );
   }
-
   Widget _buildPersonalInfoSection(
     bool isTablet,
     bool isLargeScreen,
@@ -277,39 +311,33 @@ class _ProfileScreenState extends State<ProfileScreen>
       'Personal Information',
       Icons.person_outline,
       [
-        _buildEditableField(
+        _buildFormField(
           'First Name',
-          _firstName,
-          (value) => setState(() => _firstName = value),
+          _firstNameController,
           isTablet: isTablet,
           theme: theme,
         ),
-        _buildEditableField(
+        _buildFormField(
           'Last Name',
-          _lastName,
-          (value) => setState(() => _lastName = value),
+          _lastNameController,
           isTablet: isTablet,
           theme: theme,
         ),
-        _buildEditableField(
-          'Phone Number',
-          _phoneNumber,
-          (value) => setState(() => _phoneNumber = value),
+        _buildFormField(
+          'Email',
+          _emailController,
           isTablet: isTablet,
           theme: theme,
         ),
-        _buildEditableField(
-          'Location',
-          _location,
-          (value) => setState(() => _location = value),
+        _buildFormField(
+          'Work Email',
+          _workEmailController,
           isTablet: isTablet,
           theme: theme,
         ),
-        _buildEditableField(
-          'Bio',
-          _bio,
-          (value) => setState(() => _bio = value),
-          maxLines: 3,
+        _buildFormField(
+          'Language',
+          _langController,
           isTablet: isTablet,
           theme: theme,
         ),
@@ -319,37 +347,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       theme: theme,
     );
   }
-
-  Widget _buildWorkInfoSection(
-    bool isTablet,
-    bool isLargeScreen,
-    ThemeData theme,
-  ) {
-    return _buildSection(
-      'Work Information',
-      Icons.work_outline,
-      [
-        _buildEditableField(
-          'Job Title',
-          _jobTitle,
-          (value) => setState(() => _jobTitle = value),
-          isTablet: isTablet,
-          theme: theme,
-        ),
-        _buildEditableField(
-          'Department',
-          _department,
-          (value) => setState(() => _department = value),
-          isTablet: isTablet,
-          theme: theme,
-        ),
-      ],
-      isTablet: isTablet,
-      isLargeScreen: isLargeScreen,
-      theme: theme,
-    );
-  }
-
   Widget _buildSection(
     String title,
     IconData icon,
@@ -408,11 +405,9 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-
-  Widget _buildEditableField(
+  Widget _buildFormField(
     String label,
-    String value,
-    Function(String) onChanged, {
+    TextEditingController controller, {
     int maxLines = 1,
     required bool isTablet,
     required ThemeData theme,
@@ -445,91 +440,12 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           Expanded(
             flex: 3,
-            child: GestureDetector(
-              onTap:
-                  () => _editField(
-                    label,
-                    value,
-                    onChanged,
-                    maxLines: maxLines,
-                    theme: theme,
-                    isTablet: isTablet,
-                  ),
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 14 : 12,
-                  vertical: isTablet ? 10 : 8,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        value,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface,
-                          fontSize: isTablet ? 15 : 14,
-                        ),
-                        maxLines: maxLines,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Icon(
-                      Icons.edit,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                      size: isTablet ? 18 : 16,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _editField(
-    String label,
-    String currentValue,
-    Function(String) onChanged, {
-    int maxLines = 1,
-    required ThemeData theme,
-    required bool isTablet,
-  }) {
-    final TextEditingController controller = TextEditingController(
-      text: currentValue,
-    );
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: theme.colorScheme.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
-            ),
-            title: Text(
-              'Edit $label',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: isTablet ? 20 : 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            content: TextField(
+            child: TextField(
               controller: controller,
               maxLines: maxLines,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
-                fontSize: isTablet ? 16 : 14,
+                fontSize: isTablet ? 15 : 14,
               ),
               decoration: InputDecoration(
                 hintText: 'Enter $label',
@@ -546,43 +462,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                   borderSide: BorderSide(color: theme.colorScheme.primary),
                   borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
                 ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 14 : 12,
+                  vertical: isTablet ? 10 : 8,
+                ),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    fontSize: isTablet ? 16 : 14,
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  onChanged(controller.text);
-                  Navigator.of(context).pop();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-                  ),
-                ),
-                child: Text(
-                  'Save',
-                  style: TextStyle(
-                    color: theme.colorScheme.onPrimary,
-                    fontSize: isTablet ? 16 : 14,
-                  ),
-                ),
-              ),
-            ],
           ),
+        ],
+      ),
     );
   }
-
   void _changeProfileImage(ThemeData theme, bool isTablet) {
     showModalBottomSheet(
       context: context,
@@ -648,7 +538,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
     );
   }
-
   Widget _buildPhotoOption(
     String title,
     IconData icon,
@@ -685,7 +574,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-
   void _takePhoto() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -696,7 +584,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-
   void _chooseFromGallery() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -707,7 +594,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-
   void _removePhoto() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -718,15 +604,120 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-
-  void _saveProfile() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Profile saved successfully!'),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+  bool _validateForm() {
+    if (_firstNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('First name is required'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return false;
+    }
+    if (_lastNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Last name is required'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return false;
+    }
+    if (_emailController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Email is required'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return false;
+    }
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(_emailController.text.trim())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter a valid email address'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return false;
+    }
+    if (_workEmailController.text.trim().isNotEmpty &&
+        !emailRegex.hasMatch(_workEmailController.text.trim())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter a valid work email address'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return false;
+    }
+    return true;
+  }
+  Future<void> _saveProfile() async {
+    if (!_validateForm()) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+    });
+    try {
+      final currentUser = _authProvider.user;
+      if (currentUser == null) {
+        throw Exception('No user logged in');
+      }
+      final updatedUser = User(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        workEmail:
+            _workEmailController.text.trim().isEmpty
+                ? null
+                : _workEmailController.text.trim(),
+        lang:
+            _langController.text.trim().isEmpty
+                ? 'en'
+                : _langController.text.trim(),
+        uid: currentUser.uid,
+        id: currentUser.id,
+        status: currentUser.status,
+        subscriptionTier: currentUser.subscriptionTier,
+      );
+      final response = await _userProvider.updateUser(
+        currentUser.id,
+        updatedUser,
+      );
+      if (response != null) {
+        await _userProvider.updateUserData(updatedUser);
+        _authProvider.updateUserInMemory(updatedUser);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Profile saved successfully!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.goNamed('settings');
+      } else {
+        throw Exception('Failed to update profile');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving profile: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
+    }
   }
 }

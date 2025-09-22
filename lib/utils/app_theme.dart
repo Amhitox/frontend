@@ -1,91 +1,63 @@
 import 'package:flutter/material.dart';
-
 class AppTheme {
   AppTheme._();
-
-  // Enhanced color palette for light theme
   static const Color primaryBlue = Color(0xFF2563EB);
   static const Color lightBlue = Color(0xFF3B82F6);
   static const Color accentBlue = Color(0xFF1E40AF);
   static const Color darkBlue = Color(0xFF141D2E);
   static const Color deepDark = Color(0xFF0C1421);
-
-  // Light theme specific colors
   static const Color lightBackground = Color(0xFFFAFBFC);
   static const Color lightSurface = Color(0xFFFFFFFF);
   static const Color lightSurfaceVariant = Color(0xFFF8FAFC);
   static const Color lightSecondaryContainer = Color(0xFFF1F5F9);
   static const Color lightTertiaryContainer = Color(0xFFEBF3FF);
-
-  // Text colors for light theme
   static const Color lightPrimary = Color(0xFF0F172A);
   static const Color lightSecondary = Color(0xFF475569);
   static const Color lightTertiary = Color(0xFF64748B);
-
-  // Accent and semantic colors
   static const Color successGreen = Color(0xFF10B981);
   static const Color warningOrange = Color(0xFFF59E0B);
   static const Color errorRed = Color(0xFFEF4444);
   static const Color lightGray = Color(0xFFE2E8F0);
   static const Color borderColor = Color(0xFFCBD5E1);
-
   static ThemeData get light {
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: primaryBlue,
       brightness: Brightness.light,
     ).copyWith(
-      // Primary colors
       primary: primaryBlue,
       onPrimary: Colors.white,
       primaryContainer: lightTertiaryContainer,
       onPrimaryContainer: accentBlue,
-
-      // Secondary colors
       secondary: lightBlue,
       onSecondary: Colors.white,
       secondaryContainer: lightSecondaryContainer,
       onSecondaryContainer: lightSecondary,
-
-      // Tertiary colors
       tertiary: accentBlue,
       onTertiary: Colors.white,
       tertiaryContainer: lightTertiaryContainer,
       onTertiaryContainer: accentBlue,
-
-      // Surface colors
       surface: lightSurface,
       onSurface: lightPrimary,
       surfaceContainer: lightSurfaceVariant,
       onSurfaceVariant: lightSecondary,
       surfaceContainerHighest: lightSecondaryContainer,
-
-      // Error colors
       error: errorRed,
       onError: Colors.white,
       errorContainer: const Color(0xFFFEE2E2),
       onErrorContainer: const Color(0xFF991B1B),
-
-      // Outline colors
       outline: borderColor,
       outlineVariant: lightGray,
-
-      // Inverse colors
       inverseSurface: darkBlue,
       onInverseSurface: Colors.white,
       inversePrimary: lightBlue,
-
-      // Neutral colors
       surfaceTint: primaryBlue,
       shadow: Colors.black.withValues(alpha: 0.1),
       scrim: Colors.black.withValues(alpha: 0.5),
     );
-
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: lightBackground,
-
-      // App Bar Theme
       appBarTheme: AppBarTheme(
         backgroundColor: lightSurface,
         foregroundColor: lightPrimary,
@@ -100,8 +72,6 @@ class AppTheme {
           letterSpacing: -0.5,
         ),
       ),
-
-      // Card Theme
       cardTheme: CardThemeData(
         color: lightSurface,
         elevation: 1,
@@ -109,8 +79,6 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         surfaceTintColor: primaryBlue.withValues(alpha: 0.02),
       ),
-
-      // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: lightSurfaceVariant,
@@ -140,8 +108,6 @@ class AppTheme {
           fontWeight: FontWeight.w400,
         ),
       ),
-
-      // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryBlue,
@@ -159,8 +125,6 @@ class AppTheme {
           ),
         ),
       ),
-
-      // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryBlue,
@@ -168,8 +132,6 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
-
-      // Outlined Button Theme
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: primaryBlue,
@@ -180,16 +142,12 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         ),
       ),
-
-      // Floating Action Button Theme
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         elevation: 6,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-
-      // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: lightSurface,
         selectedItemColor: primaryBlue,
@@ -205,19 +163,13 @@ class AppTheme {
           fontWeight: FontWeight.w500,
         ),
       ),
-
-      // Chip Theme
       chipTheme: ChipThemeData(
         backgroundColor: lightSecondaryContainer,
         labelStyle: TextStyle(color: lightSecondary),
         side: BorderSide.none,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-
-      // Divider Theme
       dividerTheme: DividerThemeData(color: lightGray, thickness: 1, space: 1),
-
-      // Text Theme
       textTheme: TextTheme(
         displayLarge: TextStyle(
           color: lightPrimary,
@@ -304,7 +256,6 @@ class AppTheme {
       ),
     );
   }
-
   static ThemeData get dark {
     final ColorScheme colorScheme = ColorScheme.fromSeed(
       seedColor: lightBlue,
@@ -315,7 +266,6 @@ class AppTheme {
       surface: darkBlue,
       onSurface: lightGray,
     );
-
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,

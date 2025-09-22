@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/managers/task_manager.dart';
 import 'package:frontend/models/meeting.dart';
+import 'package:frontend/providers/meeting_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:frontend/ui/screens/auth/resetpassword_screen.dart';
 import 'package:frontend/ui/screens/auth/emailverification_screen.dart';
 import 'package:frontend/ui/screens/mail/maildetails_screen.dart' as mailDetail;
@@ -16,6 +18,7 @@ import '../ui/screens/task/task_screen.dart';
 import '../ui/screens/mail/mail_screen.dart';
 import '../ui/screens/mail/composemail_screen.dart' hide MailItem;
 import '../ui/screens/welcome/subscription_screen.dart';
+import '../ui/screens/welcome/current_plan_screen.dart';
 import '../ui/screens/calendar/addschedule_screen.dart';
 import '../ui/screens/task/addtask_screen.dart';
 import '../ui/screens/welcome/analytics_screen.dart';
@@ -26,14 +29,10 @@ import '../ui/screens/welcome/splash_screen.dart';
 import '../ui/screens/welcome/onboarding_screen.dart';
 import '../ui/screens/auth/forgetpassword_screen.dart';
 import '../models/task.dart';
-
 class AppRoutes {
-  // Singleton pattern
   static final AppRoutes _instance = AppRoutes._internal();
   factory AppRoutes() => _instance;
   AppRoutes._internal();
-
-  // Route paths as constants
   static const String splash = '/splash';
   static const String onboarding = '/onboarding';
   static const String home = '/';
@@ -46,6 +45,7 @@ class AppRoutes {
   static const String maildetail = '/maildetail';
   static const String composemail = '/composemail';
   static const String subscription = '/subscription';
+  static const String currentPlan = '/currentPlan';
   static const String addSchedule = '/addSchedule';
   static const String addTask = '/addTask';
   static const String analytics = '/analytics';
@@ -54,25 +54,17 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String security = '/security';
   static late SharedPreferences pref;
-
   bool firstOpen = true;
   List<Task> tasks = <Task>[];
   List<Meeting> meetings = <Meeting>[];
-
   Future<void> init() async {
     pref = await SharedPreferences.getInstance();
     firstOpen = pref.getBool('firstOpen') ?? true;
   }
-
-  // Go Router configuration
   GoRouter createRouter(BuildContext context) {
     return GoRouter(
-      // Initial route determination
       initialLocation: splash,
-
-      // Define all routes
       routes: [
-        // Splash and Onboarding Routes
         GoRoute(
           path: splash,
           name: 'splash',
@@ -83,8 +75,6 @@ class AppRoutes {
           name: 'onboarding',
           builder: (context, state) => const OnboardingScreen(),
         ),
-
-        // Auth Routes
         GoRoute(
           path: login,
           name: 'login',
@@ -114,8 +104,6 @@ class AppRoutes {
             return const LoginScreen();
           },
         ),
-
-        // Main App Routes (Protected)
         GoRoute(
           path: home,
           name: 'home',
@@ -124,7 +112,13 @@ class AppRoutes {
         GoRoute(
           path: calendar,
           name: 'calendar',
-          builder: (context, state) => const CalendarPage(),
+          builder: (context, state) {
+            final date = state.extra as DateTime? ?? DateTime.now();
+            final meetingProvider = context.read<MeetingProvider>();
+            final dateString = date.toIso8601String().split('T').first;
+            final meetings = meetingProvider.getMeetings(dateString);
+            return CalendarPage(meetings: meetings, date: date);
+          },
         ),
         GoRoute(
           path: '/task',
@@ -132,17 +126,27 @@ class AppRoutes {
           builder: (context, state) {
             final date = state.extra as DateTime? ?? DateTime.now();
             final manager = TaskManager();
-
+            if (!manager.isInitialized) {
+              return TaskScreen(tasks: [], date: date);
+            }
+            final listenable = manager.listenable();
+            if (listenable == null) {
+              return TaskScreen(tasks: [], date: date);
+            }
             return ValueListenableBuilder(
-              valueListenable: manager.listenable(),
+              valueListenable: listenable,
               builder: (context, Box<Task> box, _) {
                 final cachedTasks =
                     box.values.where((task) {
                       if (task.dueDate == null) return false;
-                      final taskDate = DateTime.parse(task.dueDate!).toLocal();
-                      return taskDate.year == date.year &&
-                          taskDate.month == date.month &&
-                          taskDate.day == date.day;
+                      try {
+                        final taskDate = DateTime.parse(task.dueDate!);
+                        return taskDate.year == date.year &&
+                            taskDate.month == date.month &&
+                            taskDate.day == date.day;
+                      } catch (e) {
+                        return false;
+                      }
                     }).toList();
                 return TaskScreen(tasks: cachedTasks, date: date);
               },
@@ -160,7 +164,6 @@ class AppRoutes {
           builder: (context, state) {
             final email = state.extra as MailItem?;
             if (email == null) {
-              // Handle null case - redirect to mail screen
               return const MailScreen();
             }
             return mailDetail.MailDetailScreen(email: email);
@@ -175,6 +178,11 @@ class AppRoutes {
           path: subscription,
           name: 'subscription',
           builder: (context, state) => const SubscriptionPlansScreen(),
+        ),
+        GoRoute(
+          path: currentPlan,
+          name: 'currentPlan',
+          builder: (context, state) => const CurrentPlanScreen(),
         ),
         GoRoute(
           path: addSchedule,
@@ -218,8 +226,6 @@ class AppRoutes {
           builder: (context, state) => const SecurityScreen(),
         ),
       ],
-
-      // Error handling
       errorBuilder:
           (context, state) => Scaffold(
             body: Center(
@@ -241,8 +247,6 @@ class AppRoutes {
               ),
             ),
           ),
-
-      // Debug logging (remove in production)
       debugLogDiagnostics: false,
     );
   }

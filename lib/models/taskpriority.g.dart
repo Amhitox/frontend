@@ -1,15 +1,7 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
 part of 'taskpriority.dart';
-
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
-
 class TaskPriorityAdapter extends TypeAdapter<TaskPriority> {
   @override
   final int typeId = 1;
-
   @override
   TaskPriority read(BinaryReader reader) {
     switch (reader.readByte()) {
@@ -23,7 +15,6 @@ class TaskPriorityAdapter extends TypeAdapter<TaskPriority> {
         return TaskPriority.low;
     }
   }
-
   @override
   void write(BinaryWriter writer, TaskPriority obj) {
     switch (obj) {
@@ -38,10 +29,8 @@ class TaskPriorityAdapter extends TypeAdapter<TaskPriority> {
         break;
     }
   }
-
   @override
   int get hashCode => typeId.hashCode;
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

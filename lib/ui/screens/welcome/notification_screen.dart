@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
-
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
-
   @override
   _NotificationsScreenState createState() => _NotificationsScreenState();
 }
-
 class _NotificationsScreenState extends State<NotificationsScreen>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-
   String _selectedFilter = 'All';
   final List<String> _filters = ['All', 'Unread', 'Today', 'This Week'];
-
   final List<NotificationItem> _notifications = [
     NotificationItem(
       id: '1',
@@ -97,7 +92,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       priority: NotificationPriority.low,
     ),
   ];
-
   @override
   void initState() {
     super.initState();
@@ -105,21 +99,17 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-
     _slideController.forward();
   }
-
   @override
   void dispose() {
     _slideController.dispose();
     super.dispose();
   }
-
   List<NotificationItem> get _filteredNotifications {
     switch (_selectedFilter) {
       case 'Unread':
@@ -142,13 +132,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         return _notifications;
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final theme = Theme.of(context);
-
     return Scaffold(
       drawer: const SideMenu(),
       body: Container(
@@ -184,7 +172,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-
   Widget _buildHeader(bool isTablet, ThemeData theme) {
     return Container(
       margin: EdgeInsets.all(isTablet ? 20 : 16),
@@ -273,7 +260,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-
   Widget _buildHeaderButton(
     IconData icon,
     VoidCallback onTap,
@@ -301,7 +287,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-
   Widget _buildFilterTabs(bool isTablet, ThemeData theme) {
     return Container(
       margin: EdgeInsets.symmetric(
@@ -359,7 +344,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-
   Widget _buildQuickStats(bool isTablet, ThemeData theme) {
     final unreadCount = _notifications.where((n) => !n.isRead).length;
     final highPriorityCount =
@@ -370,7 +354,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         _notifications
             .where((n) => n.time.contains('m ago') || n.time.contains('h ago'))
             .length;
-
     return Container(
       margin: EdgeInsets.fromLTRB(
         isTablet ? 20 : 16,
@@ -401,7 +384,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-
   Widget _buildStatChip(
     String count,
     String label,
@@ -450,12 +432,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-
   Widget _buildNotificationsList(bool isTablet, ThemeData theme) {
     if (_filteredNotifications.isEmpty) {
       return _buildEmptyState(isTablet, theme);
     }
-
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
       itemCount: _filteredNotifications.length,
@@ -480,7 +460,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       },
     );
   }
-
   Widget _buildNotificationItem(
     NotificationItem notification,
     bool isTablet,
@@ -596,7 +575,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-
   Widget _buildNotificationIcon(
     NotificationType type,
     NotificationPriority priority,
@@ -604,7 +582,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   ) {
     IconData icon;
     Color color;
-
     switch (type) {
       case NotificationType.email:
         icon = Icons.email_outlined;
@@ -635,7 +612,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         color = Colors.indigo;
         break;
     }
-
     return Container(
       width: isTablet ? 44 : 40,
       height: isTablet ? 44 : 40,
@@ -646,13 +622,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       child: Icon(icon, color: color, size: isTablet ? 22 : 20),
     );
   }
-
   Widget _buildPriorityBadge(NotificationPriority priority, bool isTablet) {
     if (priority == NotificationPriority.normal) return const SizedBox();
-
     Color color;
     String text;
-
     switch (priority) {
       case NotificationPriority.high:
         color = Colors.red;
@@ -665,7 +638,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       default:
         return const SizedBox();
     }
-
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isTablet ? 10 : 8,
@@ -685,7 +657,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-
   Widget _buildEmptyState(bool isTablet, ThemeData theme) {
     return Center(
       child: Column(
@@ -725,7 +696,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-
   void _markAllAsRead(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -783,7 +753,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
     );
   }
-
   void _clearAllNotifications(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -837,16 +806,13 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
     );
   }
-
   void _markAsRead(NotificationItem notification) {
     setState(() => notification.isRead = true);
   }
-
   void _dismissNotification(NotificationItem notification) {
     setState(() => _notifications.removeWhere((n) => n.id == notification.id));
   }
 }
-
 class NotificationItem {
   final String id;
   final String title;
@@ -855,7 +821,6 @@ class NotificationItem {
   final NotificationType type;
   bool isRead;
   final NotificationPriority priority;
-
   NotificationItem({
     required this.id,
     required this.title,
@@ -866,7 +831,6 @@ class NotificationItem {
     required this.priority,
   });
 }
-
 enum NotificationType {
   email,
   task,
@@ -876,5 +840,4 @@ enum NotificationType {
   report,
   calendar,
 }
-
 enum NotificationPriority { high, normal, low }

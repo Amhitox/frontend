@@ -1,23 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 class SecurityScreen extends StatefulWidget {
   const SecurityScreen({super.key});
-
   @override
   _SecurityScreenState createState() => _SecurityScreenState();
 }
-
 class _SecurityScreenState extends State<SecurityScreen>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-
   bool _twoFactorEnabled = false;
   bool _biometricEnabled = true;
   bool _autoLock = true;
   String _autoLockTime = '5 minutes';
-
   @override
   void initState() {
     super.initState();
@@ -25,28 +20,23 @@ class _SecurityScreenState extends State<SecurityScreen>
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-
     _slideController.forward();
   }
-
   @override
   void dispose() {
     _slideController.dispose();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
     final theme = Theme.of(context);
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -101,7 +91,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       ),
     );
   }
-
   Widget _buildHeader(bool isTablet, bool isLargeScreen, ThemeData theme) {
     return Padding(
       padding: EdgeInsets.all(
@@ -186,7 +175,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       ),
     );
   }
-
   Widget _buildSecurityOverview(
     bool isTablet,
     bool isLargeScreen,
@@ -252,7 +240,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       ),
     );
   }
-
   Widget _buildAuthenticationSection(
     bool isTablet,
     bool isLargeScreen,
@@ -294,7 +281,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       theme: theme,
     );
   }
-
   Widget _buildPrivacySection(
     bool isTablet,
     bool isLargeScreen,
@@ -335,7 +321,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       theme: theme,
     );
   }
-
   Widget _buildActivitySection(
     bool isTablet,
     bool isLargeScreen,
@@ -375,7 +360,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       theme: theme,
     );
   }
-
   Widget _buildSection(
     String title,
     IconData icon,
@@ -434,7 +418,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       ),
     );
   }
-
   Widget _buildSecurityItem(
     String title,
     String subtitle,
@@ -507,7 +490,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       ),
     );
   }
-
   Widget _buildSwitchItem(
     String title,
     String subtitle,
@@ -574,7 +556,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       ),
     );
   }
-
   void _changePassword(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -687,7 +668,6 @@ class _SecurityScreenState extends State<SecurityScreen>
           ),
     );
   }
-
   void _changeAutoLockTime(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -732,11 +712,9 @@ class _SecurityScreenState extends State<SecurityScreen>
           ),
     );
   }
-
   void _showLoginHistory() {
     context.go('/login-history');
   }
-
   void _showActiveSessions(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -823,7 +801,6 @@ class _SecurityScreenState extends State<SecurityScreen>
           ),
     );
   }
-
   Widget _buildSessionItem(
     String device,
     String status,
@@ -894,7 +871,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       ),
     );
   }
-
   void _configureSecurityAlerts(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -950,7 +926,6 @@ class _SecurityScreenState extends State<SecurityScreen>
           ),
     );
   }
-
   void _exportData(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,

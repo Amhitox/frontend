@@ -10,10 +10,8 @@ class AuthService {
         '/api/auth/login',
         data: {'email': email, 'password': password},
       );
-      print('✅ Login successful');
       return response;
     } on DioException catch (e) {
-      print('❌ Login failed: ${e.response}');
       return e.response;
     }
   }
@@ -38,10 +36,8 @@ class AuthService {
           'birthday': birthday,
         },
       );
-      print('register was successful');
       return response;
     } on DioException catch (e) {
-      print('❌ Register failed: ${e.message}');
       return e.response;
     }
   }
@@ -49,10 +45,8 @@ class AuthService {
   Future<dynamic> logout() async {
     try {
       final response = await _dio.post('/api/auth/logout');
-      print('Logout successfully');
       return response;
     } on DioException catch (e) {
-      print('Logout failed');
       return e.response;
     }
   }
@@ -63,10 +57,8 @@ class AuthService {
         '/api/auth/Oauth/google',
         data: {'token': idToken},
       );
-      print('✅ Google Sign-In successful');
       return response;
     } on DioException catch (e) {
-      print('❌ Google Sign-In failed: ${e.response}');
       return e.response;
     }
   }
@@ -77,10 +69,8 @@ class AuthService {
         '/api/auth/forget-password',
         data: {'email': email},
       );
-      print('✅ Forgot password successful');
       return response;
     } on DioException catch (e) {
-      print('❌ Forgot password failed: ${e.response}');
       return e.response;
     }
   }
@@ -88,10 +78,8 @@ class AuthService {
   Future<dynamic> getMe() async {
     try {
       final response = await _dio.get('/api/auth/me');
-      print('✅ Get me successful');
       return response;
     } on DioException catch (e) {
-      print('❌ Get me failed: ${e.response}');
       return e.response;
     }
   }

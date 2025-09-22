@@ -12,7 +12,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.token});
   final String? token;
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -21,7 +20,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormBuilderState>();
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
-
   @override
   void initState() {
     super.initState();
@@ -32,10 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final pref = await SharedPreferences.getInstance();
       await pref.setBool("firstOpen", false);
-      print('LoginScreen: firstOpen: ${pref.getBool("firstOpen")}');
-    } catch (e) {
-      print('LoginScreen: Error updating firstOpen: $e');
-    }
+    } catch (e) {}
   }
 
   @override
@@ -45,18 +40,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenSize = MediaQuery.of(context).size;
     final screenHeight = screenSize.height;
     final screenWidth = screenSize.width;
-
-    // Responsive breakpoints
     final isSmallScreen = screenHeight < 700 || screenWidth < 400;
     final isTablet = screenWidth > 600;
     final isLandscape = screenWidth > screenHeight;
-
-    // Theme-aware colors
     final isDark = theme.brightness == Brightness.dark;
     final headerTextColor = isDark ? Colors.white : Colors.white;
     final containerColor = isDark ? const Color(0xFF141D2E) : Colors.white;
-
-    // Responsive sizing
     final headerTopPercent =
         isLandscape
             ? 0.03
@@ -76,17 +65,13 @@ class _LoginScreenState extends State<LoginScreen> {
             ? 0.22
             : 0.25;
     final horizontalPadding = isTablet ? 48.0 : 32.0;
-
     return Scaffold(
       backgroundColor: colorScheme.surface,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Stack(
           children: [
-            // Background
             const CosmicBackground(),
-
-            // Header section
             Positioned(
               top: screenHeight * headerTopPercent,
               left: screenWidth * 0.07,
@@ -98,8 +83,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 headerTextColor,
               ),
             ),
-
-            // Title section
             Positioned(
               top: screenHeight * titleTopPercent,
               left: screenWidth * 0.07,
@@ -111,8 +94,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 headerTextColor,
               ),
             ),
-
-            // Main content container
             Positioned(
               top: screenHeight * containerTopPercent,
               left: 0,
@@ -139,7 +120,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Tab Switch
                     Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: horizontalPadding,
@@ -147,8 +127,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: _buildTabSwitch(context),
                     ),
-
-                    // Scrollable content
                     Expanded(
                       child: SingleChildScrollView(
                         padding: EdgeInsets.only(
@@ -156,7 +134,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: Column(
                           children: [
-                            // Form Section
                             Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: horizontalPadding,
@@ -169,8 +146,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 isDark,
                               ),
                             ),
-
-                            // Divider section
                             Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: horizontalPadding,
@@ -178,8 +153,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               child: _buildDivider(context, isDark),
                             ),
-
-                            // Social Login Buttons
                             Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: horizontalPadding,
@@ -192,28 +165,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 isDark,
                               ),
                             ),
-
                             SizedBox(height: isSmallScreen ? 40 : 60),
                           ],
                         ),
                       ),
                     ),
-
-                    // Terms text
                     _buildTermsSection(context, isSmallScreen, isDark),
                   ],
                 ),
               ),
             ),
-            // if (authProvider.isLoading)
-            //   Container(
-            //     color: Colors.black.withOpacity(0.5),
-            //     child: Center(
-            //       child: CircularProgressIndicator(
-            //         color: Color.fromARGB(255, 134, 37, 224),
-            //       ),
-            //     ),
-            //   ),
           ],
         ),
       ),
@@ -238,7 +199,6 @@ class _LoginScreenState extends State<LoginScreen> {
             : isTablet
             ? 20.0
             : 18.0;
-
     return Row(
       children: [
         SizedBox(
@@ -293,7 +253,6 @@ class _LoginScreenState extends State<LoginScreen> {
             : isTablet
             ? 16.0
             : 15.0;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -350,12 +309,10 @@ class _LoginScreenState extends State<LoginScreen> {
             : isTablet
             ? 16.0
             : 15.0;
-
     return FormBuilder(
       key: _formKey,
       child: Column(
         children: [
-          // Email field
           FormBuilderTextField(
             name: 'email',
             keyboardType: TextInputType.emailAddress,
@@ -409,10 +366,7 @@ class _LoginScreenState extends State<LoginScreen> {
               FormBuilderValidators.email(),
             ]),
           ),
-
           const SizedBox(height: 16),
-
-          // Password field
           FormBuilderTextField(
             name: 'password',
             obscureText: !_isPasswordVisible,
@@ -478,10 +432,7 @@ class _LoginScreenState extends State<LoginScreen> {
               FormBuilderValidators.minLength(6),
             ]),
           ),
-
           const SizedBox(height: 16),
-
-          // Remember me and Forgot password row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -531,10 +482,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 24),
-
-          // Login button
           SizedBox(
             width: double.infinity,
             height: buttonHeight,
@@ -588,7 +536,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildDivider(BuildContext context, bool isDark) {
     final colorScheme = Theme.of(context).colorScheme;
-
     return Row(
       children: [
         Expanded(
@@ -641,7 +588,6 @@ class _LoginScreenState extends State<LoginScreen> {
             : isTablet
             ? 22.0
             : 20.0;
-
     final socialButtonStyle = ElevatedButton.styleFrom(
       backgroundColor: colorScheme.surface,
       foregroundColor: colorScheme.onSurface,
@@ -649,7 +595,6 @@ class _LoginScreenState extends State<LoginScreen> {
       side: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.2)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
-
     return Column(
       children: [
         SizedBox(
@@ -680,7 +625,6 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Using a fallback icon instead of asset image
                 Container(
                   width: iconSize,
                   height: iconSize,
@@ -746,7 +690,6 @@ class _LoginScreenState extends State<LoginScreen> {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final fontSize = isSmallScreen ? 11.0 : 12.0;
-
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: 20,

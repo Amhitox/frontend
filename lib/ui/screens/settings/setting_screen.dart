@@ -6,29 +6,22 @@ import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
-
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
-
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
-
 class _SettingsScreenState extends State<SettingsScreen>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
   late final ThemeProvider themeProvider;
-  // User data
   String _userName = 'Amhita Marouane';
   String _workEmail = 'amhita.maroua@gmail.com';
-
-  // User preferences
   String _selectedVoice = 'Female';
   String _selectedLanguage = 'English';
   String _selectedTheme = 'Light';
   bool _pushNotifications = true;
-
   @override
   void initState() {
     super.initState();
@@ -44,34 +37,27 @@ class _SettingsScreenState extends State<SettingsScreen>
         _selectedTheme = "System";
         break;
     }
-
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-
     _slideController.forward();
   }
-
   @override
   void dispose() {
     _slideController.dispose();
     super.dispose();
   }
-
   String currentLanguage(User user) {
     if (user.lang == 'fr') {
       return 'French';
     }
     return 'English';
   }
-
-  // Method to change theme - this would integrate with your theme provider
   void _changeTheme(String theme) {
     themeProvider.setTheme(
       theme == 'Dark'
@@ -80,11 +66,9 @@ class _SettingsScreenState extends State<SettingsScreen>
           ? ThemeMode.light
           : ThemeMode.system,
     );
-
     setState(() {
       _selectedTheme = theme;
     });
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Theme changed to $theme'),
@@ -94,7 +78,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -105,7 +88,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     setState(() {
       _selectedLanguage = currentLanguage(user);
     });
-
     return Scaffold(
       drawer: const SideMenu(),
       body: Container(
@@ -260,7 +242,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
   Widget _buildHeader(
     bool isTablet,
     bool isLargeScreen,
@@ -297,7 +278,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         children: [
           Row(
             children: [
-              // Profile Avatar
               GestureDetector(
                 onTap: () => _changeProfileImage(theme, isTablet),
                 child: Container(
@@ -443,7 +423,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             ],
           ),
           SizedBox(height: isTablet ? 20 : 16),
-          // Quick Action Buttons
           Row(
             children: [
               Expanded(
@@ -471,7 +450,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
   Widget _buildEmailSection(
     bool isTablet,
     bool isLargeScreen,
@@ -524,7 +502,6 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
             child: Column(
               children: [
-                // Registration Email (Non-editable)
                 Container(
                   padding: EdgeInsets.all(isTablet ? 20 : 16),
                   decoration: BoxDecoration(
@@ -611,7 +588,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ],
                   ),
                 ),
-                // Work Email (Editable)
                 Container(
                   padding: EdgeInsets.all(isTablet ? 20 : 16),
                   child: Row(
@@ -690,7 +666,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
   Widget _buildQuickActionButton(
     String label,
     IconData icon,
@@ -728,7 +703,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
   Widget _buildSection(
     String title,
     IconData icon,
@@ -787,7 +761,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
   Widget _buildSettingItem(
     String title,
     String subtitle,
@@ -862,7 +835,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
   Widget _buildSwitchItem(
     String title,
     String subtitle,
@@ -882,7 +854,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       theme: theme,
     );
   }
-
   Widget _buildVoiceSelector(bool isTablet, ThemeData theme) {
     return _buildSettingItem(
       'Voice Selection',
@@ -918,7 +889,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       theme: theme,
     );
   }
-
   Widget _buildLanguageSelector(bool isTablet, ThemeData theme, User user) {
     return _buildSettingItem(
       'Language',
@@ -965,7 +935,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       theme: theme,
     );
   }
-
   Widget _buildThemeSelector(bool isTablet, ThemeData theme) {
     return _buildSettingItem(
       'Theme',
@@ -1004,7 +973,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       theme: theme,
     );
   }
-
   Widget _buildSignOutButton(bool isTablet, ThemeData theme) {
     return GestureDetector(
       onTap: () => _showSignOutDialog(theme, isTablet),
@@ -1042,8 +1010,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
-  // User interaction methods
   void _changeProfileImage(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -1055,19 +1021,16 @@ class _SettingsScreenState extends State<SettingsScreen>
             primaryAction: 'Choose Photo',
             onPrimaryAction: () {
               Navigator.of(context).pop();
-              // Implement photo selection
             },
             theme: theme,
             isTablet: isTablet,
           ),
     );
   }
-
   void _editName(ThemeData theme, bool isTablet, User user) {
     final TextEditingController nameController = TextEditingController(
       text: _userName,
     );
-
     showDialog(
       context: context,
       builder:
@@ -1139,12 +1102,10 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
-
   void _editWorkEmail(ThemeData theme, bool isTablet, User user) {
     final TextEditingController emailController = TextEditingController(
       text: _workEmail,
     );
-
     showDialog(
       context: context,
       builder:
@@ -1216,7 +1177,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
-
   void _showProfileMenu(ThemeData theme, bool isTablet) {
     showModalBottomSheet(
       context: context,
@@ -1272,7 +1232,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
-
   Widget _buildMenuOption(
     String title,
     IconData icon,
@@ -1309,7 +1268,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
   void _showRateDialog(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -1396,7 +1354,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
-
   void _submitRating(int stars) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1407,7 +1364,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
   void _shareApp(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -1436,7 +1392,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
-
   void _checkForUpdates(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -1452,7 +1407,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
-
   void _showSignOutDialog(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -1472,7 +1426,6 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
-
   Widget _buildCustomDialog(
     String title,
     String content,

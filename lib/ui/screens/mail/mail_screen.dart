@@ -3,21 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
-
 class MailScreen extends StatefulWidget {
   const MailScreen({super.key});
-
   @override
   _MailScreenState createState() => _MailScreenState();
 }
-
 class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
-
   final List<MailItem> _emails = [
     MailItem(
       sender: "Sarah Chen",
@@ -62,10 +57,8 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       priority: MailPriority.normal,
     ),
   ];
-
   String _selectedFilter = 'Primary';
   final List<String> _filters = ['Primary', 'Sent', 'Draft', 'Spam'];
-
   @override
   void initState() {
     super.initState();
@@ -73,35 +66,27 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-
     _slideController.forward();
   }
-
   @override
   void dispose() {
     _slideController.dispose();
     _searchController.dispose();
     super.dispose();
   }
-
   List<MailItem> get _filteredEmails {
     final query = _searchController.text.toLowerCase();
     final allEmails = _emails.toList();
-
-    // Search logic
     if (query.isNotEmpty) {
       return allEmails.where((email) {
         return email.sender.toLowerCase().contains(query) ||
             email.subject.toLowerCase().contains(query);
       }).toList();
     }
-
-    // Existing filter logic for when no search is active
     switch (_selectedFilter) {
       case 'Primary':
         return allEmails.where((email) => email.isUnread).toList();
@@ -127,13 +112,11 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
         return allEmails;
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
-
     return Scaffold(
       drawer: const SideMenu(),
       body: Container(
@@ -169,7 +152,6 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildHeader(bool isTablet, bool isLargeScreen) {
     return Padding(
       padding: EdgeInsets.all(
@@ -266,7 +248,6 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildHeaderButton(
     IconData icon,
     VoidCallback onTap,
@@ -301,7 +282,6 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildFilterTabs(bool isTablet, bool isLargeScreen) {
     return Container(
       height: isTablet ? 60 : 50,
@@ -319,7 +299,6 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
         itemBuilder: (context, index) {
           final filter = _filters[index];
           final isSelected = _selectedFilter == filter;
-
           return GestureDetector(
             onTap: () => setState(() => _selectedFilter = filter),
             child: AnimatedContainer(
@@ -372,7 +351,6 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildQuickStats(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.fromLTRB(
@@ -447,7 +425,6 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
               ),
     );
   }
-
   Widget _buildStatChip(
     String count,
     String label,
@@ -498,7 +475,6 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildMailList(bool isTablet, bool isLargeScreen) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(
@@ -524,7 +500,6 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       },
     );
   }
-
   Widget _buildMailItem(MailItem email, bool isTablet, bool isLargeScreen) {
     return GestureDetector(
       onTap: () {
@@ -650,7 +625,6 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildAvatar(String name, bool isTablet) {
     return Container(
       width: isTablet ? 44 : 36,
@@ -676,7 +650,6 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
     );
   }
 }
-
 class MailItem {
   final String sender;
   final String subject;
@@ -684,7 +657,6 @@ class MailItem {
   final String time;
   final bool isUnread;
   final MailPriority priority;
-
   MailItem({
     required this.sender,
     required this.subject,
@@ -694,5 +666,4 @@ class MailItem {
     required this.priority,
   });
 }
-
 enum MailPriority { high, normal, low }

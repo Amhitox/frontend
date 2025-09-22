@@ -2,18 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-
 class SideMenu extends StatefulWidget {
   const SideMenu({super.key});
-
   @override
   _SideMenuState createState() => _SideMenuState();
 }
-
 class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-
   final List<MenuItemData> _menuItems = [
     MenuItemData(Icons.home_outlined, 'Home', '/'),
     MenuItemData(Icons.mail_outline, 'Mail', '/mail'),
@@ -27,7 +23,6 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
     ),
     MenuItemData(Icons.settings_outlined, 'Settings', '/settings'),
   ];
-
   @override
   void initState() {
     super.initState();
@@ -41,59 +36,41 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
     ).animate(
       CurvedAnimation(parent: _slideController, curve: Curves.easeInOut),
     );
-
-    // Start the slide animation when the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _slideController.forward();
     });
   }
-
   @override
   void dispose() {
     _slideController.dispose();
     super.dispose();
   }
-
   void _navigateTo(String route) {
-    Navigator.of(context).pop(); // Close the drawer
-
-    // Use go instead of push for main navigation to replace current route
+    Navigator.of(context).pop(); 
     if (route != '/') {
       context.push(route);
     } else {
       context.push('/');
     }
   }
-
   bool _isRouteActive(String route) {
     final currentRoute = GoRouterState.of(context).uri.path;
-
-    // Handle special case for home route
     if (route == '/') {
       return currentRoute == '/' || currentRoute == '/home';
     }
-
-    // Exact match for root level routes
     if (currentRoute == route) {
       return true;
     }
-
-    // Check if current route starts with the menu item route for nested routes
-    // This handles nested routes like /settings/profile being active for /settings
-    // But ensures we don't match /mail when on /mail-detail etc.
     if (currentRoute.startsWith('$route/')) {
       return true;
     }
-
     return false;
   }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-
     return SlideTransition(
       position: _slideAnimation,
       child: Drawer(
@@ -135,26 +112,21 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildHeader(BuildContext context) {
     final user = context.read<AuthProvider>().user;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
-
-    // Responsive sizing
     final padding = isTablet ? 32.0 : 24.0;
     final avatarSize = isTablet ? 90.0 : 80.0;
     final nameSize = isTablet ? 20.0 : 18.0;
     final emailSize = isTablet ? 15.0 : 14.0;
     final iconSize = isTablet ? 45.0 : 40.0;
-
     return Container(
       padding: EdgeInsets.all(padding),
       child: Column(
         children: [
-          // Profile avatar
           Container(
             width: avatarSize,
             height: avatarSize,
@@ -180,11 +152,8 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
             ),
           ),
           SizedBox(height: isTablet ? 20 : 16),
-
-          // User name
           Text(
-            '${user?.firstName ?? ''} ${user?.lastName ?? ''}' ??
-                'Amhita Marouane',
+            '${user?.firstName ?? 'Test'} ${user?.lastName ?? 'Test'}',
             style: TextStyle(
               color: colorScheme.onSurface,
               fontSize: nameSize,
@@ -192,8 +161,6 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
             ),
           ),
           SizedBox(height: isTablet ? 6 : 4),
-
-          // User email or status
           Text(
             user?.email ?? 'test@example.com',
             style: TextStyle(
@@ -203,8 +170,6 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
             ),
           ),
           SizedBox(height: isTablet ? 24 : 20),
-
-          // Divider
           Container(
             height: 1,
             color: colorScheme.outline.withValues(alpha: 0.2),
@@ -213,12 +178,10 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildMenuItems(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
     final horizontalPadding = isTablet ? 24.0 : 16.0;
-
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       itemCount: _menuItems.length,
@@ -240,27 +203,22 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
       },
     );
   }
-
   Widget _buildMenuItem(BuildContext context, MenuItemData item, int index) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
     final isActive = _isRouteActive(item.route);
-
-    // Responsive sizing
     final verticalMargin = isTablet ? 6.0 : 4.0;
     final horizontalPadding = isTablet ? 20.0 : 16.0;
     final verticalPadding = isTablet ? 16.0 : 14.0;
     final iconSize = isTablet ? 26.0 : 24.0;
     final fontSize = isTablet ? 17.0 : 16.0;
     final borderRadius = isTablet ? 14.0 : 12.0;
-
     return Container(
       margin: EdgeInsets.symmetric(vertical: verticalMargin),
       child: Row(
         children: [
-          // Active indicator bar
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: isActive ? 4 : 0,
@@ -366,32 +324,25 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildFooter(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
-
-    // Responsive sizing
     final padding = isTablet ? 32.0 : 24.0;
     final versionIconSize = isTablet ? 18.0 : 16.0;
     final versionFontSize = isTablet ? 13.0 : 12.0;
     final logoutIconSize = isTablet ? 18.0 : 16.0;
     final logoutFontSize = isTablet ? 15.0 : 14.0;
-
     return Container(
       padding: EdgeInsets.all(padding),
       child: Column(
         children: [
-          // Divider
           Container(
             height: 1,
             color: colorScheme.outline.withValues(alpha: 0.2),
             margin: EdgeInsets.only(bottom: isTablet ? 24 : 20),
           ),
-
-          // App version or additional info
           Row(
             children: [
               Icon(
@@ -411,8 +362,6 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
             ],
           ),
           SizedBox(height: isTablet ? 16 : 12),
-
-          // Logout button
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -460,11 +409,9 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
     );
   }
 }
-
 class MenuItemData {
   final IconData icon;
   final String label;
   final String route;
-
   MenuItemData(this.icon, this.label, this.route);
 }

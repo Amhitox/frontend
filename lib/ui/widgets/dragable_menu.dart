@@ -1,27 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 class DraggableMenu extends StatefulWidget {
   const DraggableMenu({super.key});
-
   @override
   _DraggableMenuState createState() => _DraggableMenuState();
 }
-
 class _DraggableMenuState extends State<DraggableMenu>
     with TickerProviderStateMixin {
   bool _isMenuOpen = false;
   late AnimationController _animationController;
   late AnimationController _iconRotationController;
   late Animation<double> _animation;
-
   final List<MenuItemData> _menuItems = [
     MenuItemData(Icons.home_rounded, 'Home', '/'),
     MenuItemData(Icons.email_rounded, 'Mail', '/mail'),
     MenuItemData(Icons.calendar_month_rounded, 'Calendar', '/calendar'),
     MenuItemData(Icons.task_alt_rounded, 'Tasks', '/task'),
   ];
-
   @override
   void initState() {
     super.initState();
@@ -33,32 +28,27 @@ class _DraggableMenuState extends State<DraggableMenu>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-
     _animation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
     );
   }
-
   @override
   void dispose() {
     _animationController.dispose();
     _iconRotationController.dispose();
     super.dispose();
   }
-
   void _toggleMenu() {
     setState(() => _isMenuOpen = !_isMenuOpen);
     _isMenuOpen
         ? (_animationController.forward(), _iconRotationController.forward())
         : (_animationController.reverse(), _iconRotationController.reverse());
   }
-
   void _navigateTo(String route) {
     context.push(route);
     _toggleMenu();
   }
-
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -66,7 +56,6 @@ class _DraggableMenuState extends State<DraggableMenu>
     final screenHeight = MediaQuery.of(context).size.height;
     final isTablet = screenWidth > 600;
     final isLargeScreen = screenWidth > 900;
-
     final buttonSize =
         isLargeScreen
             ? 80.0
@@ -85,24 +74,19 @@ class _DraggableMenuState extends State<DraggableMenu>
             : isTablet
             ? screenWidth * 0.12
             : screenWidth * 0.1;
-
     return Stack(
       children: [
-        // Enhanced background overlay
         if (_isMenuOpen)
           GestureDetector(
             onTap: _toggleMenu,
             child: Container(color: colors.scrim.withValues(alpha: 0.3)),
           ),
-
-        // Menu button and items
         Positioned(
           right: buttonRight,
           bottom: buttonBottom,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Menu items with simple animations
               AnimatedBuilder(
                 animation: _animation,
                 builder: (context, child) {
@@ -116,7 +100,6 @@ class _DraggableMenuState extends State<DraggableMenu>
                             0.0,
                             1.0,
                           );
-
                           return Opacity(
                             opacity: value,
                             child: Transform.translate(
@@ -142,8 +125,6 @@ class _DraggableMenuState extends State<DraggableMenu>
                   );
                 },
               ),
-
-              // Add margin between last item and main button
               SizedBox(
                 height:
                     isLargeScreen
@@ -152,8 +133,6 @@ class _DraggableMenuState extends State<DraggableMenu>
                         ? 20
                         : 16,
               ),
-
-              // Simple main button
               GestureDetector(
                 onTap: _toggleMenu,
                 child: AnimatedBuilder(
@@ -204,15 +183,12 @@ class _DraggableMenuState extends State<DraggableMenu>
       ],
     );
   }
-
   Widget _buildMenuItem(MenuItemData item, bool isTablet, bool isLargeScreen) {
     final colors = Theme.of(context).colorScheme;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Enhanced label container
         Container(
           padding: EdgeInsets.symmetric(
             horizontal:
@@ -278,7 +254,6 @@ class _DraggableMenuState extends State<DraggableMenu>
             ),
           ),
         ),
-        // Enhanced icon button
         GestureDetector(
           onTap: () => _navigateTo(item.route),
           child: Container(
@@ -334,11 +309,9 @@ class _DraggableMenuState extends State<DraggableMenu>
     );
   }
 }
-
 class MenuItemData {
   final IconData icon;
   final String label;
   final String route;
-
   MenuItemData(this.icon, this.label, this.route);
 }

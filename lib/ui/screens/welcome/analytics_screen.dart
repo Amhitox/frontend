@@ -3,7 +3,6 @@ import 'package:frontend/ui/widgets/side_menu.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
-
   @override
   _AnalyticsScreenState createState() => _AnalyticsScreenState();
 }
@@ -14,7 +13,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   late Animation<Offset> _slideAnimation;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-
   String _selectedPeriod = 'This Week';
   final List<String> _periods = [
     'Today',
@@ -22,7 +20,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     'This Month',
     'This Year',
   ];
-
   final Map<String, AnalyticsData> _analyticsData = {
     'Today': AnalyticsData(
       emailsSent: 12,
@@ -73,7 +70,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       chartColors: [Colors.blue, Colors.green, Colors.purple],
     ),
   };
-
   @override
   void initState() {
     super.initState();
@@ -81,22 +77,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
-
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
-
     _slideController.forward();
     _fadeController.forward();
   }
@@ -109,13 +101,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   AnalyticsData get _currentData => _analyticsData[_selectedPeriod]!;
-
-  // Enhanced responsive breakpoints for better iPad support
   bool _isLargeScreen(double width) => width >= 1024;
   bool _isTablet(double width) => width >= 768 && width < 1024;
   bool _isSmallTablet(double width) => width >= 600 && width < 768;
-  bool _isMobile(double width) => width < 600;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -124,12 +112,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final screenWidth = screenSize.width;
     final screenHeight = screenSize.height;
     final isLandscape = screenWidth > screenHeight;
-
-    // Enhanced responsive dimensions
     final double horizontalPadding = _getHorizontalPadding(screenWidth);
     final double verticalSpacing = _getVerticalSpacing(screenWidth);
     final double contentMaxWidth = _getContentMaxWidth(screenWidth);
-
     return Scaffold(
       drawer: const SideMenu(),
       body: Container(
@@ -203,26 +188,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     bool isLandscape,
     double spacing,
   ) {
-    // For iPads and larger screens in landscape, use a sophisticated multi-column layout
     if ((_isTablet(screenWidth) || _isLargeScreen(screenWidth)) &&
         isLandscape) {
       return _buildTabletLandscapeLayout(context, screenWidth, spacing);
-    }
-    // For iPads in portrait, use a two-column layout for some sections
-    else if (_isTablet(screenWidth) || _isLargeScreen(screenWidth)) {
+    } else if (_isTablet(screenWidth) || _isLargeScreen(screenWidth)) {
       return _buildTabletPortraitLayout(context, screenWidth, spacing);
-    }
-    // For smaller tablets, use an optimized single-column layout
-    else if (_isSmallTablet(screenWidth)) {
+    } else if (_isSmallTablet(screenWidth)) {
       return _buildSmallTabletLayout(context, screenWidth, spacing);
-    }
-    // For mobile devices
-    else {
+    } else {
       return _buildMobileLayout(context, screenWidth, spacing);
     }
   }
 
-  // Enhanced tablet landscape layout
   Widget _buildTabletLandscapeLayout(
     BuildContext context,
     double screenWidth,
@@ -231,14 +208,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return Column(
       children: [
         SizedBox(height: spacing),
-        // Stats in a single row for landscape
         _buildQuickStats(context, crossAxisCount: 4, aspectRatio: 1.4),
         SizedBox(height: spacing),
-        // Main content in three columns
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left column - Productivity and insights
             Expanded(
               flex: 2,
               child: Column(
@@ -250,10 +224,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               ),
             ),
             SizedBox(width: spacing),
-            // Middle column - Chart
             Expanded(flex: 2, child: _buildChartCard(context, screenWidth)),
             SizedBox(width: spacing),
-            // Right column - Category breakdown
             Expanded(
               flex: 2,
               child: _buildCategoryBreakdown(context, screenWidth),
@@ -265,7 +237,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  // Enhanced tablet portrait layout
   Widget _buildTabletPortraitLayout(
     BuildContext context,
     double screenWidth,
@@ -276,7 +247,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         SizedBox(height: spacing),
         _buildQuickStats(context, crossAxisCount: 4, aspectRatio: 1.6),
         SizedBox(height: spacing),
-        // Two-column layout for main content
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -308,7 +278,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  // Small tablet layout
   Widget _buildSmallTabletLayout(
     BuildContext context,
     double screenWidth,
@@ -336,7 +305,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     );
   }
 
-  // Mobile layout
   Widget _buildMobileLayout(
     BuildContext context,
     double screenWidth,
@@ -361,15 +329,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
   Widget _buildHeader(BuildContext context, double screenWidth) {
     final theme = Theme.of(context);
-
-    // Enhanced responsive sizing
     final double padding = _getHeaderPadding(screenWidth);
     final double iconSize = _getHeaderIconSize(screenWidth);
     final double titleSize = _getHeaderTitleSize(screenWidth);
     final double subtitleSize = _getHeaderSubtitleSize(screenWidth);
     final double borderRadius = _getHeaderBorderRadius(screenWidth);
     final double margin = _getHeaderMargin(screenWidth);
-
     return Container(
       margin: EdgeInsets.all(margin),
       padding: EdgeInsets.all(padding),
@@ -559,7 +524,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final theme = Theme.of(context);
     final double valueSize = _isTablet(screenWidth) ? 20.0 : 18.0;
     final double labelSize = _isTablet(screenWidth) ? 12.0 : 11.0;
-
     return Column(
       children: [
         Text(
@@ -591,7 +555,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final theme = Theme.of(context);
     final double buttonSize = _isTablet(screenWidth) ? 44.0 : 36.0;
     final double iconSize = _isTablet(screenWidth) ? 20.0 : 16.0;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -614,7 +577,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final theme = Theme.of(context);
     final double fontSize = _getTabFontSize(screenWidth);
     final double padding = _getTabPadding(screenWidth);
-
     return Container(
       margin: EdgeInsets.symmetric(horizontal: padding, vertical: 8),
       padding: const EdgeInsets.all(4),
@@ -700,16 +662,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     double aspectRatio = 1.5,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
-
-    // Better aspect ratio calculation for iPads
     double finalAspectRatio = aspectRatio;
     if (_isTablet(screenWidth) || _isLargeScreen(screenWidth)) {
       finalAspectRatio = crossAxisCount == 4 ? 1.4 : 1.6;
     } else if (_isSmallTablet(screenWidth)) {
       finalAspectRatio = crossAxisCount == 4 ? 1.3 : 1.7;
     }
-
-    // Enhanced spacing for different screen sizes
     final double crossSpacing =
         _isLargeScreen(screenWidth)
             ? 24.0
@@ -719,7 +677,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ? 18.0
             : 16.0;
     final double mainSpacing = crossSpacing;
-
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
@@ -770,26 +727,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   ) {
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
-
-    // Enhanced responsive sizing
     final double cardPadding = _getStatCardPadding(screenWidth);
     final double iconSize = _getStatCardIconSize(screenWidth);
     final double valueSize = _getStatCardValueSize(screenWidth);
     final double titleSize = _getStatCardTitleSize(screenWidth);
     final double spacing = _getStatCardSpacing(screenWidth);
-
     return Container(
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.1),
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.08),
+            color: theme.colorScheme.shadow.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -797,28 +751,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Calculate available space for better layout distribution
-          final availableHeight = constraints.maxHeight - (cardPadding * 2);
-          final iconSpace = iconSize + spacing;
-          final remainingHeight = availableHeight - iconSpace;
-
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              // Icon container with fixed size
               Container(
                 width: iconSize,
                 height: iconSize,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(iconSize * 0.25),
                 ),
                 child: Icon(icon, color: color, size: iconSize * 0.55),
               ),
               SizedBox(height: spacing),
-
-              // Value text with proper space allocation
               Expanded(
                 flex: 3,
                 child: Container(
@@ -847,11 +793,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   ),
                 ),
               ),
-
-              // Small spacing between value and title
               SizedBox(height: spacing * 0.3),
-
-              // Title text with proper space allocation
               Expanded(
                 flex: 2,
                 child: Container(
@@ -860,7 +802,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   child: Text(
                     title,
                     style: TextStyle(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                       fontSize: titleSize,
                       fontWeight: FontWeight.w500,
                       height: 1.2,
@@ -916,7 +858,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final double padding = _getCardPadding(screenWidth);
     final double titleSize = _getCardTitleSize(screenWidth);
     final double subtitleSize = _getCardSubtitleSize(screenWidth);
-
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
@@ -1029,7 +970,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final theme = Theme.of(context);
     final double padding = _getCardPadding(screenWidth);
     final double titleSize = _getCardTitleSize(screenWidth);
-
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
@@ -1073,7 +1013,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final theme = Theme.of(context);
     final double barWidth = _getChartBarWidth(screenWidth);
     final double fontSize = _getChartLabelSize(screenWidth);
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -1082,7 +1021,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             final index = entry.key;
             final value = entry.value;
             final height = (value / maxValue) * _getChartMaxHeight(screenWidth);
-
             return TweenAnimationBuilder<double>(
               duration: Duration(milliseconds: 800 + (index * 100)),
               tween: Tween(begin: 0.0, end: height),
@@ -1147,7 +1085,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final double padding = _getCardPadding(screenWidth);
     final double titleSize = _getCardTitleSize(screenWidth);
     final double itemSize = _getCategoryItemSize(screenWidth);
-
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
@@ -1173,7 +1110,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               final category = _currentData.topCategories[index];
               final percentage = _currentData.categoryData[index];
               final color = _currentData.chartColors[index];
-
               return Padding(
                 padding: EdgeInsets.only(
                   bottom: _isTablet(screenWidth) ? 20 : 16,
@@ -1260,7 +1196,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final theme = Theme.of(context);
     final double padding = _getCardPadding(screenWidth);
     final double titleSize = _getCardTitleSize(screenWidth);
-
     return FadeTransition(
       opacity: _fadeAnimation,
       child: Container(
@@ -1332,7 +1267,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final double iconSize = _getInsightIconSize(screenWidth);
     final double titleSize = _getInsightTitleSize(screenWidth);
     final double descSize = _getInsightDescSize(screenWidth);
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1439,7 +1373,6 @@ class AnalyticsData {
   final List<int> categoryData;
   final List<int> weeklyData;
   final List<Color> chartColors;
-
   AnalyticsData({
     required this.emailsSent,
     required this.emailsReceived,

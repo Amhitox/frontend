@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 class CalendarView extends StatefulWidget {
   final DateTime selectedDate;
   final Function(DateTime) onDateSelected;
   final VoidCallback onBack;
-
   const CalendarView({
     super.key,
     required this.selectedDate,
     required this.onDateSelected,
     required this.onBack,
   });
-
   @override
   _CalendarViewState createState() => _CalendarViewState();
 }
-
 class _CalendarViewState extends State<CalendarView> {
   bool _showingCalendarView = false;
   late DateTime _selectedDate;
@@ -25,21 +21,18 @@ class _CalendarViewState extends State<CalendarView> {
     super.initState();
     _selectedDate = widget.selectedDate;
   }
-
   void _toggleCalendarView() {
     setState(() {
       _showingCalendarView = !_showingCalendarView;
     });
     HapticFeedback.lightImpact();
   }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
-
     return Column(
       children: [
         _buildCalendarViewHeader(theme, isTablet, isLargeScreen),
@@ -47,7 +40,6 @@ class _CalendarViewState extends State<CalendarView> {
       ],
     );
   }
-
   Widget _buildCalendarViewHeader(
     ThemeData theme,
     bool isTablet,
@@ -59,7 +51,6 @@ class _CalendarViewState extends State<CalendarView> {
             : isTablet
             ? 24.0
             : 20.0;
-
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
@@ -117,7 +108,6 @@ class _CalendarViewState extends State<CalendarView> {
       ),
     );
   }
-
   Widget _buildMonthCalendar(
     ThemeData theme,
     bool isTablet,
@@ -135,7 +125,6 @@ class _CalendarViewState extends State<CalendarView> {
             : isTablet
             ? 20.0
             : 16.0;
-
     return Container(
       margin: EdgeInsets.all(margin),
       padding: EdgeInsets.all(padding),
@@ -165,7 +154,6 @@ class _CalendarViewState extends State<CalendarView> {
       ),
     );
   }
-
   Widget _buildCalendarMonthHeader(ThemeData theme, bool isTablet) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -212,7 +200,6 @@ class _CalendarViewState extends State<CalendarView> {
       ],
     );
   }
-
   Widget _buildCalendarNavButton(
     IconData icon,
     VoidCallback onTap,
@@ -247,7 +234,6 @@ class _CalendarViewState extends State<CalendarView> {
       ),
     );
   }
-
   Widget _buildCalendarDaysHeader(ThemeData theme, bool isTablet) {
     final days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return Row(
@@ -269,7 +255,6 @@ class _CalendarViewState extends State<CalendarView> {
               .toList(),
     );
   }
-
   Widget _buildCalendarGrid(ThemeData theme, bool isTablet) {
     final daysInMonth =
         DateTime(_selectedDate.year, _selectedDate.month + 1, 0).day;
@@ -279,27 +264,23 @@ class _CalendarViewState extends State<CalendarView> {
       1,
     );
     final startingWeekday = firstDayOfMonth.weekday % 7;
-
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
         childAspectRatio: 1,
       ),
-      itemCount: 42, // 6 weeks
+      itemCount: 42, 
       itemBuilder: (context, index) {
         if (index < startingWeekday) {
-          return Container(); // Empty cells before month starts
+          return Container(); 
         }
-
         final day = index - startingWeekday + 1;
         if (day > daysInMonth) {
-          return Container(); // Empty cells after month ends
+          return Container(); 
         }
-
         final date = DateTime(_selectedDate.year, _selectedDate.month, day);
         final isToday = _isSameDay(date, DateTime.now());
         final isSelected = _isSameDay(date, _selectedDate);
-
         return Material(
           color: Colors.transparent,
           child: InkWell(
@@ -352,7 +333,6 @@ class _CalendarViewState extends State<CalendarView> {
       },
     );
   }
-
   void _selectDateFromCalendar(DateTime date) {
     setState(() {
       _selectedDate = date;
@@ -361,7 +341,6 @@ class _CalendarViewState extends State<CalendarView> {
     widget.onDateSelected(date);
     HapticFeedback.mediumImpact();
   }
-
   String _formatFullDate(DateTime date) {
     List<String> months = [
       'January',
@@ -379,7 +358,6 @@ class _CalendarViewState extends State<CalendarView> {
     ];
     return '${months[date.month - 1]} ${date.year}';
   }
-
   bool _isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
         date1.month == date2.month &&
