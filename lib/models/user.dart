@@ -43,8 +43,9 @@ class User {
     if (status != null) json['status'] = status;
     if (firstName != null) json['firstName'] = firstName;
     if (id != null) json['id'] = id;
-    if (workEmail != null && workEmail!.isNotEmpty)
+    if (workEmail != null && workEmail!.isNotEmpty) {
       json['workEmail'] = workEmail;
+    }
     if (subscriptionTier != null) json['subscriptionTier'] = subscriptionTier;
     return json;
   }

@@ -1,21 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/utils/localization.dart';
 import 'package:go_router/go_router.dart';
+
 class DraggableMenu extends StatefulWidget {
   const DraggableMenu({super.key});
   @override
   _DraggableMenuState createState() => _DraggableMenuState();
 }
+
 class _DraggableMenuState extends State<DraggableMenu>
     with TickerProviderStateMixin {
   bool _isMenuOpen = false;
   late AnimationController _animationController;
   late AnimationController _iconRotationController;
   late Animation<double> _animation;
-  final List<MenuItemData> _menuItems = [
-    MenuItemData(Icons.home_rounded, 'Home', '/'),
-    MenuItemData(Icons.email_rounded, 'Mail', '/mail'),
-    MenuItemData(Icons.calendar_month_rounded, 'Calendar', '/calendar'),
-    MenuItemData(Icons.task_alt_rounded, 'Tasks', '/task'),
+  List<MenuItemData> get _menuItems => [
+    MenuItemData(Icons.home_rounded, AppLocalizations.of(context).home, '/'),
+    MenuItemData(
+      Icons.email_rounded,
+      AppLocalizations.of(context).email,
+      '/mail',
+    ),
+    MenuItemData(
+      Icons.calendar_month_rounded,
+      AppLocalizations.of(context).calendar,
+      '/calendar',
+    ),
+    MenuItemData(
+      Icons.task_alt_rounded,
+      AppLocalizations.of(context).tasks,
+      '/task',
+    ),
   ];
   @override
   void initState() {
@@ -33,22 +48,26 @@ class _DraggableMenuState extends State<DraggableMenu>
       curve: Curves.easeInOut,
     );
   }
+
   @override
   void dispose() {
     _animationController.dispose();
     _iconRotationController.dispose();
     super.dispose();
   }
+
   void _toggleMenu() {
     setState(() => _isMenuOpen = !_isMenuOpen);
     _isMenuOpen
         ? (_animationController.forward(), _iconRotationController.forward())
         : (_animationController.reverse(), _iconRotationController.reverse());
   }
+
   void _navigateTo(String route) {
     context.push(route);
     _toggleMenu();
   }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -183,6 +202,7 @@ class _DraggableMenuState extends State<DraggableMenu>
       ],
     );
   }
+
   Widget _buildMenuItem(MenuItemData item, bool isTablet, bool isLargeScreen) {
     final colors = Theme.of(context).colorScheme;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -309,6 +329,7 @@ class _DraggableMenuState extends State<DraggableMenu>
     );
   }
 }
+
 class MenuItemData {
   final IconData icon;
   final String label;

@@ -12,6 +12,7 @@ import 'package:frontend/utils/error_handler.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 class AuthProvider extends ChangeNotifier {
   late AuthService _authService;
   late PersistCookieJar _cookieJar;
@@ -46,6 +47,7 @@ class AuthProvider extends ChangeNotifier {
       _dio.interceptors.add(CookieManager(_cookieJar));
     }
   }
+
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
@@ -72,6 +74,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<dynamic> register(
     String email,
     String password,
@@ -108,6 +111,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<dynamic> logout() async {
     try {
       if (_user != null) {
@@ -126,6 +130,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrintStack(stackTrace: stacktrace);
     }
   }
+
   Future<dynamic> signInWithGoogle() async {
     try {
       await _googleSignIn.initialize(
@@ -167,6 +172,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<dynamic> forgotPassword(String email) async {
     try {
       final response = await _authService.forgotPassword(email);
@@ -176,6 +182,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
   }
+
   Future<dynamic> resetPassword(String code, String newPassword) async {
     try {
       await firebaseAuth.confirmPasswordReset(
@@ -188,6 +195,7 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
   }
+
   Future<dynamic> verifyEmail(String token) async {
     try {
       await FirebaseAuth.instance.applyActionCode(token);
@@ -197,8 +205,16 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
   }
+
   void updateUserInMemory(User updatedUser) {
     _user = updatedUser;
     notifyListeners();
+  }
+
+  Future<void> syncLanguagePreference() async {
+    if (_user?.lang != null) {
+      // This will be called from the language provider when needed
+      // The language provider will handle the actual language setting
+    }
   }
 }

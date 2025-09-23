@@ -1,27 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/utils/localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 class SideMenu extends StatefulWidget {
   const SideMenu({super.key});
   @override
   _SideMenuState createState() => _SideMenuState();
 }
+
 class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-  final List<MenuItemData> _menuItems = [
-    MenuItemData(Icons.home_outlined, 'Home', '/'),
-    MenuItemData(Icons.mail_outline, 'Mail', '/mail'),
-    MenuItemData(Icons.calendar_today_outlined, 'Calendar', '/calendar'),
-    MenuItemData(Icons.task_alt_outlined, 'Tasks', '/task'),
-    MenuItemData(Icons.analytics_outlined, 'Analytics', '/analytics'),
+  List<MenuItemData> get _menuItems => [
+    MenuItemData(Icons.home_outlined, AppLocalizations.of(context).home, '/'),
+    MenuItemData(
+      Icons.mail_outline,
+      AppLocalizations.of(context).email,
+      '/mail',
+    ),
+    MenuItemData(
+      Icons.calendar_today_outlined,
+      AppLocalizations.of(context).calendar,
+      '/calendar',
+    ),
+    MenuItemData(
+      Icons.task_alt_outlined,
+      AppLocalizations.of(context).tasks,
+      '/task',
+    ),
+    MenuItemData(
+      Icons.analytics_outlined,
+      AppLocalizations.of(context).analytics,
+      '/analytics',
+    ),
     MenuItemData(
       Icons.notifications_outlined,
-      'Notifications',
+      AppLocalizations.of(context).notifications,
       '/notifications',
     ),
-    MenuItemData(Icons.settings_outlined, 'Settings', '/settings'),
+    MenuItemData(
+      Icons.settings_outlined,
+      AppLocalizations.of(context).settings,
+      '/settings',
+    ),
   ];
   @override
   void initState() {
@@ -40,19 +63,22 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
       _slideController.forward();
     });
   }
+
   @override
   void dispose() {
     _slideController.dispose();
     super.dispose();
   }
+
   void _navigateTo(String route) {
-    Navigator.of(context).pop(); 
+    Navigator.of(context).pop();
     if (route != '/') {
       context.push(route);
     } else {
       context.push('/');
     }
   }
+
   bool _isRouteActive(String route) {
     final currentRoute = GoRouterState.of(context).uri.path;
     if (route == '/') {
@@ -66,6 +92,7 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
     }
     return false;
   }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -112,6 +139,7 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildHeader(BuildContext context) {
     final user = context.read<AuthProvider>().user;
     final theme = Theme.of(context);
@@ -178,6 +206,7 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildMenuItems(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600;
@@ -203,6 +232,7 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
       },
     );
   }
+
   Widget _buildMenuItem(BuildContext context, MenuItemData item, int index) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -324,6 +354,7 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildFooter(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -409,6 +440,7 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
     );
   }
 }
+
 class MenuItemData {
   final IconData icon;
   final String label;

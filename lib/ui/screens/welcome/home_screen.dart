@@ -4,7 +4,9 @@ import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/providers/meeting_provider.dart';
 import 'package:frontend/services/connectivity_service.dart';
 import 'package:frontend/services/firabasesync_service.dart';
+import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
+import 'package:frontend/utils/localization.dart';
 import 'dart:math' as math;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -149,6 +151,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 },
               ),
             ),
+            const DraggableMenu(),
           ],
         ),
       ),
@@ -470,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           _buildWelcomeSection(isTablet, isLargeScreen),
           _buildCentralMicrophone(isTablet, isLargeScreen),
           _buildVoiceIndicator(isTablet),
-          _buildQuickActions(isTablet, isLargeScreen),
+          // _buildQuickActions(isTablet, isLargeScreen),
           SizedBox(height: spacing * 0.3),
         ],
       ),
@@ -570,7 +573,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
                 SizedBox(width: 8),
                 Text(
-                  'Ready to assist you',
+                  AppLocalizations.of(context).readyToAssistYou,
                   style: TextStyle(
                     color: Theme.of(
                       context,
@@ -589,9 +592,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return AppLocalizations.of(context).goodMorning;
+    if (hour < 17) return AppLocalizations.of(context).goodAfternoon;
+    return AppLocalizations.of(context).goodEvening;
   }
 
   Widget _buildCentralMicrophone(bool isTablet, bool isLargeScreen) {

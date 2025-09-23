@@ -16,8 +16,11 @@ import 'package:frontend/providers/sub_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/language_provider.dart';
 import 'utils/app_theme.dart';
+import 'utils/localization.dart';
 import 'routes/app_router.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -35,6 +38,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider.value(value: authProvider),
         ChangeNotifierProvider(
           create: (_) => TaskProvider(dio: authProvider.dio),
@@ -53,20 +57,43 @@ Future<void> main() async {
     ),
   );
 }
-class MainApp extends StatelessWidget {
+
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Sync language preferences when the app starts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      final languageProvider = context.read<LanguageProvider>();
+      if (authProvider.user?.lang != null) {
+        languageProvider.setLanguageFromUser(authProvider.user!.lang);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final languageProvider = Provider.of<LanguageProvider>(context);
     final router = AppRoutes().createRouter(context);
     return MaterialApp.router(
       title: 'Aixy',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeProvider.themeMode,
+      locale: languageProvider.locale,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         FlutterQuillLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

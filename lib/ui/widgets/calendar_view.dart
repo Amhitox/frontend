@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:frontend/utils/localization.dart';
 class CalendarView extends StatefulWidget {
   final DateTime selectedDate;
   final Function(DateTime) onDateSelected;
@@ -91,7 +92,7 @@ class _CalendarViewState extends State<CalendarView> {
           SizedBox(width: isTablet ? 20 : 16),
           Expanded(
             child: Text(
-              'Select Date',
+              AppLocalizations.of(context).selectDate,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontSize:
                     isLargeScreen

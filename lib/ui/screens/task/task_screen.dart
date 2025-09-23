@@ -12,6 +12,8 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
+import '../../../utils/localization.dart';
+
 class TaskScreen extends StatefulWidget {
   final List<Task> tasks;
   final DateTime date;
@@ -19,6 +21,7 @@ class TaskScreen extends StatefulWidget {
   @override
   _TaskScreenState createState() => _TaskScreenState();
 }
+
 class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
@@ -26,7 +29,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   bool _showingCalendarView = false;
   String _selectedFilter = "All";
   bool _isLoading = false;
-  final List<String> _filters = ["All", "In Progress", "Completed"];
+  List<String> _filters = [];
   List<Task> _tasks = <Task>[];
   @override
   void initState() {
@@ -47,6 +50,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _setupTaskListener();
     });
   }
+
   void _setupTaskListener() {
     final manager = TaskManager();
     if (manager.isInitialized) {
@@ -60,10 +64,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       }
     }
   }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
   }
+
   Future<void> _getTasksForDate(DateTime date) async {
     if (mounted) {
       setState(() {
@@ -97,16 +103,19 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       }
     }
   }
+
   @override
   void dispose() {
     _slideController.dispose();
     super.dispose();
   }
+
   void _toggleCalendarView() {
     setState(() {
       _showingCalendarView = !_showingCalendarView;
     });
   }
+
   void _selectDateFromCalendar(DateTime date) async {
     setState(() {
       _selectedDate = date;
@@ -114,6 +123,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     });
     await _getTasksForDate(date);
   }
+
   void _toggleTaskCompletion(
     Task task,
     DateTime selectedDate,
@@ -139,16 +149,16 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           id: task.id!,
           isCompleted: isCompleted,
         );
-      } catch (e) {
-      }
-    } catch (e) {
-    }
+      } catch (e) {}
+    } catch (e) {}
   }
+
   void _editTask(Task task) async {
     HapticFeedback.mediumImpact();
     await context.pushNamed('addTask', extra: task);
     await _getTasksForDate(_selectedDate);
   }
+
   void _deleteTask(Task task, DateTime selectedDate) async {
     HapticFeedback.mediumImpact();
     setState(() {
@@ -179,30 +189,41 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       await _permanentlyDeleteTask(task, selectedDate);
     }
   }
+
   Future<void> _permanentlyDeleteTask(Task task, DateTime selectedDate) async {
     try {
       await context.read<TaskProvider>().deleteTask(task.id!);
       setState(() {
         _tasks.removeWhere((t) => t.id == task.id);
       });
-    } catch (e) {
-    }
+    } catch (e) {}
   }
+
   List<Task> get _filteredTasks {
-    switch (_selectedFilter) {
-      case 'In Progress':
-        return _tasks.where((task) => task.isCompleted != true).toList();
-      case 'Completed':
-        return _tasks.where((task) => task.isCompleted == true).toList();
-      default:
-        return _tasks;
+    final l10n = AppLocalizations.of(context);
+    if (_selectedFilter == 'In Progress' ||
+        _selectedFilter == l10n.inProgress) {
+      return _tasks.where((task) => task.isCompleted != true).toList();
+    } else if (_selectedFilter == 'Completed' ||
+        _selectedFilter == l10n.completed) {
+      return _tasks.where((task) => task.isCompleted == true).toList();
+    } else {
+      return _tasks;
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
+    final l10n = AppLocalizations.of(context);
+
+    // Initialize filters with localized strings
+    if (_filters.isEmpty) {
+      _filters = [l10n.all, l10n.inProgress, l10n.completed];
+      _selectedFilter = l10n.all;
+    }
     return Scaffold(
       drawer: const SideMenu(),
       body: Container(
@@ -245,6 +266,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildHeader(bool isTablet, bool isLargeScreen) {
     return Padding(
       padding: EdgeInsets.all(
@@ -261,7 +283,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Tasks',
+                  AppLocalizations.of(context).tasks,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontSize:
@@ -277,7 +299,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Text(
-                      '${_tasks.length} tasks for ${_getDateLabel()}',
+                      '${_tasks.length} ${AppLocalizations.of(context).tasks} for ${_getDateLabel()}',
                       style: TextStyle(
                         color: Theme.of(
                           context,
@@ -316,6 +338,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildHeaderButton(
     IconData icon,
     VoidCallback onTap,
@@ -352,6 +375,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildCalendarView() {
     return CalendarView(
       key: const ValueKey('calendar'),
@@ -360,6 +384,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       onBack: _toggleCalendarView,
     );
   }
+
   Widget _buildProgressCard(bool isTablet) {
     final completedTasks = _tasks.where((task) => task.isCompleted!).length;
     final totalTasks = _tasks.length;
@@ -381,7 +406,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Today's Progress",
+                  AppLocalizations.of(context).todayProgress,
                   style: TextStyle(
                     color: Theme.of(
                       context,
@@ -391,7 +416,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '$completedTasks of $totalTasks completed',
+                  '$completedTasks of $totalTasks ${AppLocalizations.of(context).completed}',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontSize: isTablet ? 18 : 16,
@@ -402,7 +427,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                 Row(
                   children: [
                     _buildStatChip(
-                      'High',
+                      AppLocalizations.of(context).high,
                       _getHighPriorityCount(),
                       Colors.red,
                       isTablet,
@@ -417,6 +442,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildStatChip(String label, int count, Color color, bool isTablet) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -451,6 +477,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ],
     );
   }
+
   Widget _buildProgressCircle(double progress) {
     return Stack(
       alignment: Alignment.center,
@@ -480,6 +507,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ],
     );
   }
+
   Widget _buildFilterTabs(bool isTablet) {
     return Container(
       height: 50,
@@ -539,6 +567,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildShimmerList(bool isTablet) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(
@@ -551,6 +580,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       },
     );
   }
+
   Widget _buildShimmerItem(context, bool isTablet) {
     return Shimmer.fromColors(
       baseColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.3),
@@ -636,6 +666,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildTasksList(bool isTablet) {
     if (_isLoading) {
       return _buildShimmerList(isTablet);
@@ -652,6 +683,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       },
     );
   }
+
   Widget _buildTaskItem(Task task, bool isTablet) {
     return Dismissible(
       key: Key(task.title! + task.dueDate!),
@@ -819,6 +851,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildSwipeBackground({required bool isEdit, required bool isTablet}) {
     return Container(
       margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
@@ -843,7 +876,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
               ),
               SizedBox(height: isTablet ? 8 : 6),
               Text(
-                isEdit ? 'Edit' : 'Delete',
+                isEdit
+                    ? AppLocalizations.of(context).edit
+                    : AppLocalizations.of(context).delete,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: isTablet ? 14 : 12,
@@ -856,6 +891,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Future<bool> _showDeleteConfirmation(Task task) async {
     return await showDialog<bool>(
           context: context,
@@ -866,14 +902,14 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 title: Text(
-                  'Delete Task',
+                  AppLocalizations.of(context).deleteTask,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 content: Text(
-                  'Are you sure you want to delete "${task.title}"?',
+                  '${AppLocalizations.of(context).areYouSureYouWantToDelete} "${task.title}"?',
                   style: TextStyle(
                     color: Theme.of(
                       context,
@@ -884,7 +920,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
                     child: Text(
-                      'Cancel',
+                      AppLocalizations.of(context).cancel,
                       style: TextStyle(
                         color: Theme.of(
                           context,
@@ -894,8 +930,8 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text(
-                      'Delete',
+                    child: Text(
+                      AppLocalizations.of(context).delete,
                       style: TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.w600,
@@ -907,6 +943,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         ) ??
         false;
   }
+
   Widget _buildCheckboxButton(Task task, bool isTablet) {
     final size = isTablet ? 28.0 : 24.0;
     return Container(
@@ -939,21 +976,22 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildPriorityChip(Task task, bool isTablet) {
     Color color;
     String label;
     switch (task.priority) {
       case TaskPriority.high:
         color = Colors.red.shade400;
-        label = 'HIGH';
+        label = AppLocalizations.of(context).high.toUpperCase();
         break;
       case TaskPriority.medium:
         color = Colors.orange.shade400;
-        label = 'MEDIUM';
+        label = AppLocalizations.of(context).medium.toUpperCase();
         break;
       default:
         color = Colors.green.shade400;
-        label = 'LOW';
+        label = AppLocalizations.of(context).low.toUpperCase();
     }
     return Container(
       padding: EdgeInsets.symmetric(
@@ -985,6 +1023,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildCategoryChip(Task task, bool isTablet) {
     return Container(
       padding: EdgeInsets.symmetric(
@@ -1015,9 +1054,11 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   String _getDateLabel() {
     return '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}';
   }
+
   int _getHighPriorityCount() =>
       _tasks.where((t) => t.priority == TaskPriority.high).length;
 }

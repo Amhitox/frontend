@@ -672,7 +672,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Continue with Microsoft',
+                  'Continue with Apple',
                   style: TextStyle(fontSize: fontSize),
                 ),
               ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend/providers/task_provider.dart';
+import 'package:frontend/utils/localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../models/task.dart';
@@ -26,18 +27,19 @@ class _AddTaskScreenState extends State<AddTaskScreen>
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   TaskPriority _selectedPriority = TaskPriority.medium;
-  String _selectedCategory = 'Work';
+  String _selectedCategoryKey = 'work';
   bool _showCustomCategoryField = false;
   Task newTask = Task();
   bool isEditMode = false;
-  final List<String> _categories = [
-    'Work',
-    'Personal',
-    'Finance',
-    'Health',
-    'Education',
-    'Other',
+  final List<String> _categoryKeys = [
+    'work',
+    'personal',
+    'finance',
+    'health',
+    'education',
+    'other',
   ];
+  List<String> _categories = [];
   bool _isSaving = false;
   @override
   void initState() {
@@ -63,12 +65,12 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       isEditMode = true;
       _titleController.text = widget.editingTask!.title!;
       _descriptionController.text = widget.editingTask!.description ?? '';
-      _selectedCategory = widget.editingTask!.category!;
+      _selectedCategoryKey = widget.editingTask!.category!;
       _selectedPriority = widget.editingTask!.priority!;
-      if (!_categories.contains(_selectedCategory)) {
+      if (!_categoryKeys.contains(_selectedCategoryKey)) {
         _showCustomCategoryField = true;
-        _customCategoryController.text = _selectedCategory;
-        _selectedCategory = 'Other';
+        _customCategoryController.text = _selectedCategoryKey;
+        _selectedCategoryKey = 'other';
       }
       try {
         final isoString = widget.editingTask!.dueDate!;
@@ -88,6 +90,21 @@ class _AddTaskScreenState extends State<AddTaskScreen>
     }
     _slideController.forward();
     _fadeController.forward();
+
+    // Initialize categories with translated values
+    _categories = [
+      AppLocalizations.of(context).work,
+      AppLocalizations.of(context).personal,
+      AppLocalizations.of(context).finance,
+      AppLocalizations.of(context).health,
+      AppLocalizations.of(context).education,
+      AppLocalizations.of(context).other,
+    ];
+
+    // Set default category key
+    if (_selectedCategoryKey.isEmpty) {
+      _selectedCategoryKey = 'work';
+    }
   }
 
   @override
@@ -102,12 +119,18 @@ class _AddTaskScreenState extends State<AddTaskScreen>
 
   void _saveTask() async {
     if (_titleController.text.trim().isEmpty) {
-      _showFeedback('Please enter a task title', isError: true);
+      _showFeedback(
+        AppLocalizations.of(context).pleaseEnterATaskTitle,
+        isError: true,
+      );
       return;
     }
     if (_showCustomCategoryField &&
         _customCategoryController.text.trim().isEmpty) {
-      _showFeedback('Please enter a custom category name', isError: true);
+      _showFeedback(
+        AppLocalizations.of(context).pleaseEnterACustomCategoryName,
+        isError: true,
+      );
       return;
     }
     final now = DateTime.now();
@@ -126,8 +149,8 @@ class _AddTaskScreenState extends State<AddTaskScreen>
     );
     if (selectedDateOnly.isBefore(today)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Task date cannot be in the past'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context).taskDateCannotBeInThePast),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 3),
         ),
@@ -138,8 +161,10 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       final oneHourFromNow = now.add(const Duration(hours: 1));
       if (combinedDateTime.isBefore(oneHourFromNow)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Task time must be at least 1 hour from now'),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).taskTimeMustBeAtLeastOneHourFromNow,
+            ),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 3),
           ),
@@ -156,7 +181,9 @@ class _AddTaskScreenState extends State<AddTaskScreen>
         _selectedDate,
         _selectedTime,
         false,
-        _selectedCategory.toLowerCase(),
+        _showCustomCategoryField
+            ? _customCategoryController.text.trim().toLowerCase()
+            : _selectedCategoryKey,
       );
     } else {
       await context.read<TaskProvider>().updateTask(
@@ -167,15 +194,18 @@ class _AddTaskScreenState extends State<AddTaskScreen>
         date: _selectedDate,
         time: _selectedTime,
         isCompleted: widget.editingTask!.isCompleted,
-        category: _selectedCategory.toLowerCase(),
+        category:
+            _showCustomCategoryField
+                ? _customCategoryController.text.trim().toLowerCase()
+                : _selectedCategoryKey,
       );
     }
     HapticFeedback.mediumImpact();
     await Future.delayed(const Duration(milliseconds: 1000));
     _showFeedback(
       widget.editingTask != null
-          ? 'Task updated successfully'
-          : 'Task created successfully',
+          ? AppLocalizations.of(context).taskUpdatedSuccessfully
+          : AppLocalizations.of(context).taskCreatedSuccessfully,
     );
     await Future.delayed(const Duration(milliseconds: 600));
     if (mounted) context.pop();
@@ -287,7 +317,9 @@ class _AddTaskScreenState extends State<AddTaskScreen>
           SizedBox(width: isTablet ? 20 : 16),
           Expanded(
             child: Text(
-              widget.editingTask != null ? 'Edit Task' : 'New Task',
+              widget.editingTask != null
+                  ? AppLocalizations.of(context).editTask
+                  : AppLocalizations.of(context).newTask,
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontSize:
                     isLargeScreen
@@ -319,8 +351,8 @@ class _AddTaskScreenState extends State<AddTaskScreen>
           SizedBox(height: isTablet ? 24 : 20),
           _buildTextField(
             controller: _titleController,
-            label: 'Task Title',
-            hint: 'What needs to be done?',
+            label: AppLocalizations.of(context).taskTitle,
+            hint: AppLocalizations.of(context).whatNeedsToBeDone,
             icon: Icons.task_alt_rounded,
             theme: theme,
             isTablet: isTablet,
@@ -329,8 +361,8 @@ class _AddTaskScreenState extends State<AddTaskScreen>
           SizedBox(height: isTablet ? 24 : 20),
           _buildTextField(
             controller: _descriptionController,
-            label: 'Description',
-            hint: 'Add details about this task (optional)',
+            label: AppLocalizations.of(context).description,
+            hint: AppLocalizations.of(context).addDetailsAboutThisTaskOptional,
             icon: Icons.description_rounded,
             maxLines: 3,
             theme: theme,
@@ -345,8 +377,8 @@ class _AddTaskScreenState extends State<AddTaskScreen>
             SizedBox(height: isTablet ? 16 : 12),
             _buildTextField(
               controller: _customCategoryController,
-              label: 'Custom Category',
-              hint: 'Enter your custom category name',
+              label: AppLocalizations.of(context).customCategory,
+              hint: AppLocalizations.of(context).enterYourCustomCategoryName,
               icon: Icons.label_rounded,
               theme: theme,
               isTablet: isTablet,
@@ -470,7 +502,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'DUE DATE & TIME',
+          AppLocalizations.of(context).dueDateTime,
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             fontSize:
@@ -650,7 +682,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
           child: Column(
             children: [
               Text(
-                'Time',
+                AppLocalizations.of(context).time,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   fontSize:
@@ -692,7 +724,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'CATEGORY',
+          AppLocalizations.of(context).category,
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             fontSize:
@@ -710,8 +742,11 @@ class _AddTaskScreenState extends State<AddTaskScreen>
           spacing: isTablet ? 12 : 8,
           runSpacing: isTablet ? 12 : 8,
           children:
-              _categories.map((category) {
-                final isSelected = _selectedCategory == category;
+              _categoryKeys.asMap().entries.map((entry) {
+                final index = entry.key;
+                final categoryKey = entry.value;
+                final categoryDisplay = _categories[index];
+                final isSelected = _selectedCategoryKey == categoryKey;
                 return Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -719,8 +754,8 @@ class _AddTaskScreenState extends State<AddTaskScreen>
                     onTap: () {
                       HapticFeedback.selectionClick();
                       setState(() {
-                        _selectedCategory = category;
-                        _showCustomCategoryField = category == 'Other';
+                        _selectedCategoryKey = categoryKey;
+                        _showCustomCategoryField = categoryKey == 'other';
                       });
                     },
                     child: AnimatedContainer(
@@ -781,7 +816,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
                                 ],
                       ),
                       child: Text(
-                        category,
+                        categoryDisplay,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color:
                               isSelected
@@ -817,7 +852,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'PRIORITY',
+          AppLocalizations.of(context).priority,
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             fontSize:
@@ -1008,8 +1043,8 @@ class _AddTaskScreenState extends State<AddTaskScreen>
                           SizedBox(width: isTablet ? 12 : 8),
                           Text(
                             widget.editingTask != null
-                                ? 'Update Task'
-                                : 'Create Task',
+                                ? AppLocalizations.of(context).updateTask
+                                : AppLocalizations.of(context).createTask,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: Colors.white,
                               fontSize:
@@ -1044,11 +1079,11 @@ class _AddTaskScreenState extends State<AddTaskScreen>
   String _getPriorityLabel(TaskPriority priority) {
     switch (priority) {
       case TaskPriority.high:
-        return 'High';
+        return AppLocalizations.of(context).high;
       case TaskPriority.medium:
-        return 'Medium';
+        return AppLocalizations.of(context).medium;
       case TaskPriority.low:
-        return 'Low';
+        return AppLocalizations.of(context).low;
     }
   }
 }

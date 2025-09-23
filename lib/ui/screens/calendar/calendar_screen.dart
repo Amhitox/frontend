@@ -9,6 +9,7 @@ import 'package:frontend/ui/widgets/meeting_sync_status_indicator.dart';
 import 'package:frontend/providers/meeting_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../models/meeting.dart';
+import '../../../utils/localization.dart';
 
 class CalendarPage extends StatefulWidget {
   final Map<String, dynamic>? data;

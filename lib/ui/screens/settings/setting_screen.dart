@@ -4,39 +4,36 @@ import 'package:frontend/providers/user_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/providers/theme_provider.dart';
+import 'package:frontend/providers/language_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/utils/localization.dart';
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
+
 class _SettingsScreenState extends State<SettingsScreen>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
   late final ThemeProvider themeProvider;
+  late final LanguageProvider languageProvider;
   String _userName = 'Amhita Marouane';
   String _workEmail = 'amhita.maroua@gmail.com';
-  String _selectedVoice = 'Female';
-  String _selectedLanguage = 'English';
-  String _selectedTheme = 'Light';
+  String _selectedVoice = '';
+  String _selectedLanguage = '';
+  String _selectedTheme = '';
   bool _pushNotifications = true;
   @override
   void initState() {
     super.initState();
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    switch (themeProvider.themeMode) {
-      case ThemeMode.light:
-        _selectedTheme = "Light";
-        break;
-      case ThemeMode.dark:
-        _selectedTheme = "Dark";
-        break;
-      case ThemeMode.system:
-        _selectedTheme = "System";
-        break;
-    }
+    languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+
+    // Values will be set in build method with localization
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -47,47 +44,103 @@ class _SettingsScreenState extends State<SettingsScreen>
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
     _slideController.forward();
   }
+
   @override
   void dispose() {
     _slideController.dispose();
     super.dispose();
   }
+
   String currentLanguage(User user) {
+    final l10n = AppLocalizations.of(context);
     if (user.lang == 'fr') {
-      return 'French';
+      return l10n.french;
     }
-    return 'English';
+    return l10n.english;
   }
+
   void _changeTheme(String theme) {
-    themeProvider.setTheme(
-      theme == 'Dark'
-          ? ThemeMode.dark
-          : theme == 'Light'
-          ? ThemeMode.light
-          : ThemeMode.system,
-    );
+    final l10n = AppLocalizations.of(context);
+    ThemeMode newThemeMode;
+
+    if (theme == l10n.dark) {
+      newThemeMode = ThemeMode.dark;
+    } else if (theme == l10n.light) {
+      newThemeMode = ThemeMode.light;
+    } else {
+      newThemeMode = ThemeMode.system;
+    }
+
+    themeProvider.setTheme(newThemeMode);
     setState(() {
       _selectedTheme = theme;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Theme changed to $theme'),
+        content: Text('${l10n.theme} ${l10n.changed} $theme'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
+
+  void _changeLanguage(String language) async {
+    final l10n = AppLocalizations.of(context);
+    final languageCode = language == l10n.english ? 'en' : 'fr';
+    await languageProvider.setLanguage(languageCode);
+
+    var user = context.read<AuthProvider>().user;
+    if (user != null) {
+      user.lang = languageCode;
+      context.read<UserProvider>().updateUser(user.id, user);
+    }
+
+    setState(() {
+      _selectedLanguage = language;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${l10n.language} ${l10n.changed} $language'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     var user = context.watch<AuthProvider>().user ?? User();
-    setState(() {
+
+    // Initialize all selected values with localized strings
+    if (_selectedVoice.isEmpty) {
+      _selectedVoice = l10n.female; // Default to female
+    }
+
+    if (_selectedLanguage.isEmpty) {
       _selectedLanguage = currentLanguage(user);
-    });
+    }
+
+    if (_selectedTheme.isEmpty) {
+      switch (themeProvider.themeMode) {
+        case ThemeMode.light:
+          _selectedTheme = l10n.light;
+          break;
+        case ThemeMode.dark:
+          _selectedTheme = l10n.dark;
+          break;
+        case ThemeMode.system:
+          _selectedTheme = l10n.system;
+          break;
+      }
+    }
     return Scaffold(
       drawer: const SideMenu(),
       body: Container(
@@ -128,15 +181,15 @@ class _SettingsScreenState extends State<SettingsScreen>
                           user,
                         ),
                         _buildSection(
-                          'App Preferences',
+                          AppLocalizations.of(context).appPreferences,
                           Icons.tune_outlined,
                           [
                             _buildVoiceSelector(isTablet, theme),
                             _buildLanguageSelector(isTablet, theme, user),
                             _buildThemeSelector(isTablet, theme),
                             _buildSwitchItem(
-                              'Push Notifications',
-                              'Receive notifications on your device',
+                              l10n.pushNotifications,
+                              l10n.pushNotifications,
                               Icons.notifications_outlined,
                               _pushNotifications,
                               (value) =>
@@ -150,12 +203,12 @@ class _SettingsScreenState extends State<SettingsScreen>
                           theme,
                         ),
                         _buildSection(
-                          'Support & Feedback',
+                          AppLocalizations.of(context).supportFeedback,
                           Icons.help_outline,
                           [
                             _buildSettingItem(
-                              'Rate Us',
-                              'Love the app? Leave us a review',
+                              AppLocalizations.of(context).rateUs,
+                              AppLocalizations.of(context).loveTheApp,
                               Icons.star_outline,
                               showArrow: false,
                               trailing: Row(
@@ -174,16 +227,16 @@ class _SettingsScreenState extends State<SettingsScreen>
                               theme: theme,
                             ),
                             _buildSettingItem(
-                              'Share App',
-                              'Tell your friends about this app',
+                              AppLocalizations.of(context).shareApp,
+                              AppLocalizations.of(context).tellYourFriends,
                               Icons.share_outlined,
                               onTap: () => _shareApp(theme, isTablet),
                               isTablet: isTablet,
                               theme: theme,
                             ),
                             _buildSettingItem(
-                              'Help & Support',
-                              'Get help and work support',
+                              AppLocalizations.of(context).helpSupport,
+                              AppLocalizations.of(context).getHelp,
                               Icons.support_agent_outlined,
                               onTap: () => context.go('/support'),
                               isTablet: isTablet,
@@ -195,28 +248,28 @@ class _SettingsScreenState extends State<SettingsScreen>
                           theme,
                         ),
                         _buildSection(
-                          'Legal & Information',
+                          AppLocalizations.of(context).legalInformation,
                           Icons.info_outline,
                           [
                             _buildSettingItem(
-                              'Privacy Policy',
-                              'How we protect your data',
+                              AppLocalizations.of(context).privacyPolicy,
+                              AppLocalizations.of(context).howWeProtectYourData,
                               Icons.privacy_tip_outlined,
                               onTap: () => context.go('/privacy'),
                               isTablet: isTablet,
                               theme: theme,
                             ),
                             _buildSettingItem(
-                              'Terms of Service',
-                              'Terms and conditions of use',
+                              AppLocalizations.of(context).termsOfService,
+                              AppLocalizations.of(context).termsAndConditions,
                               Icons.description_outlined,
                               onTap: () => context.go('/terms'),
                               isTablet: isTablet,
                               theme: theme,
                             ),
                             _buildSettingItem(
-                              'App Version',
-                              'Version 1.2.3 (Build 456)',
+                              AppLocalizations.of(context).appVersion,
+                              AppLocalizations.of(context).version123,
                               Icons.system_update_outlined,
                               showArrow: false,
                               onTap: () => _checkForUpdates(theme, isTablet),
@@ -242,6 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
+
   Widget _buildHeader(
     bool isTablet,
     bool isLargeScreen,
@@ -427,7 +481,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             children: [
               Expanded(
                 child: _buildQuickActionButton(
-                  'Edit Profile',
+                  AppLocalizations.of(context).editProfile,
                   Icons.person_outline,
                   Colors.blue,
                   () => context.go('/profile'),
@@ -437,7 +491,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               SizedBox(width: isTablet ? 16 : 12),
               Expanded(
                 child: _buildQuickActionButton(
-                  'Security',
+                  AppLocalizations.of(context).security,
                   Icons.security,
                   Colors.orange,
                   () => context.go('/security'),
@@ -450,6 +504,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
+
   Widget _buildEmailSection(
     bool isTablet,
     bool isLargeScreen,
@@ -475,7 +530,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
                 SizedBox(width: isTablet ? 10 : 8),
                 Text(
-                  'Email Management',
+                  AppLocalizations.of(context).emailManagement,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
                     fontSize:
@@ -541,7 +596,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Registration Email',
+                              AppLocalizations.of(context).registrationEmail,
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface,
                                 fontSize: isTablet ? 16 : 15,
@@ -575,7 +630,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           ),
                         ),
                         child: Text(
-                          'Fixed',
+                          AppLocalizations.of(context).fixed,
                           style: TextStyle(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -613,7 +668,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Work Email',
+                              AppLocalizations.of(context).workEmail,
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface,
                                 fontSize: isTablet ? 16 : 15,
@@ -647,7 +702,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             ),
                           ),
                           child: Text(
-                            'Edit',
+                            AppLocalizations.of(context).edit,
                             style: TextStyle(
                               color: Colors.blue,
                               fontSize: isTablet ? 12 : 11,
@@ -666,6 +721,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
+
   Widget _buildQuickActionButton(
     String label,
     IconData icon,
@@ -703,6 +759,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
+
   Widget _buildSection(
     String title,
     IconData icon,
@@ -761,6 +818,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
+
   Widget _buildSettingItem(
     String title,
     String subtitle,
@@ -835,6 +893,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
+
   Widget _buildSwitchItem(
     String title,
     String subtitle,
@@ -854,10 +913,12 @@ class _SettingsScreenState extends State<SettingsScreen>
       theme: theme,
     );
   }
+
   Widget _buildVoiceSelector(bool isTablet, ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return _buildSettingItem(
-      'Voice Selection',
-      'Choose voice: $_selectedVoice',
+      l10n.voice,
+      '${l10n.voice}: $_selectedVoice',
       Icons.record_voice_over_outlined,
       showArrow: false,
       trailing: Container(
@@ -878,10 +939,14 @@ class _SettingsScreenState extends State<SettingsScreen>
               fontSize: isTablet ? 13 : 12,
             ),
             items:
-                ['Male', 'Female'].map((voice) {
+                [l10n.male, l10n.female].map((voice) {
                   return DropdownMenuItem(value: voice, child: Text(voice));
                 }).toList(),
-            onChanged: (value) => setState(() => _selectedVoice = value!),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => _selectedVoice = value);
+              }
+            },
           ),
         ),
       ),
@@ -889,10 +954,12 @@ class _SettingsScreenState extends State<SettingsScreen>
       theme: theme,
     );
   }
+
   Widget _buildLanguageSelector(bool isTablet, ThemeData theme, User user) {
+    final l10n = AppLocalizations.of(context);
     return _buildSettingItem(
-      'Language',
-      'App language: $_selectedLanguage',
+      l10n.language,
+      '${l10n.language}: $_selectedLanguage',
       Icons.language_outlined,
       showArrow: false,
       trailing: Container(
@@ -913,20 +980,16 @@ class _SettingsScreenState extends State<SettingsScreen>
               fontSize: isTablet ? 13 : 12,
             ),
             items:
-                ['English', 'French'].map((language) {
+                [l10n.english, l10n.french].map((language) {
                   return DropdownMenuItem(
                     value: language,
                     child: Text(language),
                   );
                 }).toList(),
             onChanged: (value) {
-              if (value == 'English') {
-                user.lang = 'en';
-              } else {
-                user.lang = 'fr';
+              if (value != null) {
+                _changeLanguage(value);
               }
-              context.read<UserProvider>().updateUser(user.id, user);
-              setState(() => _selectedLanguage = value!);
             },
           ),
         ),
@@ -935,10 +998,12 @@ class _SettingsScreenState extends State<SettingsScreen>
       theme: theme,
     );
   }
+
   Widget _buildThemeSelector(bool isTablet, ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return _buildSettingItem(
-      'Theme',
-      'Current theme: $_selectedTheme',
+      l10n.theme,
+      '${l10n.theme}: $_selectedTheme',
       Icons.palette_outlined,
       showArrow: false,
       trailing: Container(
@@ -959,13 +1024,17 @@ class _SettingsScreenState extends State<SettingsScreen>
               fontSize: isTablet ? 13 : 12,
             ),
             items:
-                ['Dark', 'Light', 'Auto'].map((themeOption) {
+                [l10n.dark, l10n.light, l10n.system].map((themeOption) {
                   return DropdownMenuItem(
                     value: themeOption,
                     child: Text(themeOption),
                   );
                 }).toList(),
-            onChanged: (value) => _changeTheme(value!),
+            onChanged: (value) {
+              if (value != null) {
+                _changeTheme(value);
+              }
+            },
           ),
         ),
       ),
@@ -973,6 +1042,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       theme: theme,
     );
   }
+
   Widget _buildSignOutButton(bool isTablet, ThemeData theme) {
     return GestureDetector(
       onTap: () => _showSignOutDialog(theme, isTablet),
@@ -1010,6 +1080,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
+
   void _changeProfileImage(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -1027,6 +1098,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
+
   void _editName(ThemeData theme, bool isTablet, User user) {
     final TextEditingController nameController = TextEditingController(
       text: _userName,
@@ -1102,6 +1174,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
+
   void _editWorkEmail(ThemeData theme, bool isTablet, User user) {
     final TextEditingController emailController = TextEditingController(
       text: _workEmail,
@@ -1177,6 +1250,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
+
   void _showProfileMenu(ThemeData theme, bool isTablet) {
     showModalBottomSheet(
       context: context,
@@ -1232,6 +1306,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
+
   Widget _buildMenuOption(
     String title,
     IconData icon,
@@ -1268,6 +1343,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
+
   void _showRateDialog(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -1354,6 +1430,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
+
   void _submitRating(int stars) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1364,6 +1441,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
+
   void _shareApp(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -1392,6 +1470,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
+
   void _checkForUpdates(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -1407,6 +1486,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
+
   void _showSignOutDialog(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -1426,6 +1506,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
     );
   }
+
   Widget _buildCustomDialog(
     String title,
     String content,
