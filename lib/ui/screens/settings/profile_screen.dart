@@ -51,7 +51,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         _workEmailController.text = user.workEmail ?? '';
         _langController.text = user.lang ?? 'en';
       }
-    } catch (e) {
     } finally {
       setState(() {
         _isLoading = false;

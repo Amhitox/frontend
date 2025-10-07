@@ -13,6 +13,7 @@ import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/providers/meeting_provider.dart';
 import 'package:frontend/providers/user_provider.dart';
 import 'package:frontend/providers/sub_provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
@@ -20,6 +21,7 @@ import 'providers/language_provider.dart';
 import 'utils/app_theme.dart';
 import 'utils/localization.dart';
 import 'routes/app_router.dart';
+import 'services/mail_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,17 +68,61 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> {
+  DeepLinkService? _deepLinkService;
+  bool _isDeepLinkInitialized = false;
+
   @override
   void initState() {
     super.initState();
-    // Sync language preferences when the app starts
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeApp();
+    });
+  }
+
+  Future<void> _initializeApp() async {
+    try {
       final authProvider = context.read<AuthProvider>();
       final languageProvider = context.read<LanguageProvider>();
+
       if (authProvider.user?.lang != null) {
         languageProvider.setLanguageFromUser(authProvider.user!.lang);
       }
-    });
+
+      // Initialize deep links
+      _deepLinkService = DeepLinkService(dio: authProvider.dio);
+      await _deepLinkService!.initDeepLinks(
+        onGmailConnected: (success, error, email) {
+          print(
+            '📨 Gmail connection callback: success=$success, email=$email, error=$error',
+          );
+
+          if (mounted && context.mounted) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (mounted && context.mounted) {
+                context.pushReplacement('/callback');
+              }
+            });
+          }
+        },
+      );
+
+      setState(() {
+        _isDeepLinkInitialized = true;
+      });
+
+      print('✅ Deep link service initialized successfully');
+    } catch (e) {
+      print('❌ Error initializing deep link service: $e');
+      setState(() {
+        _isDeepLinkInitialized = true;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _deepLinkService?.dispose();
+    super.dispose();
   }
 
   @override
@@ -84,6 +130,7 @@ class _MainAppState extends State<MainApp> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
     final router = AppRoutes().createRouter(context);
+
     return MaterialApp.router(
       title: 'Aixy',
       theme: AppTheme.light,

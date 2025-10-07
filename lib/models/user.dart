@@ -49,4 +49,6 @@ class User {
     if (subscriptionTier != null) json['subscriptionTier'] = subscriptionTier;
     return json;
   }
+
+  copyWith({required String workEmail}) {}
 }

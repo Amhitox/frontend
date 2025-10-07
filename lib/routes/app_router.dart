@@ -1,7 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:frontend/managers/task_manager.dart';
 import 'package:frontend/models/meeting.dart';
+import 'package:frontend/models/user.dart';
+import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/meeting_provider.dart';
+import 'package:frontend/services/mail_service.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/ui/screens/auth/resetpassword_screen.dart';
 import 'package:frontend/ui/screens/auth/emailverification_screen.dart';
@@ -29,6 +34,7 @@ import '../ui/screens/welcome/splash_screen.dart';
 import '../ui/screens/welcome/onboarding_screen.dart';
 import '../ui/screens/auth/forgetpassword_screen.dart';
 import '../models/task.dart';
+
 class AppRoutes {
   static final AppRoutes _instance = AppRoutes._internal();
   factory AppRoutes() => _instance;
@@ -61,6 +67,7 @@ class AppRoutes {
     pref = await SharedPreferences.getInstance();
     firstOpen = pref.getBool('firstOpen') ?? true;
   }
+
   GoRouter createRouter(BuildContext context) {
     return GoRouter(
       initialLocation: splash,
@@ -102,6 +109,91 @@ class AppRoutes {
               return EmailVerificationScreen(token: token);
             }
             return const LoginScreen();
+          },
+        ),
+
+        GoRoute(
+          path: '/callback',
+          name: 'callback',
+          builder: (context, state) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (!context.mounted) return;
+
+              final callbackData = DeepLinkService.getPendingCallbackData();
+
+              String? message;
+              bool isError = false;
+
+              try {
+                final prefs = await SharedPreferences.getInstance();
+                final userJson = prefs.getString('user');
+
+                if (callbackData == null) {
+                  print('⚠️ No callback data available');
+                  message = '⚠️ No callback data received';
+                  isError = true;
+                } else if (userJson == null) {
+                  print('❌ User not found in SharedPreferences');
+                  message = '❌ Please log in first';
+                  isError = true;
+                } else {
+                  final success = callbackData['success'] == true;
+                  final email = callbackData['email'] as String?;
+                  final error = callbackData['error'] as String?;
+
+                  if (success && email != null) {
+                    final userMap =
+                        jsonDecode(userJson) as Map<String, dynamic>;
+                    userMap['workEmail'] = email;
+
+                    await prefs.setString('user', jsonEncode(userMap));
+
+                    // Update AuthProvider in memory if possible
+                    if (context.mounted) {
+                      try {
+                        final authProvider = context.read<AuthProvider>();
+                        final updatedUser = User.fromJson(userMap);
+                        authProvider.updateUserInMemory(updatedUser);
+                      } catch (e) {
+                        debugPrint('⚠️ Could not update AuthProvider: $e');
+                      }
+                    }
+
+                    print('✅ Gmail connected: $email');
+                    message = '✅ Gmail connected: $email';
+                    isError = false;
+                  } else {
+                    final errorMsg = error ?? 'Gmail connection failed';
+                    print('❌ $errorMsg');
+                    message = '❌ $errorMsg';
+                    isError = true;
+                  }
+                }
+              } catch (e, stackTrace) {
+                debugPrint('Error in callback handler: $e');
+                debugPrint('Stack trace: $stackTrace');
+                message = '❌ Connection failed: $e';
+                isError = true;
+              }
+              DeepLinkService.clearPendingCallbackData();
+
+              await Future.delayed(const Duration(milliseconds: 300));
+
+              if (context.mounted) {
+                context.pushReplacement(
+                  '/mail',
+                  extra: {
+                    'showSnackbar': message != null,
+                    'message': message,
+                    'isError': isError,
+                  },
+                );
+              }
+            });
+
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           },
         ),
         GoRoute(
@@ -153,10 +245,15 @@ class AppRoutes {
             );
           },
         ),
+
         GoRoute(
-          path: mail,
+          path: '/mail',
           name: 'mail',
-          builder: (context, state) => const MailScreen(),
+          builder: (context, state) {
+            return MailScreen(
+              initialExtra: state.extra as Map<String, dynamic>?,
+            );
+          },
         ),
         GoRoute(
           path: maildetail,

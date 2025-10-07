@@ -545,14 +545,14 @@ class _CalendarPageState extends State<CalendarPage>
       controller: ScrollController(
         initialScrollOffset: _getInitialScrollOffset(timeSlotHeight),
       ),
-      child: Container(
+      child: SizedBox(
         height: totalHeight,
         child: Stack(
           children: [
             Column(
               children: List.generate(totalHours, (index) {
                 final hour = index;
-                return Container(
+                return SizedBox(
                   height: timeSlotHeight,
                   child: Row(
                     children: [

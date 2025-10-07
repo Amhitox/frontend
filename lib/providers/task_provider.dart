@@ -499,7 +499,6 @@ class TaskProvider extends ChangeNotifier {
           final updatedTask = task.copyWith(id: serverTaskId);
           await _taskManager.addOrUpdateTask(updatedTask, isSynced: true);
         } else {}
-      } catch (e) {
       } finally {
         _syncingTasks.remove(task.id!);
       }
@@ -523,7 +522,6 @@ class TaskProvider extends ChangeNotifier {
           task.category,
         );
         await _taskManager.markTaskAsSynced(task.id!);
-      } catch (e) {
       } finally {
         _syncingTasks.remove(task.id!);
       }
