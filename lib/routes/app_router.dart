@@ -7,6 +7,7 @@ import 'package:frontend/models/user.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/meeting_provider.dart';
 import 'package:frontend/services/mail_service.dart';
+import 'package:frontend/models/email_message.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/ui/screens/auth/resetpassword_screen.dart';
 import 'package:frontend/ui/screens/auth/emailverification_screen.dart';
@@ -183,7 +184,7 @@ class AppRoutes {
                 context.pushReplacement(
                   '/mail',
                   extra: {
-                    'showSnackbar': message != null,
+                    'showSnackbar': true,
                     'message': message,
                     'isError': isError,
                   },
@@ -259,7 +260,7 @@ class AppRoutes {
           path: maildetail,
           name: 'maildetail',
           builder: (context, state) {
-            final email = state.extra as MailItem?;
+            final email = state.extra as EmailMessage?;
             if (email == null) {
               return const MailScreen();
             }

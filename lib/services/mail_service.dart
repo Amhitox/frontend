@@ -1,18 +1,53 @@
 import 'package:dio/dio.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:cookie_jar/cookie_jar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 
 class MailService {
   final Dio _dio;
+  String? _accessToken;
+  String? _refreshToken;
+
   MailService({required Dio dio}) : _dio = dio;
+
+  Future<bool> initialize() async {
+    try {
+      final tokenData = await checkTokens();
+      if (tokenData != null && tokenData['hasTokens'] == true) {
+        _accessToken = tokenData['tokens']?['accessToken'];
+        _refreshToken = tokenData['tokens']?['refreshToken'];
+        print('✅ Mail service initialized with access token');
+        return true;
+      }
+      print('⚠️ No email tokens found');
+      return false;
+    } catch (e) {
+      print('❌ Failed to initialize mail service: $e');
+      return false;
+    }
+  }
 
   Future<dynamic> connect() async {
     try {
-      final response = await _dio.get('/api/email/gmail/connect');
-      await _launchUrl(response.data['authUrl']);
+      final response = await _dio.get(
+        '/api/email/gmail/connect',
+        options: Options(
+          followRedirects: false,
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.data != null && response.data['authUrl'] != null) {
+        await _launchUrl(response.data['authUrl']);
+        return response.data;
+      }
+
+      return {'error': 'No auth URL received'};
     } on DioException catch (e) {
-      return e.response;
+      print('❌ Connect error: ${e.response?.data}');
+      return e.response?.data ?? {'error': e.message};
     }
   }
 
@@ -23,15 +58,166 @@ class MailService {
     }
   }
 
-  Future<dynamic> sendEmail(String email, String subject, String body) async {
+  Future<Map<String, dynamic>?> checkTokens() async {
+    try {
+      final response = await _dio.get('/api/email/gmail/check-tokens');
+      print('✅ Token check response: ${response.data}');
+      return response.data;
+    } on DioException catch (e) {
+      print('❌ Error checking tokens');
+      print('Status: ${e.response?.statusCode}');
+      print('Response: ${e.response?.data}');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> listMails({
+    String type = 'inbox',
+    int maxResults = 20,
+    String? pageToken,
+  }) async {
+    if (_accessToken == null) {
+      print('⚠️ No access token, attempting to initialize...');
+      final initialized = await initialize();
+      if (!initialized) {
+        print('❌ Failed to get access token');
+        return {'error': 'No access token available'};
+      }
+    }
+
+    try {
+      final response = await _dio.get(
+        '/api/email/gmail/list',
+        queryParameters: {
+          'type': type,
+          'maxResults': maxResults,
+          if (pageToken != null) 'pageToken': pageToken,
+        },
+        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
+      );
+
+      print('✅ Listed ${response.data['messages']?.length ?? 0} emails');
+      return response.data;
+    } on DioException catch (e) {
+      print('❌ Error listing mails');
+      print('Status: ${e.response?.statusCode}');
+      print('Response: ${e.response?.data}');
+      print('Message: ${e.message}');
+
+      if (e.response?.statusCode == 401) {
+        print('⚠️ Token expired, attempting to refresh...');
+        final refreshed = await initialize();
+
+        if (refreshed && _accessToken != null) {
+          print('✅ Token refreshed, retrying request...');
+          try {
+            final retryResponse = await _dio.get(
+              '/api/email/gmail/list',
+              queryParameters: {
+                'type': type,
+                'maxResults': maxResults,
+                if (pageToken != null) 'pageToken': pageToken,
+              },
+              options: Options(
+                headers: {'Authorization': 'Bearer $_accessToken'},
+              ),
+            );
+            return retryResponse.data;
+          } catch (retryError) {
+            print('❌ Retry failed: $retryError');
+            return null;
+          }
+        }
+      }
+
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> sendEmail(
+    String to,
+    String subject,
+    String body,
+  ) async {
+    if (_accessToken == null) {
+      await initialize();
+    }
+
     try {
       final response = await _dio.post(
         '/api/email/gmail/send',
-        data: {'email': email, 'subject': subject, 'body': body},
+        data: {'to': to, 'subject': subject, 'body': body},
+        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
       );
-      return response;
+
+      print('✅ Email sent successfully');
+      return response.data;
     } on DioException catch (e) {
-      return e.response;
+      print('❌ Error sending email: ${e.response?.data}');
+      return e.response?.data;
+    }
+  }
+
+  Future<Map<String, dynamic>?> summarizeEmail(String messageId) async {
+    if (_accessToken == null) {
+      await initialize();
+    }
+
+    try {
+      final response = await _dio.post(
+        '/api/email/gmail/summarize',
+        data: {'messageId': messageId},
+        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
+      );
+
+      print('✅ Email summarized successfully');
+      return response.data;
+    } on DioException catch (e) {
+      print('❌ Error summarizing email: ${e.response?.data}');
+      return null;
+    }
+  }
+
+  Future<bool> deleteEmail(String messageId) async {
+    if (_accessToken == null) {
+      await initialize();
+    }
+
+    try {
+      final response = await _dio.delete(
+        '/api/email/gmail/$messageId',
+        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
+      );
+
+      print('✅ Email deleted successfully');
+      return response.statusCode == 200;
+    } on DioException catch (e) {
+      print('❌ Error deleting email: ${e.response?.data}');
+      return false;
+    }
+  }
+
+  Future<bool> disconnect() async {
+    try {
+      await _dio.post('/api/email/gmail/disconnect');
+      _accessToken = null;
+      _refreshToken = null;
+      print('✅ Gmail disconnected');
+      return true;
+    } on DioException catch (e) {
+      print('❌ Error disconnecting: ${e.message}');
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getCurrentUser() async {
+    try {
+      final response = await _dio.get('/api/auth/me');
+      print('✅ Current user: ${response.data}');
+      return response.data;
+    } on DioException catch (e) {
+      print('❌ Not authenticated: ${e.message}');
+      return null;
     }
   }
 }
@@ -43,7 +229,6 @@ class DeepLinkService {
 
   final Dio _dio;
 
-  // Store pending deep link data
   static Map<String, dynamic>? _pendingCallbackData;
 
   DeepLinkService._({required Dio dio}) : _dio = dio {
@@ -55,24 +240,20 @@ class DeepLinkService {
     return _instance!;
   }
 
-  /// Get and clear pending callback data
   static Map<String, dynamic>? getPendingCallbackData() {
     final data = _pendingCallbackData;
     _pendingCallbackData = null;
     return data;
   }
 
-  /// Initialize deep link listening
   Future<void> initDeepLinks({
     required Function(bool success, String? error, String? email)
     onGmailConnected,
   }) async {
     print('🔗 Initializing deep link service...');
 
-    // Handle initial link if app was closed
     await _handleInitialLink(onGmailConnected);
 
-    // Handle links while app is active
     _sub = _appLinks.uriLinkStream.listen(
       (Uri uri) {
         _handleDeepLink(uri, onGmailConnected);
@@ -87,7 +268,6 @@ class DeepLinkService {
     print('✅ Deep link service initialized successfully');
   }
 
-  /// Handle initial link when app starts
   Future<void> _handleInitialLink(
     Function(bool success, String? error, String? email) onGmailConnected,
   ) async {
@@ -102,7 +282,6 @@ class DeepLinkService {
     }
   }
 
-  /// Store callback data for later retrieval
   void _storePendingData(bool success, String? error, String? email) {
     _pendingCallbackData = {
       'success': success,
@@ -113,14 +292,12 @@ class DeepLinkService {
     print('📦 Stored pending callback data: $_pendingCallbackData');
   }
 
-  /// Process the deep link - ONLY handles backend callback format
   void _handleDeepLink(
     Uri uri,
     Function(bool success, String? error, String? email) onGmailConnected,
   ) {
     print('🔗 Received deep link: $uri');
 
-    // Only handle the backend Gmail callback format
     if (uri.scheme == 'aixy' &&
         uri.host == 'gmail' &&
         uri.path == '/callback') {
@@ -150,7 +327,6 @@ class DeepLinkService {
     print('🗑️ Cleared pending callback data');
   }
 
-  /// Dispose the stream subscription
   void dispose() {
     _sub?.cancel();
   }

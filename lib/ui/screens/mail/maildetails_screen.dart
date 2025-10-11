@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'mail_screen.dart';
+import 'package:frontend/models/email_message.dart';
+
 class MailDetailScreen extends StatefulWidget {
-  final MailItem email;
+  final EmailMessage email;
   const MailDetailScreen({super.key, required this.email});
   @override
   State<MailDetailScreen> createState() => _MailDetailScreenState();
 }
+
 class _MailDetailScreenState extends State<MailDetailScreen>
     with SingleTickerProviderStateMixin {
   late ScrollController _scrollController;
@@ -28,6 +30,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
     _scrollController.addListener(_onScroll);
     _animationController.forward();
   }
+
   void _onScroll() {
     final shouldShowElevated = _scrollController.offset > 10;
     if (shouldShowElevated != _showElevatedHeader) {
@@ -36,12 +39,14 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       });
     }
   }
+
   @override
   void dispose() {
     _scrollController.dispose();
     _animationController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -83,7 +88,8 @@ class _MailDetailScreenState extends State<MailDetailScreen>
                   SliverToBoxAdapter(
                     child: _buildContentSection(theme, isTablet),
                   ),
-                  if (_hasAttachments())
+                  if (widget.email.hasAttachments &&
+                      widget.email.attachments != null)
                     SliverToBoxAdapter(
                       child: _buildAttachmentsSection(theme, isTablet),
                     ),
@@ -98,6 +104,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       bottomSheet: _buildActionBottomSheet(theme, isTablet),
     );
   }
+
   Widget _buildEnhancedHeader(ThemeData theme, bool isTablet) {
     return Padding(
       padding: EdgeInsets.all(isTablet ? 20 : 16),
@@ -137,7 +144,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _formatTime(widget.email.time),
+                  widget.email.formattedTime,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: isTablet ? 14 : 12,
@@ -146,7 +153,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
               ],
             ),
           ),
-          if (widget.email.priority == MailPriority.high)
+          if (widget.email.labelIds.contains('IMPORTANT'))
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -164,7 +171,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'High',
+                    'Important',
                     style: TextStyle(
                       color: Colors.red,
                       fontSize: isTablet ? 12 : 10,
@@ -179,13 +186,9 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       ),
     );
   }
+
   Widget _buildEnhancedAvatar(bool isTablet, ThemeData theme) {
-    final initials = widget.email.sender
-        .split(' ')
-        .map((n) => n.isNotEmpty ? n[0] : '')
-        .join()
-        .toUpperCase()
-        .substring(0, 2);
+    final initials = widget.email.senderInitials;
     return Hero(
       tag: 'avatar_${widget.email.sender}',
       child: Container(
@@ -222,6 +225,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       ),
     );
   }
+
   Widget _buildSubjectSection(ThemeData theme, bool isTablet) {
     return Container(
       margin: EdgeInsets.all(isTablet ? 24 : 20),
@@ -243,6 +247,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       ),
     );
   }
+
   Widget _buildMetadataSection(ThemeData theme, bool isTablet) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 20),
@@ -261,7 +266,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                'Received ${_formatTime(widget.email.time)}',
+                'Received ${widget.email.formattedTime}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   fontSize: isTablet ? 14 : 13,
@@ -293,6 +298,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       ),
     );
   }
+
   Widget _buildContentSection(ThemeData theme, bool isTablet) {
     return Container(
       margin: EdgeInsets.all(isTablet ? 24 : 20),
@@ -305,7 +311,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
         ),
       ),
       child: SelectableText(
-        widget.email.preview,
+        widget.email.body.isNotEmpty ? widget.email.body : widget.email.snippet,
         style: theme.textTheme.bodyLarge?.copyWith(
           fontSize: isTablet ? 16 : 15,
           height: 1.6,
@@ -314,6 +320,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       ),
     );
   }
+
   Widget _buildAttachmentsSection(ThemeData theme, bool isTablet) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: isTablet ? 24 : 20),
@@ -343,17 +350,19 @@ class _MailDetailScreenState extends State<MailDetailScreen>
             ],
           ),
           const SizedBox(height: 12),
-          ...List.generate(
-            2,
-            (index) => _buildAttachmentItem(theme, isTablet, index),
+          ...widget.email.attachments!.map(
+            (attachment) => _buildAttachmentItem(theme, isTablet, attachment),
           ),
         ],
       ),
     );
   }
-  Widget _buildAttachmentItem(ThemeData theme, bool isTablet, int index) {
-    final attachmentNames = ['Document.pdf', 'Report.xlsx'];
-    final icons = [Icons.picture_as_pdf, Icons.table_chart];
+
+  Widget _buildAttachmentItem(
+    ThemeData theme,
+    bool isTablet,
+    EmailAttachment attachment,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: EdgeInsets.all(isTablet ? 16 : 12),
@@ -366,20 +375,39 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       ),
       child: Row(
         children: [
-          Icon(
-            icons[index],
-            color: theme.colorScheme.primary,
-            size: isTablet ? 24 : 20,
+          Text(
+            attachment.fileIcon,
+            style: TextStyle(fontSize: isTablet ? 24 : 20),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              attachmentNames[index],
-              style: theme.textTheme.bodyMedium,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  attachment.filename,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  attachment.formattedSize,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              // TODO: Implement download functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Downloading ${attachment.filename}...'),
+                ),
+              );
+            },
             icon: Icon(
               Icons.download_rounded,
               color: theme.colorScheme.primary,
@@ -390,6 +418,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       ),
     );
   }
+
   Widget _buildActionBottomSheet(ThemeData theme, bool isTablet) {
     return Container(
       height: isTablet ? 80 : 72,
@@ -438,6 +467,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       ),
     );
   }
+
   Widget _buildActionButton({
     required IconData icon,
     required String label,
@@ -479,13 +509,8 @@ class _MailDetailScreenState extends State<MailDetailScreen>
       ),
     );
   }
-  String _formatTime(String time) {
-    return time;
-  }
-  bool _hasAttachments() {
-    return true;
-  }
+
   bool _isUnread() {
-    return false;
+    return widget.email.isUnread;
   }
 }
