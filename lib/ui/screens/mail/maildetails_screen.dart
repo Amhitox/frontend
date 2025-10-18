@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/models/email_message.dart';
+import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/services/mail_service.dart';
+import 'package:provider/provider.dart';
 
 class MailDetailScreen extends StatefulWidget {
   final EmailMessage email;
@@ -16,6 +19,10 @@ class _MailDetailScreenState extends State<MailDetailScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   bool _showElevatedHeader = false;
+
+  // Email details state
+  EmailMessage? _fullEmail;
+  bool _isLoadingDetails = false;
   @override
   void initState() {
     super.initState();
@@ -29,6 +36,9 @@ class _MailDetailScreenState extends State<MailDetailScreen>
     );
     _scrollController.addListener(_onScroll);
     _animationController.forward();
+
+    // Fetch full email details
+    _fetchEmailDetails();
   }
 
   void _onScroll() {
@@ -38,6 +48,192 @@ class _MailDetailScreenState extends State<MailDetailScreen>
         _showElevatedHeader = shouldShowElevated;
       });
     }
+  }
+
+  Future<void> _fetchEmailDetails() async {
+    if (_isLoadingDetails) return;
+
+    setState(() {
+      _isLoadingDetails = true;
+    });
+
+    try {
+      final auth = context.read<AuthProvider>();
+      final mailService = MailService(dio: auth.dio);
+
+      final response = await mailService.getEmailDetails(widget.email.id);
+
+      if (response != null) {
+        // Parse the full email details
+        final fullEmail = _parseFullEmailMessage(response);
+        setState(() {
+          _fullEmail = fullEmail;
+        });
+
+        // Mark email as read when viewed
+        if (widget.email.isUnread) {
+          await mailService.markAsRead(widget.email.id);
+        }
+      }
+    } catch (e) {
+      print('❌ Error fetching email details: $e');
+    } finally {
+      setState(() {
+        _isLoadingDetails = false;
+      });
+    }
+  }
+
+  Future<void> _deleteEmail() async {
+    try {
+      final auth = context.read<AuthProvider>();
+      final mailService = MailService(dio: auth.dio);
+
+      final success = await mailService.deleteEmail(widget.email.id);
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Email deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Navigate back to mail list
+        context.pop();
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete email'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error deleting email: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting email: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleReadStatus() async {
+    try {
+      final auth = context.read<AuthProvider>();
+      final mailService = MailService(dio: auth.dio);
+
+      final success =
+          widget.email.isUnread
+              ? await mailService.markAsRead(widget.email.id)
+              : await mailService.markAsUnread(widget.email.id);
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.email.isUnread ? 'Marked as read' : 'Marked as unread',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error toggling read status: $e');
+    }
+  }
+
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Delete Email'),
+            content: Text(
+              'Are you sure you want to delete this email? This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _deleteEmail();
+                },
+                child: Text('Delete', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+    );
+  }
+
+  EmailMessage _parseFullEmailMessage(Map<String, dynamic> data) {
+    // Extract headers
+    final headers = data['headers'] as Map<String, dynamic>? ?? {};
+
+    // Extract sender information from headers
+    String sender = 'Unknown Sender';
+    String senderEmail = '';
+
+    final fromHeader = headers['from'] as String? ?? '';
+    if (fromHeader.isNotEmpty) {
+      // Parse "Name <email@domain.com>" format
+      if (fromHeader.contains('<') && fromHeader.contains('>')) {
+        final parts = fromHeader.split('<');
+        sender = parts[0].trim();
+        senderEmail = parts[1].replaceAll('>', '').trim();
+      } else {
+        // Just email address
+        senderEmail = fromHeader;
+        sender = fromHeader.split('@').first;
+      }
+    }
+
+    // Extract subject from headers
+    final subject = headers['subject'] as String? ?? '(No Subject)';
+
+    // Extract other fields
+    final snippet = data['snippet'] as String? ?? '';
+    final body =
+        data['body'] as String? ?? data['textBody'] as String? ?? snippet;
+
+    // Parse date
+    DateTime date = DateTime.now();
+    final dateString = data['date'] as String?;
+    if (dateString != null) {
+      try {
+        date = DateTime.parse(dateString);
+      } catch (e) {
+        print('❌ Error parsing date: $dateString');
+      }
+    }
+
+    // Check if unread
+    final labelIds = data['labelIds'] as List<dynamic>? ?? [];
+    final isUnread = labelIds.contains('UNREAD');
+
+    // Check for attachments
+    final hasAttachments = data['hasAttachments'] == true;
+
+    return EmailMessage(
+      id: data['id'] as String? ?? '',
+      threadId: data['threadId'] as String? ?? data['id'] as String? ?? '',
+      sender: sender,
+      senderEmail: senderEmail,
+      subject: subject,
+      snippet: snippet,
+      body: body,
+      date: date,
+      isUnread: isUnread,
+      labelIds: labelIds.map((e) => e.toString()).toList(),
+      hasAttachments: hasAttachments,
+      attachments: null,
+    );
   }
 
   @override
@@ -310,14 +506,21 @@ class _MailDetailScreenState extends State<MailDetailScreen>
           color: theme.colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
-      child: SelectableText(
-        widget.email.body.isNotEmpty ? widget.email.body : widget.email.snippet,
-        style: theme.textTheme.bodyLarge?.copyWith(
-          fontSize: isTablet ? 16 : 15,
-          height: 1.6,
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
-        ),
-      ),
+      child:
+          _isLoadingDetails
+              ? Center(child: CircularProgressIndicator())
+              : SelectableText(
+                _fullEmail?.body.isNotEmpty == true
+                    ? _fullEmail!.body
+                    : widget.email.snippet.isNotEmpty
+                    ? widget.email.snippet
+                    : 'No content available',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontSize: isTablet ? 16 : 15,
+                  height: 1.6,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.9),
+                ),
+              ),
     );
   }
 
@@ -440,6 +643,16 @@ class _MailDetailScreenState extends State<MailDetailScreen>
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildActionButton(
+                icon:
+                    widget.email.isUnread
+                        ? Icons.mark_email_read_rounded
+                        : Icons.mark_email_unread_rounded,
+                label: widget.email.isUnread ? 'Mark Read' : 'Mark Unread',
+                onTap: _toggleReadStatus,
+                theme: theme,
+                isTablet: isTablet,
+              ),
+              _buildActionButton(
                 icon: Icons.reply_all_rounded,
                 label: 'Reply All',
                 onTap: () {},
@@ -456,7 +669,7 @@ class _MailDetailScreenState extends State<MailDetailScreen>
               _buildActionButton(
                 icon: Icons.delete_outline_rounded,
                 label: 'Delete',
-                onTap: () {},
+                onTap: () => _showDeleteConfirmation(),
                 theme: theme,
                 isTablet: isTablet,
                 isDestructive: true,

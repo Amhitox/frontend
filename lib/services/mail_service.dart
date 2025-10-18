@@ -1,6 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'package:cookie_jar/cookie_jar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
@@ -8,7 +6,6 @@ import 'dart:async';
 class MailService {
   final Dio _dio;
   String? _accessToken;
-  String? _refreshToken;
 
   MailService({required Dio dio}) : _dio = dio;
 
@@ -17,7 +14,6 @@ class MailService {
       final tokenData = await checkTokens();
       if (tokenData != null && tokenData['hasTokens'] == true) {
         _accessToken = tokenData['tokens']?['accessToken'];
-        _refreshToken = tokenData['tokens']?['refreshToken'];
         print('✅ Mail service initialized with access token');
         return true;
       }
@@ -97,6 +93,7 @@ class MailService {
       );
 
       print('✅ Listed ${response.data['messages']?.length ?? 0} emails');
+      print(response.data);
       return response.data;
     } on DioException catch (e) {
       print('❌ Error listing mails');
@@ -201,7 +198,6 @@ class MailService {
     try {
       await _dio.post('/api/email/gmail/disconnect');
       _accessToken = null;
-      _refreshToken = null;
       print('✅ Gmail disconnected');
       return true;
     } on DioException catch (e) {
@@ -220,6 +216,63 @@ class MailService {
       return null;
     }
   }
+
+  Future<Map<String, dynamic>?> getEmailDetails(String messageId) async {
+    if (_accessToken == null) {
+      await initialize();
+    }
+
+    try {
+      final response = await _dio.get(
+        '/api/email/gmail/message/$messageId',
+        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
+      );
+
+      print('✅ Email details fetched for: $messageId');
+      return response.data;
+    } on DioException catch (e) {
+      print('❌ Error fetching email details: ${e.response?.data}');
+      return null;
+    }
+  }
+
+  Future<bool> markAsRead(String messageId) async {
+    if (_accessToken == null) {
+      await initialize();
+    }
+
+    try {
+      final response = await _dio.patch(
+        '/api/email/gmail/$messageId/read',
+        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
+      );
+
+      print('✅ Email marked as read: $messageId');
+      return response.statusCode == 200;
+    } on DioException catch (e) {
+      print('❌ Error marking email as read: ${e.response?.data}');
+      return false;
+    }
+  }
+
+  Future<bool> markAsUnread(String messageId) async {
+    if (_accessToken == null) {
+      await initialize();
+    }
+
+    try {
+      final response = await _dio.patch(
+        '/api/email/gmail/$messageId/unread',
+        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
+      );
+
+      print('✅ Email marked as unread: $messageId');
+      return response.statusCode == 200;
+    } on DioException catch (e) {
+      print('❌ Error marking email as unread: ${e.response?.data}');
+      return false;
+    }
+  }
 }
 
 class DeepLinkService {
@@ -227,16 +280,14 @@ class DeepLinkService {
   late AppLinks _appLinks;
   StreamSubscription? _sub;
 
-  final Dio _dio;
-
   static Map<String, dynamic>? _pendingCallbackData;
 
-  DeepLinkService._({required Dio dio}) : _dio = dio {
+  DeepLinkService._() {
     _appLinks = AppLinks();
   }
 
-  factory DeepLinkService({required Dio dio}) {
-    _instance ??= DeepLinkService._(dio: dio);
+  factory DeepLinkService() {
+    _instance ??= DeepLinkService._();
     return _instance!;
   }
 

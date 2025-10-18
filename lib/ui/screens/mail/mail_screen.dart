@@ -222,19 +222,55 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
   }
 
   EmailMessage _parseEmailMessage(Map<String, dynamic> data) {
+    final headers = data['headers'] as Map<String, dynamic>? ?? {};
+
+    String sender = 'Unknown Sender';
+    String senderEmail = '';
+
+    final fromHeader = headers['from'] as String? ?? '';
+    if (fromHeader.isNotEmpty) {
+      if (fromHeader.contains('<') && fromHeader.contains('>')) {
+        final parts = fromHeader.split('<');
+        sender = parts[0].trim();
+        senderEmail = parts[1].replaceAll('>', '').trim();
+      } else {
+        senderEmail = fromHeader;
+        sender = fromHeader.split('@').first;
+      }
+    }
+
+    final subject = headers['subject'] as String? ?? '(No Subject)';
+
+    final snippet = data['snippet'] as String? ?? '';
+    final body = data['body'] as String? ?? snippet;
+
+    DateTime date = DateTime.now();
+    final dateString = data['date'] as String?;
+    if (dateString != null) {
+      try {
+        date = DateTime.parse(dateString);
+      } catch (e) {
+        print('❌ Error parsing date: $dateString');
+      }
+    }
+
+    final labelIds = data['labelIds'] as List<dynamic>? ?? [];
+    final isUnread = labelIds.contains('UNREAD');
+
+    final hasAttachments = data['hasAttachments'] == true;
+
     return EmailMessage(
-      id: data['id'] ?? '',
-      threadId: data['threadId'] ?? data['id'] ?? '',
-      sender: data['from'] ?? 'Unknown Sender',
-      senderEmail: data['fromEmail'] ?? '',
-      subject: data['subject'] ?? '(No Subject)',
-      snippet: data['snippet'] ?? '',
-      body: data['body'] ?? data['snippet'] ?? '',
-      date:
-          data['date'] != null ? DateTime.parse(data['date']) : DateTime.now(),
-      isUnread: data['unread'] == true,
-      labelIds: data['labels'] != null ? List<String>.from(data['labels']) : [],
-      hasAttachments: data['hasAttachments'] == true,
+      id: data['id'] as String? ?? '',
+      threadId: data['threadId'] as String? ?? data['id'] as String? ?? '',
+      sender: sender,
+      senderEmail: senderEmail,
+      subject: subject,
+      snippet: snippet,
+      body: body,
+      date: date,
+      isUnread: isUnread,
+      labelIds: labelIds.map((e) => e.toString()).toList(),
+      hasAttachments: hasAttachments,
       attachments: null,
     );
   }
@@ -249,6 +285,175 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
         _scrollController.position.maxScrollExtent - 200) {
       _loadMoreEmails();
     }
+  }
+
+  Future<void> _deleteEmail(EmailMessage email) async {
+    try {
+      final auth = context.read<AuthProvider>();
+      final mailService = MailService(dio: auth.dio);
+
+      final success = await mailService.deleteEmail(email.id);
+
+      if (success && mounted) {
+        setState(() {
+          _emails.removeWhere((e) => e.id == email.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Email deleted successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete email'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error deleting email: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting email: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _markAsRead(EmailMessage email) async {
+    try {
+      final auth = context.read<AuthProvider>();
+      final mailService = MailService(dio: auth.dio);
+
+      final success = await mailService.markAsRead(email.id);
+
+      if (success && mounted) {
+        setState(() {
+          final index = _emails.indexWhere((e) => e.id == email.id);
+          if (index != -1) {
+            _emails[index] = EmailMessage(
+              id: email.id,
+              threadId: email.threadId,
+              sender: email.sender,
+              senderEmail: email.senderEmail,
+              subject: email.subject,
+              snippet: email.snippet,
+              body: email.body,
+              date: email.date,
+              isUnread: false,
+              labelIds: email.labelIds,
+              hasAttachments: email.hasAttachments,
+              attachments: email.attachments,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      print('❌ Error marking email as read: $e');
+    }
+  }
+
+  Future<void> _markAsUnread(EmailMessage email) async {
+    try {
+      final auth = context.read<AuthProvider>();
+      final mailService = MailService(dio: auth.dio);
+
+      final success = await mailService.markAsUnread(email.id);
+
+      if (success && mounted) {
+        setState(() {
+          final index = _emails.indexWhere((e) => e.id == email.id);
+          if (index != -1) {
+            _emails[index] = EmailMessage(
+              id: email.id,
+              threadId: email.threadId,
+              sender: email.sender,
+              senderEmail: email.senderEmail,
+              subject: email.subject,
+              snippet: email.snippet,
+              body: email.body,
+              date: email.date,
+              isUnread: true,
+              labelIds: email.labelIds,
+              hasAttachments: email.hasAttachments,
+              attachments: email.attachments,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      print('❌ Error marking email as unread: $e');
+    }
+  }
+
+  void _showEmailContextMenu(
+    EmailMessage email,
+    bool isTablet,
+    bool isLargeScreen,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ListTile(
+                  leading: Icon(
+                    email.isUnread
+                        ? Icons.mark_email_read_rounded
+                        : Icons.mark_email_unread_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  title: Text(
+                    email.isUnread ? 'Mark as Read' : 'Mark as Unread',
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (email.isUnread) {
+                      _markAsRead(email);
+                    } else {
+                      _markAsUnread(email);
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.red,
+                  ),
+                  title: Text('Delete'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _deleteEmail(email);
+                  },
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
+          ),
+    );
   }
 
   @override
@@ -1062,15 +1267,71 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
           return _buildPaginationLoader();
         }
 
-        return GestureDetector(
-          onTap: () {
-            // Navigate to mail details with EmailMessage
-            context.pushNamed('maildetail', extra: _filteredEmails[index]);
+        return Dismissible(
+          key: Key(_filteredEmails[index].id),
+          direction: DismissDirection.endToStart,
+          confirmDismiss: (direction) async {
+            return await showDialog(
+              context: context,
+              builder:
+                  (context) => AlertDialog(
+                    title: Text('Delete Email'),
+                    content: Text(
+                      'Are you sure you want to delete this email?',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+            );
           },
-          child: _buildMailItem(
-            _filteredEmails[index],
-            isTablet,
-            isLargeScreen,
+          onDismissed: (direction) {
+            _deleteEmail(_filteredEmails[index]);
+          },
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+            ),
+            child: Icon(
+              Icons.delete_outline_rounded,
+              color: Colors.white,
+              size: isTablet ? 28 : 24,
+            ),
+          ),
+          child: GestureDetector(
+            onTap: () {
+              // Mark as read when tapped
+              if (_filteredEmails[index].isUnread) {
+                _markAsRead(_filteredEmails[index]);
+              }
+              // Navigate to mail details with EmailMessage
+              context.pushNamed('maildetail', extra: _filteredEmails[index]);
+            },
+            onLongPress: () {
+              _showEmailContextMenu(
+                _filteredEmails[index],
+                isTablet,
+                isLargeScreen,
+              );
+            },
+            child: _buildMailItem(
+              _filteredEmails[index],
+              isTablet,
+              isLargeScreen,
+            ),
           ),
         );
       },

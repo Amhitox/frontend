@@ -126,14 +126,12 @@ class EmailAttachment {
     };
   }
 
-  // Helper method to get file size in readable format
   String get formattedSize {
-    if (size < 1024) return '${size} B';
+    if (size < 1024) return '$size B';
     if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
     return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  // Helper method to get appropriate icon for file type
   String get fileIcon {
     final extension = filename.split('.').last.toLowerCase();
     switch (extension) {

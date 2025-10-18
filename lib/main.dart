@@ -88,8 +88,7 @@ class _MainAppState extends State<MainApp> {
         languageProvider.setLanguageFromUser(authProvider.user!.lang);
       }
 
-      // Initialize deep links
-      _deepLinkService = DeepLinkService(dio: authProvider.dio);
+      _deepLinkService = DeepLinkService();
       await _deepLinkService!.initDeepLinks(
         onGmailConnected: (success, error, email) {
           print(
