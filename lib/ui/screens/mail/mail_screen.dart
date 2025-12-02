@@ -16,7 +16,8 @@ class MailScreen extends StatefulWidget {
   _MailScreenState createState() => _MailScreenState();
 }
 
-class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
+class _MailScreenState extends State<MailScreen>
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
   bool _isSearching = false;
@@ -30,6 +31,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
 
   bool _isConnected = false;
   bool _isCheckingConnection = true;
+  bool _hasInitiallyLoaded = false;
 
   String _selectedFilter = 'Inbox';
   final List<String> _filters = [
@@ -82,6 +84,9 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
 
     _checkConnectionAndLoadEmails();
   }
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void dispose() {
@@ -138,7 +143,11 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
           _isCheckingConnection = false;
         });
 
-        await _fetchEmails();
+        // Only fetch emails if not already loaded
+        if (!_hasInitiallyLoaded) {
+          await _fetchEmails();
+          _hasInitiallyLoaded = true;
+        }
       } else {
         print('⚠️ No email tokens found, showing connect button');
         setState(() {
@@ -245,7 +254,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
     final body = data['body'] as String? ?? snippet;
 
     DateTime date = DateTime.now();
-    final dateString = data['date'] as String?;
+    final dateString = data['date'] as String? ?? headers['date'] as String?;
     if (dateString != null) {
       try {
         date = DateTime.parse(dateString);
@@ -259,9 +268,18 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
 
     final hasAttachments = data['hasAttachments'] == true;
 
+    // Create EmailHeaders object
+    final emailHeaders = EmailHeaders(
+      subject: headers['subject'] as String?,
+      from: headers['from'] as String?,
+      to: headers['to'] as String?,
+      date: headers['date'] as String?,
+    );
+
     return EmailMessage(
       id: data['id'] as String? ?? '',
       threadId: data['threadId'] as String? ?? data['id'] as String? ?? '',
+      draftId: data['draftId'] as String?,
       sender: sender,
       senderEmail: senderEmail,
       subject: subject,
@@ -272,6 +290,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
       labelIds: labelIds.map((e) => e.toString()).toList(),
       hasAttachments: hasAttachments,
       attachments: null,
+      headers: emailHeaders,
     );
   }
 
@@ -339,6 +358,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
             _emails[index] = EmailMessage(
               id: email.id,
               threadId: email.threadId,
+              draftId: email.draftId,
               sender: email.sender,
               senderEmail: email.senderEmail,
               subject: email.subject,
@@ -349,6 +369,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
               labelIds: email.labelIds,
               hasAttachments: email.hasAttachments,
               attachments: email.attachments,
+              headers: email.headers,
             );
           }
         });
@@ -372,6 +393,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
             _emails[index] = EmailMessage(
               id: email.id,
               threadId: email.threadId,
+              draftId: email.draftId,
               sender: email.sender,
               senderEmail: email.senderEmail,
               subject: email.subject,
@@ -382,6 +404,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
               labelIds: email.labelIds,
               hasAttachments: email.hasAttachments,
               attachments: email.attachments,
+              headers: email.headers,
             );
           }
         });
@@ -458,6 +481,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
@@ -1250,18 +1274,22 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildMailList(bool isTablet, bool isLargeScreen) {
-    return ListView.builder(
-      controller: _scrollController,
-      padding: EdgeInsets.symmetric(
-        horizontal:
-            isLargeScreen
-                ? 24
-                : isTablet
-                ? 20
-                : 16,
-      ),
-      itemCount: _filteredEmails.length + (_hasMore && _isLoading ? 1 : 0),
-      itemBuilder: (context, index) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _fetchEmails(isRefresh: true);
+      },
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: EdgeInsets.symmetric(
+          horizontal:
+              isLargeScreen
+                  ? 24
+                  : isTablet
+                  ? 20
+                  : 16,
+        ),
+        itemCount: _filteredEmails.length + (_hasMore && _isLoading ? 1 : 0),
+        itemBuilder: (context, index) {
         // Show loading indicator at bottom
         if (index == _filteredEmails.length) {
           return _buildPaginationLoader();
@@ -1335,6 +1363,7 @@ class _MailScreenState extends State<MailScreen> with TickerProviderStateMixin {
           ),
         );
       },
+      ),
     );
   }
 

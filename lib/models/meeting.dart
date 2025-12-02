@@ -42,11 +42,27 @@ class Meeting extends HiveObject {
     };
   }
   factory Meeting.fromJson(Map<String, dynamic> json) {
+    // Normalize date format to YYYY-MM-DD
+    String? normalizedDate;
+    if (json['date'] != null) {
+      final dateValue = json['date'].toString();
+      // Handle different date formats from backend
+      if (dateValue.contains('T')) {
+        // ISO8601 format: "2024-01-15T00:00:00Z" -> "2024-01-15"
+        normalizedDate = dateValue.split('T').first;
+      } else {
+        // Already in date format: "2024-01-15"
+        normalizedDate = dateValue;
+      }
+      // Remove any trailing whitespace or timezone info
+      normalizedDate = normalizedDate.trim();
+    }
+    
     return Meeting(
       id: json['id'] ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
-      date: json['date'] ?? '',
+      date: normalizedDate ?? '',
       startTime: json['startTime'] ?? '',
       endTime: json['endTime'] ?? '',
       attendees: json['attendees'] ?? [],

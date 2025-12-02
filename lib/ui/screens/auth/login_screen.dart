@@ -611,15 +611,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
                 context.goNamed('home');
               } else if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      context.watch<AuthProvider>().errorMessage ?? "test",
+                final errorMsg = context.read<AuthProvider>().errorMessage;
+                // Only show error if there's an actual error message (not null)
+                // null means user canceled, which is fine
+                if (errorMsg != null && errorMsg.isNotEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(errorMsg),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
                     ),
-                    backgroundColor: Colors.red,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+                  );
+                }
               }
             },
             child: Row(

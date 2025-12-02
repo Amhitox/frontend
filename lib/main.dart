@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:frontend/models/task.dart';
 import 'package:frontend/models/taskpriority.dart';
@@ -22,10 +23,25 @@ import 'utils/app_theme.dart';
 import 'utils/localization.dart';
 import 'routes/app_router.dart';
 import 'services/mail_service.dart';
+import 'services/notification_service.dart';
+
+// Top-level function to handle background messages (must be top-level)
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  debugPrint('📨 Background message received: ${message.messageId}');
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  // Initialize notification service
+  await NotificationService().initialize();
+
+  // Set up background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   await Hive.initFlutter();
   Hive.registerAdapter(TaskAdapter());
   Hive.registerAdapter(TaskPriorityAdapter());
@@ -87,6 +103,11 @@ class _MainAppState extends State<MainApp> {
       if (authProvider.user?.lang != null) {
         languageProvider.setLanguageFromUser(authProvider.user!.lang);
       }
+
+      // Set up foreground message handler for FCM
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        NotificationService().handleForegroundMessage(message);
+      });
 
       _deepLinkService = DeepLinkService();
       await _deepLinkService!.initDeepLinks(

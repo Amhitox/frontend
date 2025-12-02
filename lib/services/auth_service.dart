@@ -16,6 +16,27 @@ class AuthService {
     }
   }
 
+  Future<dynamic> loginWithFcm(
+    String email,
+    String password,
+    Map<String, String>? fcmData,
+  ) async {
+    try {
+      final data = {
+        'email': email,
+        'password': password,
+        if (fcmData != null) ...fcmData,
+      };
+      final response = await _dio.post(
+        '/api/auth/login',
+        data: data,
+      );
+      return response;
+    } on DioException catch (e) {
+      return e.response;
+    }
+  }
+
   Future<dynamic> register(
     String email,
     String password,
@@ -51,11 +72,18 @@ class AuthService {
     }
   }
 
-  Future<dynamic> signInWithGoogle(String idToken) async {
+  Future<dynamic> signInWithGoogle(
+    String idToken,
+    Map<String, String>? fcmData,
+  ) async {
     try {
+      final data = {
+        'token': idToken,
+        if (fcmData != null) ...fcmData,
+      };
       final response = await _dio.post(
         '/api/auth/Oauth/google',
-        data: {'token': idToken},
+        data: data,
       );
       return response;
     } on DioException catch (e) {

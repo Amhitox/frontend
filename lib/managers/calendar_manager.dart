@@ -35,7 +35,14 @@ class CalendarManager {
     }
     final dateStr = date.toIso8601String().split('T').first;
     return _box!.values
-        .where((t) => t.date?.split('T').first == dateStr)
+        .where((t) {
+          if (t.date == null || t.date!.isEmpty) return false;
+          // Normalize the stored date for comparison
+          final storedDate = t.date!.contains('T') 
+              ? t.date!.split('T').first.trim()
+              : t.date!.trim();
+          return storedDate == dateStr;
+        })
         .toList();
   }
   ValueListenable<Box<Meeting>>? listenable() {

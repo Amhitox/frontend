@@ -136,7 +136,7 @@ class MeetingProvider extends ChangeNotifier {
   ) async {
     String meetingId;
 
-    // Combine date and time for API
+    // Combine date and time for API (in local timezone)
     final startDateTime = DateTime(
       date.year,
       date.month,
@@ -152,6 +152,10 @@ class MeetingProvider extends ChangeNotifier {
       endTime.minute,
     );
 
+    // Get timezone offset from the actual datetime (not DateTime.now())
+    // This ensures we use the correct offset for the specific date/time
+    final timezoneOffset = _formatTimezoneOffset(startDateTime.timeZoneOffset);
+
     if (_isOnline) {
       try {
         final response = await meeting.addMeeting(
@@ -161,6 +165,7 @@ class MeetingProvider extends ChangeNotifier {
           endDateTime.toIso8601String(),
           attendees,
           location.toString().split('.').last,
+          timezoneOffset,
         );
 
         if (response.statusCode == 201) {
@@ -391,7 +396,7 @@ class MeetingProvider extends ChangeNotifier {
     final existingMeeting = _calendarManager.getMeetingById(id);
     if (existingMeeting == null) return;
 
-    // Combine date and time for API
+    // Combine date and time for API (in local timezone)
     final startDateTime = DateTime(
       date.year,
       date.month,
@@ -406,6 +411,10 @@ class MeetingProvider extends ChangeNotifier {
       endTime.hour,
       endTime.minute,
     );
+
+    // Get timezone offset from the actual datetime (not DateTime.now())
+    // This ensures we use the correct offset for the specific date/time
+    final timezoneOffset = _formatTimezoneOffset(startDateTime.timeZoneOffset);
 
     final updatedMeeting = existingMeeting.copyWith(
       title: title,
@@ -427,6 +436,7 @@ class MeetingProvider extends ChangeNotifier {
           endDateTime.toIso8601String(),
           attendees,
           location.toString().split('.').last,
+          timezoneOffset,
         );
 
         await _calendarManager.addOrUpdateMeeting(
@@ -512,6 +522,9 @@ class MeetingProvider extends ChangeNotifier {
           endTime.minute,
         );
 
+        // Get timezone offset from the actual datetime (not DateTime.now())
+        final timezoneOffset = _formatTimezoneOffset(startDateTime.timeZoneOffset);
+
         final response = await this.meeting.addMeeting(
           meeting.title ?? '',
           meeting.description ?? '',
@@ -519,6 +532,7 @@ class MeetingProvider extends ChangeNotifier {
           endDateTime.toIso8601String(),
           meeting.attendees ?? [],
           meeting.location?.toString().split('.').last ?? 'online',
+          timezoneOffset,
         );
 
         if (response.statusCode == 201) {
@@ -570,6 +584,9 @@ class MeetingProvider extends ChangeNotifier {
           endTime.minute,
         );
 
+        // Get timezone offset from the actual datetime (not DateTime.now())
+        final timezoneOffset = _formatTimezoneOffset(startDateTime.timeZoneOffset);
+
         await this.meeting.updateMeeting(
           meeting.id!,
           meeting.title ?? '',
@@ -578,6 +595,7 @@ class MeetingProvider extends ChangeNotifier {
           endDateTime.toIso8601String(),
           meeting.attendees ?? [],
           meeting.location?.toString().split('.').last ?? 'online',
+          timezoneOffset,
         );
         await _calendarManager.markMeetingAsSynced(meeting.id!);
       } finally {
@@ -648,6 +666,15 @@ class MeetingProvider extends ChangeNotifier {
     } else {
       return '${hour - 12}:${minute.toString().padLeft(2, '0')} PM';
     }
+  }
+
+  /// Format timezone offset as "+05:30" or "-05:00"
+  String _formatTimezoneOffset(Duration offset) {
+    final totalMinutes = offset.inMinutes;
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes.remainder(60).abs();
+    final sign = totalMinutes >= 0 ? '+' : '-';
+    return '$sign${hours.abs().toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
   }
 
   // Helper method to parse TimeOfDay from string

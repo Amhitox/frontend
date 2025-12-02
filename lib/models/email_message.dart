@@ -1,6 +1,34 @@
+class EmailHeaders {
+  final String? subject;
+  final String? from;
+  final String? to;
+  final String? date;
+
+  EmailHeaders({this.subject, this.from, this.to, this.date});
+
+  factory EmailHeaders.fromJson(Map<String, dynamic> json) {
+    return EmailHeaders(
+      subject: json['subject'] as String?,
+      from: json['from'] as String?,
+      to: json['to'] as String?,
+      date: json['date'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (subject != null) 'subject': subject,
+      if (from != null) 'from': from,
+      if (to != null) 'to': to,
+      if (date != null) 'date': date,
+    };
+  }
+}
+
 class EmailMessage {
   final String id;
   final String threadId;
+  final String? draftId;
   final String sender;
   final String senderEmail;
   final String subject;
@@ -11,10 +39,12 @@ class EmailMessage {
   final List<String> labelIds;
   final bool hasAttachments;
   final List<EmailAttachment>? attachments;
+  final EmailHeaders? headers;
 
   EmailMessage({
     required this.id,
     required this.threadId,
+    this.draftId,
     required this.sender,
     required this.senderEmail,
     required this.subject,
@@ -25,12 +55,14 @@ class EmailMessage {
     required this.labelIds,
     required this.hasAttachments,
     this.attachments,
+    this.headers,
   });
 
   factory EmailMessage.fromJson(Map<String, dynamic> json) {
     return EmailMessage(
       id: json['id'] as String,
       threadId: json['threadId'] as String,
+      draftId: json['draftId'] as String?,
       sender: json['sender'] as String,
       senderEmail: json['senderEmail'] as String,
       subject: json['subject'] as String,
@@ -48,6 +80,10 @@ class EmailMessage {
                   )
                   .toList()
               : null,
+      headers:
+          json['headers'] != null
+              ? EmailHeaders.fromJson(json['headers'] as Map<String, dynamic>)
+              : null,
     );
   }
 
@@ -55,6 +91,7 @@ class EmailMessage {
     return {
       'id': id,
       'threadId': threadId,
+      if (draftId != null) 'draftId': draftId,
       'sender': sender,
       'senderEmail': senderEmail,
       'subject': subject,
@@ -65,6 +102,7 @@ class EmailMessage {
       'labelIds': labelIds,
       'hasAttachments': hasAttachments,
       'attachments': attachments?.map((a) => a.toJson()).toList(),
+      if (headers != null) 'headers': headers!.toJson(),
     };
   }
 
@@ -99,13 +137,13 @@ class EmailAttachment {
   final String filename;
   final String mimeType;
   final int size;
-  final String attachmentId;
+  final String? attachmentId;
 
   EmailAttachment({
     required this.filename,
     required this.mimeType,
     required this.size,
-    required this.attachmentId,
+    this.attachmentId,
   });
 
   factory EmailAttachment.fromJson(Map<String, dynamic> json) {
@@ -113,7 +151,7 @@ class EmailAttachment {
       filename: json['filename'] as String,
       mimeType: json['mimeType'] as String,
       size: json['size'] as int,
-      attachmentId: json['attachmentId'] as String,
+      attachmentId: json['attachmentId'] as String?,
     );
   }
 
@@ -122,7 +160,7 @@ class EmailAttachment {
       'filename': filename,
       'mimeType': mimeType,
       'size': size,
-      'attachmentId': attachmentId,
+      if (attachmentId != null) 'attachmentId': attachmentId,
     };
   }
 

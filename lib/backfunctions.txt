@@ -1,0 +1,265 @@
+
+// mark as read
+export async function POST(req: NextRequest) {
+  try {
+    // Authenticate user
+    const authResult = await authenticateRequest(req);
+    if (!authResult.authenticated) {
+      return NextResponse.json(
+        { success: false, error: authResult.error || "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const userId = authResult.userId!;
+    const body = await req.json();
+    const { messageId } = body;
+
+    if (!messageId) {
+      return NextResponse.json(
+        { success: false, error: "messageId is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get Gmail tokens for the user
+    const tokenDoc = await adminDb.collection("email_tokens").doc(userId).get();
+    if (!tokenDoc.exists) {
+      return NextResponse.json(
+        { success: false, error: "No Gmail tokens found for this user" },
+        { status: 404 }
+      );
+    }
+
+    const tokenData = tokenDoc.data();
+    const accessToken = tokenData?.accessToken;
+    const refreshToken = tokenData?.refreshToken;
+
+    if (!accessToken || !refreshToken) {
+      return NextResponse.json(
+        { success: false, error: "Missing access or refresh token" },
+        { status: 400 }
+      );
+    }
+
+    // Initialize Gmail API client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET,
+      process.env.NEXT_PUBLIC_EMAIL_REDIRECT_URI
+    );
+
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    // Use EmailService to mark as read
+    const emailService = await EmailService.initialize(oauth2Client);
+    await emailService.markAsRead(messageId);
+
+    console.log(`✅ Email ${messageId} marked as read for user ${userId}`);
+
+    return NextResponse.json({
+      success: true,
+      message: "Email marked as read successfully"
+    });
+
+  } catch (error: any) {
+    console.error("Error marking email as read:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || "Failed to mark email as read"
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// send email 
+async function fileToBase64(file: File): Promise<string> {
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+  return buffer.toString('base64');
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    
+    // Authenticate the request to get userId
+    const authResult = await authenticateRequest(req);
+    
+    if (!authResult.authenticated || !authResult.userId) {
+      console.error('❌ Authentication failed');
+      return Response.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    // Get tokens from email_tokens collection
+    const tokenDoc = await adminDb.collection('email_tokens').doc(authResult.userId).get();
+    
+    if (!tokenDoc.exists) {
+      console.error('❌ Token document does not exist');
+      return Response.json({ 
+        error: 'Gmail not connected. Please reconnect your Gmail account.' 
+      }, { status: 400 });
+    }
+
+    const tokenData = tokenDoc.data();
+    
+    if (!tokenData?.accessToken || !tokenData?.refreshToken) {
+      console.error('❌ Tokens missing in document');
+      return Response.json({ 
+        error: 'Gmail tokens not found. Please reconnect your Gmail account.' 
+      }, { status: 400 });
+    }
+
+    // Check if token is expired or will expire soon (within 5 minutes)
+    const now = Date.now();
+    const expiryDate = tokenData.expiryDate || 0;
+    let accessToken = tokenData.accessToken;
+    let refreshToken = tokenData.refreshToken;
+
+    
+
+    // Use AuthService instance to get properly configured OAuth2Client
+    const authService = AuthService.getInstance();
+    const oauth2Client = authService.getOAuth2Client();
+
+    // Always try to refresh if token is expired or will expire soon
+    if (expiryDate < (now + 5 * 60 * 1000)) {
+      try {
+        const refreshResult = await authService.refreshAccessToken(refreshToken);
+        
+        accessToken = refreshResult.access_token;
+        const newExpiryDate = refreshResult.expiry_date;
+        
+        // Update tokens in Firebase
+        await adminDb.collection('email_tokens').doc(authResult.userId).update({
+          accessToken: accessToken,
+          expiryDate: newExpiryDate,
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (refreshError: any) {
+        console.error('❌ Token refresh failed:', {
+          error: refreshError.message,
+          stack: refreshError.stack,
+          response: refreshError.response?.data
+        });
+        return Response.json({ 
+          error: 'Failed to refresh Gmail tokens. Please reconnect your Gmail account.',
+          details: refreshError.message
+        }, { status: 401 });
+      }
+    }
+
+    // FIX: Use the SAME OAuth2Client instance with proper credentials
+    oauth2Client.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expiry_date: expiryDate,
+      token_type: 'Bearer',
+      scope: tokenData.scope
+    });
+    
+    // Test token validity before proceeding
+    try {
+      const tokenInfo = await oauth2Client.getAccessToken();
+    } catch (tokenError: any) {
+      console.error('❌ Token validation failed:', {
+        error: tokenError.message,
+        response: tokenError.response?.data
+      });
+      
+      // Try to refresh token one more time
+      try {
+        const refreshResult = await authService.refreshAccessToken(refreshToken);
+        
+        accessToken = refreshResult.access_token;
+        const newExpiryDate = refreshResult.expiry_date;
+        
+        oauth2Client.setCredentials({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expiry_date: newExpiryDate,
+          token_type: 'Bearer',
+          scope: tokenData.scope
+        });
+        
+        await adminDb.collection('email_tokens').doc(authResult.userId).update({
+          accessToken: accessToken,
+          expiryDate: newExpiryDate,
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (emergencyRefreshError: any) {
+        console.error('❌ Emergency token refresh failed:', emergencyRefreshError);
+        return Response.json({ 
+          error: 'Gmail authentication failed. Please reconnect your Gmail account.',
+          details: 'Token validation and refresh both failed'
+        }, { status: 401 });
+      }
+    }
+    const emailService = await EmailService.initialize(oauth2Client as any);
+    
+    // Parse form data
+    const formData = await req.formData();
+    const to = formData.get('to') as string;
+    const subject = formData.get('subject') as string;
+    const body = formData.get('body') as string;
+    const attachmentFiles = formData.getAll('attachments') as File[];
+
+
+    // Validate request body
+    if (!to || !subject || !body) {
+      console.error('❌ Missing required fields');
+      return Response.json(
+        { error: 'Missing required fields: to, subject, and body are required' },
+        { status: 400 }
+      );
+    }
+
+    // Process attachments
+    const attachments = await Promise.all(
+      attachmentFiles.map(async (file) => ({
+        filename: file.name,
+        content: await fileToBase64(file),
+        mimeType: file.type,
+      }))
+    );
+
+    const emailData: SendEmailRequest & { attachments?: any[] } = {
+      to,
+      subject,
+      body,
+      attachments: attachments.length > 0 ? attachments : undefined as any,
+    };
+
+    // Send email
+    const messageId = await emailService.sendEmail(emailData);
+    
+    return Response.json({ 
+      success: true,
+      messageId,
+      message: 'Email sent successfully'
+    });
+  } catch (error: any) {
+    console.error('\n❌ ERROR SENDING EMAIL:', {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+      errors: error.errors,
+      response: error.response?.data,
+      stack: error.stack
+    });
+    
+    return Response.json(
+      { 
+        error: 'Failed to send email',
+        details: error.message,
+        errorCode: error.code || error.status,
+        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+      },
+      { status: 500 }
+    );
+  }
+}

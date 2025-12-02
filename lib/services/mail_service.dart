@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
+import 'dart:io';
 
 class MailService {
   final Dio _dio;
@@ -135,22 +136,99 @@ class MailService {
     String to,
     String subject,
     String body,
+    List<File>? attachments,
   ) async {
     if (_accessToken == null) {
       await initialize();
     }
 
     try {
-      final response = await _dio.post(
-        '/api/email/gmail/send',
-        data: {'to': to, 'subject': subject, 'body': body},
-        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
-      );
+      final formData = FormData.fromMap({
+        'to': to,
+        'subject': subject,
+        'body': body,
+      });
+
+      if (attachments != null && attachments.isNotEmpty) {
+        for (var file in attachments) {
+          if (await file.exists()) {
+            final filename = file.path.split('/').last;
+            formData.files.add(
+              MapEntry(
+                'attachments',
+                await MultipartFile.fromFile(file.path, filename: filename),
+              ),
+            );
+          }
+        }
+      }
+
+      final response = await _dio.post('/api/send', data: formData);
 
       print('✅ Email sent successfully');
       return response.data;
     } on DioException catch (e) {
       print('❌ Error sending email: ${e.response?.data}');
+      return e.response?.data;
+    }
+  }
+
+  // Helper method to send email with bytes attachments (for file_picker)
+  // Backend expects FormData with: to, subject, body, and attachments (as Files)
+  // Backend uses cookie-based authentication via authenticateRequest(req)
+  Future<Map<String, dynamic>?> sendEmailWithBytes(
+    String to,
+    String subject,
+    String body,
+    List<Map<String, dynamic>>?
+    attachments, // [{name: String, bytes: List<int>, mimeType: String?}]
+  ) async {
+    // Backend uses cookie-based authentication - no Authorization header needed
+    // Cookies are automatically handled by Dio's CookieManager interceptor
+    try {
+      final formData = FormData.fromMap({
+        'to': to,
+        'subject': subject,
+        'body': body,
+      });
+
+      // Backend expects attachments as File objects in FormData
+      // Convert bytes to MultipartFile which Dio will send as File
+      if (attachments != null && attachments.isNotEmpty) {
+        for (var attachment in attachments) {
+          final name = attachment['name'] as String;
+          final bytes = attachment['bytes'] as List<int>?;
+
+          if (bytes != null && bytes.isNotEmpty) {
+            formData.files.add(
+              MapEntry(
+                'attachments',
+                MultipartFile.fromBytes(bytes, filename: name),
+              ),
+            );
+          }
+        }
+      }
+
+      final response = await _dio.post('/api/send', data: formData);
+
+      // Backend returns: { success: true, messageId, message: "..." }
+      final responseData = response.data;
+
+      if (response.statusCode == 200 &&
+          (responseData['success'] == true ||
+              responseData['messageId'] != null)) {
+        print(
+          '✅ Email sent successfully. MessageId: ${responseData['messageId']}',
+        );
+        return responseData;
+      } else {
+        print('⚠️ Email send returned unexpected response: $responseData');
+        return responseData;
+      }
+    } on DioException catch (e) {
+      print('❌ Error sending email: ${e.response?.data}');
+      // Backend returns: { error: "...", details: "...", errorCode: "..." }
       return e.response?.data;
     }
   }
@@ -218,39 +296,57 @@ class MailService {
   }
 
   Future<Map<String, dynamic>?> getEmailDetails(String messageId) async {
-    if (_accessToken == null) {
-      await initialize();
-    }
-
     try {
+      if (_accessToken == null) {
+        print('⚠️ No access token, attempting to initialize...');
+        final initialized = await initialize();
+        if (!initialized) {
+          print('❌ Failed to get access token');
+          return {'error': 'No access token available'};
+        }
+      }
       final response = await _dio.get(
-        '/api/email/gmail/message/$messageId',
+        '/api/email/gmail/$messageId',
         options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
       );
 
       print('✅ Email details fetched for: $messageId');
       return response.data;
     } on DioException catch (e) {
-      print('❌ Error fetching email details: ${e.response?.data}');
+      if (e.response?.statusCode == 404) {
+        print(
+          '⚠️ Email details endpoint not found (404). Using data from list.',
+        );
+        return null;
+      }
+      print(
+        '❌ Error fetching email details: ${e.response?.statusCode} - ${e.response?.data}',
+      );
       return null;
     }
   }
 
   Future<bool> markAsRead(String messageId) async {
-    if (_accessToken == null) {
-      await initialize();
-    }
-
     try {
-      final response = await _dio.patch(
-        '/api/email/gmail/$messageId/read',
-        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
+      final response = await _dio.post(
+        '/api/email/gmail/mark-read',
+        data: {'messageId': messageId},
       );
 
-      print('✅ Email marked as read: $messageId');
-      return response.statusCode == 200;
+      // Backend returns: { success: true, message: "..." }
+      final responseData = response.data;
+      final success =
+          responseData['success'] == true || response.statusCode == 200;
+
+      if (success) {
+        print('✅ Email marked as read: $messageId');
+      } else {
+        print('⚠️ Mark as read returned success: false $messageId');
+      }
+
+      return success;
     } on DioException catch (e) {
-      print('❌ Error marking email as read: ${e.response?.data}');
+      print('❌ Error marking email as read: $messageId ${e.response?.data}');
       return false;
     }
   }

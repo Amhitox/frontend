@@ -4,12 +4,17 @@ import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:file_picker/file_picker.dart';
+import 'package:frontend/services/mail_service.dart';
+import 'package:frontend/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
+
 class ComposeMailScreen extends StatefulWidget {
   final MailItem? editingMail;
   const ComposeMailScreen({super.key, this.editingMail});
   @override
   _ComposeMailScreenState createState() => _ComposeMailScreenState();
 }
+
 class _ComposeMailScreenState extends State<ComposeMailScreen>
     with TickerProviderStateMixin {
   final TextEditingController _toController = TextEditingController();
@@ -51,6 +56,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     }
     _slideController.forward();
   }
+
   @override
   void dispose() {
     _slideController.dispose();
@@ -62,6 +68,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     _bodyFocus.dispose();
     super.dispose();
   }
+
   void _sendMail() async {
     if (_toController.text.isEmpty ||
         _subjectController.text.isEmpty ||
@@ -69,18 +76,106 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       _showFeedback('Please complete all required fields', isError: true);
       return;
     }
+
     setState(() => _isSending = true);
-    await Future.delayed(const Duration(milliseconds: 1500));
-    _showFeedback(
-      'Message sent successfully with ${_attachments.length} attachments',
-    );
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) context.go('/mail');
+
+    try {
+      final auth = context.read<AuthProvider>();
+      final mailService = MailService(dio: auth.dio);
+
+      // Extract plain text from quill document
+      String bodyText = _bodyController.document.toPlainText();
+
+      // Fallback: try to extract from delta if plain text is empty
+      if (bodyText.trim().isEmpty) {
+        final delta = _bodyController.document.toDelta().toJson();
+        for (var op in delta) {
+          if (op.containsKey('insert')) {
+            final insert = op['insert'];
+            if (insert is String) {
+              bodyText += insert;
+            }
+          }
+        }
+      }
+
+      // Convert attachments to the format expected by the API
+      List<Map<String, dynamic>>? attachmentData;
+      if (_attachments.isNotEmpty) {
+        attachmentData =
+            _attachments
+                .where((att) => att.bytes != null && att.bytes!.isNotEmpty)
+                .map(
+                  (att) => {
+                    'name': att.name,
+                    'bytes': att.bytes,
+                    'mimeType': _getMimeTypeFromFilename(att.name),
+                  },
+                )
+                .toList();
+      }
+
+      final response = await mailService.sendEmailWithBytes(
+        _toController.text.trim(),
+        _subjectController.text.trim(),
+        bodyText.trim(),
+        attachmentData,
+      );
+
+      if (mounted) {
+        if (response != null && response['error'] == null) {
+          _showFeedback(
+            'Message sent successfully${_attachments.isNotEmpty ? ' with ${_attachments.length} attachment(s)' : ''}',
+          );
+          await Future.delayed(const Duration(milliseconds: 800));
+          if (mounted) context.go('/mail');
+        } else {
+          final errorMsg =
+              response?['error'] ??
+              response?['message'] ??
+              'Failed to send email';
+          _showFeedback(errorMsg.toString(), isError: true);
+          setState(() => _isSending = false);
+        }
+      }
+    } catch (e) {
+      print('❌ Error sending email: $e');
+      if (mounted) {
+        _showFeedback('Error sending email: $e', isError: true);
+        setState(() => _isSending = false);
+      }
+    }
   }
+
+  String _getMimeTypeFromFilename(String filename) {
+    final extension = filename.split('.').last.toLowerCase();
+    final mimeTypes = {
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx':
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'ppt': 'application/vnd.ms-powerpoint',
+      'pptx':
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'txt': 'text/plain',
+      'zip': 'application/zip',
+      'rar': 'application/x-rar-compressed',
+    };
+    return mimeTypes[extension] ?? 'application/octet-stream';
+  }
+
   void _saveDraft() async {
     _showFeedback('Draft saved with ${_attachments.length} attachments');
     HapticFeedback.lightImpact();
   }
+
   Future<void> _pickFiles() async {
     try {
       setState(() => _isUploadingFile = true);
@@ -119,6 +214,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       setState(() => _isUploadingFile = false);
     }
   }
+
   Future<void> _pickImages() async {
     try {
       setState(() => _isUploadingFile = true);
@@ -157,6 +253,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       setState(() => _isUploadingFile = false);
     }
   }
+
   void _removeAttachment(int index) {
     setState(() {
       _attachments.removeAt(index);
@@ -164,6 +261,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     HapticFeedback.lightImpact();
     _showFeedback('Attachment removed');
   }
+
   void _showFeedback(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -182,6 +280,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
+
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
@@ -190,6 +289,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -227,6 +327,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
+
   Widget _buildHeader(bool isTablet, bool isLargeScreen) {
     return Padding(
       padding: EdgeInsets.all(
@@ -288,6 +389,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
+
   Widget _buildHeaderButton(
     IconData icon,
     VoidCallback onTap,
@@ -322,6 +424,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
+
   Widget _buildContent(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.fromLTRB(
@@ -352,15 +455,13 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           if (_attachments.isNotEmpty)
             _buildAttachmentsSection(isTablet, isLargeScreen),
           _buildCompactToolbar(isTablet, isLargeScreen),
-          Expanded(
-            flex: 3, 
-            child: _buildMessageField(isTablet, isLargeScreen),
-          ),
+          Expanded(flex: 3, child: _buildMessageField(isTablet, isLargeScreen)),
           _buildSendButton(isTablet, isLargeScreen),
         ],
       ),
     );
   }
+
   Widget _buildCompactInputFields(bool isTablet, bool isLargeScreen) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -430,6 +531,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
+
   Widget _buildSmallButton(String text, VoidCallback onTap, bool isTablet) {
     return GestureDetector(
       onTap: onTap,
@@ -453,6 +555,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
+
   Widget _buildCompactTextField({
     required TextEditingController controller,
     required FocusNode focusNode,
@@ -465,7 +568,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       animation: focusNode,
       builder: (context, child) {
         return Container(
-          height: isTablet ? 42 : 36, 
+          height: isTablet ? 42 : 36,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface.withValues(
               alpha: focusNode.hasFocus ? 0.1 : 0.03,
@@ -498,6 +601,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       },
     );
   }
+
   Widget _buildAttachmentsSection(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.fromLTRB(isTablet ? 24 : 16, 0, isTablet ? 24 : 16, 0),
@@ -618,6 +722,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
+
   Widget _buildCompactToolbar(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.fromLTRB(
@@ -733,6 +838,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
+
   Widget _buildMessageField(bool isTablet, bool isLargeScreen) {
     return Container(
       margin: EdgeInsets.fromLTRB(isTablet ? 24 : 16, 0, isTablet ? 24 : 16, 0),
@@ -760,6 +866,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
     );
   }
+
   Widget _buildSendButton(bool isTablet, bool isLargeScreen) {
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -833,6 +940,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     );
   }
 }
+
 class AttachmentItem {
   final String name;
   final String? path;
@@ -847,6 +955,7 @@ class AttachmentItem {
     this.isImage = false,
   });
 }
+
 class MailItem {
   final String sender;
   final String subject;
@@ -863,4 +972,5 @@ class MailItem {
     required this.priority,
   });
 }
+
 enum MailPriority { high, normal, low }

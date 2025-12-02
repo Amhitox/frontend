@@ -29,6 +29,7 @@ class MeetingService {
     String endDateTime,
     List<String> attendees,
     String location,
+    String timezoneOffset, // Timezone offset in format "+05:30" or "-05:00"
   ) async {
     try {
       final response = await _dio.post(
@@ -39,6 +40,8 @@ class MeetingService {
           "startTime": startDateTime,
           "endTime": endDateTime,
           "location": location,
+          "attendees": attendees, // Include attendees for notifications
+          "timezoneOffset": timezoneOffset, // Send timezone offset for accurate scheduling
         },
       );
       return response;
@@ -59,6 +62,7 @@ class MeetingService {
     String endDateTime,
     List<String> attendees,
     String location,
+    String timezoneOffset, // Timezone offset in format "+05:30" or "-05:00"
   ) async {
     try {
       final response = await _dio.put(
@@ -69,6 +73,8 @@ class MeetingService {
           "startTime": startDateTime,
           "endTime": endDateTime,
           "location": location,
+          "attendees": attendees, // Include attendees for notifications
+          "timezoneOffset": timezoneOffset, // Send timezone offset for accurate scheduling
         },
       );
       return response;

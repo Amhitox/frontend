@@ -167,7 +167,8 @@ class _CalendarPageState extends State<CalendarPage>
     if (_isSameDay(date, widget.date)) {
       return widget.meetings;
     }
-    final meetingProvider = context.read<MeetingProvider>();
+    // Use watch instead of read to listen to provider changes
+    final meetingProvider = context.watch<MeetingProvider>();
     final dateString = date.toIso8601String().split('T').first;
     return meetingProvider.getMeetings(dateString);
   }

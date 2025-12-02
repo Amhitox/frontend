@@ -41,6 +41,7 @@ class _AddTaskScreenState extends State<AddTaskScreen>
   ];
   List<String> _categories = [];
   bool _isSaving = false;
+  bool _categoriesInitialized = false;
   @override
   void initState() {
     super.initState();
@@ -91,19 +92,28 @@ class _AddTaskScreenState extends State<AddTaskScreen>
     _slideController.forward();
     _fadeController.forward();
 
-    // Initialize categories with translated values
-    _categories = [
-      AppLocalizations.of(context).work,
-      AppLocalizations.of(context).personal,
-      AppLocalizations.of(context).finance,
-      AppLocalizations.of(context).health,
-      AppLocalizations.of(context).education,
-      AppLocalizations.of(context).other,
-    ];
-
     // Set default category key
     if (_selectedCategoryKey.isEmpty) {
       _selectedCategoryKey = 'work';
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize categories with translated values
+    // This is called after initState() when inherited widgets are available
+    // Only initialize once or when language changes
+    if (!_categoriesInitialized || _categories.isEmpty) {
+      _categories = [
+        AppLocalizations.of(context).work,
+        AppLocalizations.of(context).personal,
+        AppLocalizations.of(context).finance,
+        AppLocalizations.of(context).health,
+        AppLocalizations.of(context).education,
+        AppLocalizations.of(context).other,
+      ];
+      _categoriesInitialized = true;
     }
   }
 
@@ -745,7 +755,10 @@ class _AddTaskScreenState extends State<AddTaskScreen>
               _categoryKeys.asMap().entries.map((entry) {
                 final index = entry.key;
                 final categoryKey = entry.value;
-                final categoryDisplay = _categories[index];
+                // Ensure categories are initialized before accessing
+                final categoryDisplay = index < _categories.length 
+                    ? _categories[index] 
+                    : categoryKey; // Fallback to key if not initialized yet
                 final isSelected = _selectedCategoryKey == categoryKey;
                 return Material(
                   color: Colors.transparent,
