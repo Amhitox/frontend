@@ -217,7 +217,7 @@ class _CalendarPageState extends State<CalendarPage>
   void _refreshMeetingsForDate(DateTime date) async {
     final meetingProvider = context.read<MeetingProvider>();
     final dateString = date.toIso8601String().split('T').first;
-    await meetingProvider.syncFromServer(dateString);
+
     if (mounted) {
       setState(() {});
     }

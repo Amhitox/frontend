@@ -82,11 +82,7 @@ class TaskProvider extends ChangeNotifier {
       await syncUnsyncedTasks();
 
       print('TaskProvider: Syncing from server');
-      final today = DateTime.now().toIso8601String().split('T').first;
-      await syncFromServer(today);
-
-      // Background sync for other dates (unnoticed)
-      _backgroundSyncAllData();
+      await syncAllFromServer();
 
       print('TaskProvider: Full sync completed successfully');
     } catch (e) {
@@ -143,6 +139,10 @@ class TaskProvider extends ChangeNotifier {
       time.minute,
     );
 
+    final timezoneOffset = _formatTimezoneOffset(
+      combinedDateTime.timeZoneOffset,
+    );
+
     if (_isOnline) {
       try {
         final response = await task.addTask(
@@ -152,6 +152,7 @@ class TaskProvider extends ChangeNotifier {
           combinedDateTime.toIso8601String(),
           isCompleted,
           category,
+          timezoneOffset,
         );
 
         if (response.statusCode == 201) {
@@ -251,34 +252,17 @@ class TaskProvider extends ChangeNotifier {
 
     final localTasks = _taskManager.getTaskOfDate(DateTime.parse(date));
 
-    // Sync this specific date in background if online
-    if (_isOnline && !_syncInProgress) {
-      _syncSpecificDate(date);
-    }
-
     _isLoading = false;
     notifyListeners();
     return localTasks;
   }
 
-  void _syncSpecificDate(String date) {
-    // Sync specific date without blocking UI
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      if (_isOnline && !_syncInProgress) {
-        try {
-          await syncFromServer(date);
-        } catch (e) {
-          // Silent fail for specific date sync
-        }
-      }
-    });
-  }
-
-  Future<void> syncFromServer(String date) async {
+  Future<void> syncAllFromServer() async {
     if (!_isOnline) return;
 
     try {
-      final response = await task.getTasks(date);
+      print('TaskProvider: Syncing all tasks from server');
+      final response = await task.getAllTasks();
 
       if (response.statusCode == 200) {
         final data = response.data["data"];
@@ -287,102 +271,19 @@ class TaskProvider extends ChangeNotifier {
           final serverTasks =
               jsonList.map((json) => Task.fromJson(json)).toList();
 
+          print(
+            'TaskProvider: Fetched ${serverTasks.length} tasks from server',
+          );
           await _taskManager.syncTasksFromServer(serverTasks);
           notifyListeners();
         }
-      }
-    } catch (e) {}
-  }
-
-  Future<void> syncAllFromServer() async {
-    if (!_isOnline) return;
-
-    try {
-      print('TaskProvider: Syncing all tasks from server');
-      // Get tasks for the last 30 days and next 30 days
-      final now = DateTime.now();
-      final startDate = now.subtract(const Duration(days: 30));
-      final endDate = now.add(const Duration(days: 30));
-
-      final allTasks = <Task>[];
-
-      // Sync tasks for each day in the range
-      for (int i = 0; i <= 60; i++) {
-        final date = startDate.add(Duration(days: i));
-        final dateString = date.toIso8601String().split('T').first;
-
-        try {
-          final response = await task.getTasks(dateString);
-          if (response.statusCode == 200) {
-            final data = response.data["data"];
-            if (data != null && data["tasks"] != null) {
-              final jsonList = data["tasks"] as List<dynamic>;
-              final dayTasks =
-                  jsonList.map((json) => Task.fromJson(json)).toList();
-              allTasks.addAll(dayTasks);
-            }
-          }
-        } catch (e) {
-          print('TaskProvider: Error syncing tasks for $dateString: $e');
-        }
-      }
-
-      if (allTasks.isNotEmpty) {
-        print('TaskProvider: Syncing ${allTasks.length} tasks from server');
-        await _taskManager.syncTasksFromServer(allTasks);
-        notifyListeners();
       }
     } catch (e) {
       print('TaskProvider: Error in syncAllFromServer: $e');
     }
   }
 
-  void _backgroundSyncAllData() {
-    // Run background sync without blocking the UI
-    // Only sync a few days at a time to avoid overwhelming the server
-    Future.delayed(const Duration(seconds: 2), () async {
-      if (_isOnline && !_syncInProgress) {
-        print('TaskProvider: Starting smart background sync');
-        await _smartBackgroundSync();
-        print('TaskProvider: Smart background sync completed');
-      }
-    });
-  }
 
-  Future<void> _smartBackgroundSync() async {
-    // Sync only the most recent 7 days and next 7 days for better performance
-    final now = DateTime.now();
-    final startDate = now.subtract(const Duration(days: 7));
-    final endDate = now.add(const Duration(days: 7));
-
-    final allTasks = <Task>[];
-
-    // Sync tasks for each day in the range (15 days total)
-    for (int i = 0; i <= 14; i++) {
-      final date = startDate.add(Duration(days: i));
-      final dateString = date.toIso8601String().split('T').first;
-
-      try {
-        final response = await task.getTasks(dateString);
-        if (response.statusCode == 200) {
-          final data = response.data["data"];
-          if (data != null && data["tasks"] != null) {
-            final jsonList = data["tasks"] as List<dynamic>;
-            final dayTasks =
-                jsonList.map((json) => Task.fromJson(json)).toList();
-            allTasks.addAll(dayTasks);
-          }
-        }
-      } catch (e) {
-        // Silent fail for background sync
-      }
-    }
-
-    if (allTasks.isNotEmpty) {
-      await _taskManager.syncTasksFromServer(allTasks);
-      notifyListeners();
-    }
-  }
 
   Future<void> updateTask({
     required String id,
@@ -419,7 +320,10 @@ class TaskProvider extends ChangeNotifier {
       category: category,
     );
 
-    if (_isOnline) {
+    // Skip API call for temp IDs - they don't exist on the server yet
+    final isTempId = id.startsWith('temp_');
+
+    if (_isOnline && !isTempId) {
       try {
         await task.updateTask(
           id,
@@ -436,6 +340,7 @@ class TaskProvider extends ChangeNotifier {
         await _taskManager.addOrUpdateTask(updatedTask, isSynced: false);
       }
     } else {
+      // For temp IDs or offline, just update locally
       await _taskManager.addOrUpdateTask(updatedTask, isSynced: false);
     }
 
@@ -483,6 +388,22 @@ class TaskProvider extends ChangeNotifier {
       _syncingTasks.add(task.id!);
 
       try {
+        // Calculate timezone offset from the task's due date
+        String timezoneOffset = '+00:00'; // Default fallback
+        if (task.dueDate != null && task.dueDate!.isNotEmpty) {
+          try {
+            final dueDateTime = DateTime.parse(task.dueDate!);
+            timezoneOffset = _formatTimezoneOffset(dueDateTime.timeZoneOffset);
+          } catch (e) {
+            // If parsing fails, use current timezone
+            timezoneOffset = _formatTimezoneOffset(
+              DateTime.now().timeZoneOffset,
+            );
+          }
+        } else {
+          timezoneOffset = _formatTimezoneOffset(DateTime.now().timeZoneOffset);
+        }
+
         final response = await this.task.addTask(
           task.title ?? '',
           task.description ?? '',
@@ -490,6 +411,7 @@ class TaskProvider extends ChangeNotifier {
           task.dueDate ?? '',
           task.isCompleted ?? false,
           task.category ?? '',
+          timezoneOffset,
         );
 
         if (response.statusCode == 201) {
@@ -554,5 +476,14 @@ class TaskProvider extends ChangeNotifier {
       await _performFullSync();
     } else if (_syncInProgress) {
     } else {}
+  }
+
+  /// Format timezone offset as "+05:30" or "-05:00"
+  String _formatTimezoneOffset(Duration offset) {
+    final totalMinutes = offset.inMinutes;
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes.remainder(60).abs();
+    final sign = totalMinutes >= 0 ? '+' : '-';
+    return '$sign${hours.abs().toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
   }
 }

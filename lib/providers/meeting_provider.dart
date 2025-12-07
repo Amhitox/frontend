@@ -84,11 +84,9 @@ class MeetingProvider extends ChangeNotifier {
       await syncUnsyncedMeetings();
 
       print('MeetingProvider: Syncing from server');
-      final today = DateTime.now().toIso8601String().split('T').first;
-      await syncFromServer(today);
+      await syncAllFromServer();
 
-      // Background sync for other dates (unnoticed)
-      _backgroundSyncAllData();
+      print('MeetingProvider: Full sync completed successfully');
 
       print('MeetingProvider: Full sync completed successfully');
     } catch (e) {
@@ -255,46 +253,10 @@ class MeetingProvider extends ChangeNotifier {
       DateTime.parse(date),
     );
 
-    // Sync this specific date in background if online
-    if (_isOnline && !_syncInProgress) {
-      _syncSpecificDate(date);
-    }
-
     _isLoading = false;
     notifyListeners();
 
     return localMeetings;
-  }
-
-  void _syncSpecificDate(String date) {
-    // Sync specific date without blocking UI
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      if (_isOnline && !_syncInProgress) {
-        try {
-          await syncFromServer(date);
-        } catch (e) {
-          // Silent fail for specific date sync
-        }
-      }
-    });
-  }
-
-  Future<void> syncFromServer(String date) async {
-    if (!_isOnline) return;
-
-    try {
-      final response = await meeting.getMeetings(date);
-
-      if (response.statusCode == 200) {
-        final jsonList = response.data["events"] as List<dynamic>;
-
-        final serverMeetings =
-            jsonList.map((json) => Meeting.fromJson(json)).toList();
-
-        await _calendarManager.syncMeetingsFromServer(serverMeetings);
-        notifyListeners();
-      }
-    } catch (e) {}
   }
 
   Future<void> syncAllFromServer() async {
@@ -302,36 +264,18 @@ class MeetingProvider extends ChangeNotifier {
 
     try {
       print('MeetingProvider: Syncing all meetings from server');
-      // Get meetings for the last 30 days and next 30 days
-      final now = DateTime.now();
-      final startDate = now.subtract(const Duration(days: 30));
-      final endDate = now.add(const Duration(days: 30));
+      final response = await meeting.getAllMeetings();
 
-      final allMeetings = <Meeting>[];
+      if (response.statusCode == 200) {
+        final jsonList = response.data["events"] as List<dynamic>;
 
-      // Sync meetings for each day in the range
-      for (int i = 0; i <= 60; i++) {
-        final date = startDate.add(Duration(days: i));
-        final dateString = date.toIso8601String().split('T').first;
+        final serverMeetings =
+            jsonList.map((json) => Meeting.fromJson(json)).toList();
 
-        try {
-          final response = await meeting.getMeetings(dateString);
-          if (response.statusCode == 200) {
-            final jsonList = response.data["events"] as List<dynamic>;
-            final dayMeetings =
-                jsonList.map((json) => Meeting.fromJson(json)).toList();
-            allMeetings.addAll(dayMeetings);
-          }
-        } catch (e) {
-          print('MeetingProvider: Error syncing meetings for $dateString: $e');
-        }
-      }
-
-      if (allMeetings.isNotEmpty) {
         print(
-          'MeetingProvider: Syncing ${allMeetings.length} meetings from server',
+          'MeetingProvider: Fetched ${serverMeetings.length} meetings from server',
         );
-        await _calendarManager.syncMeetingsFromServer(allMeetings);
+        await _calendarManager.syncMeetingsFromServer(serverMeetings);
         notifyListeners();
       }
     } catch (e) {
@@ -339,49 +283,7 @@ class MeetingProvider extends ChangeNotifier {
     }
   }
 
-  void _backgroundSyncAllData() {
-    // Run background sync without blocking the UI
-    // Only sync a few days at a time to avoid overwhelming the server
-    Future.delayed(const Duration(seconds: 2), () async {
-      if (_isOnline && !_syncInProgress) {
-        print('MeetingProvider: Starting smart background sync');
-        await _smartBackgroundSync();
-        print('MeetingProvider: Smart background sync completed');
-      }
-    });
-  }
 
-  Future<void> _smartBackgroundSync() async {
-    // Sync only the most recent 7 days and next 7 days for better performance
-    final now = DateTime.now();
-    final startDate = now.subtract(const Duration(days: 7));
-    final endDate = now.add(const Duration(days: 7));
-
-    final allMeetings = <Meeting>[];
-
-    // Sync meetings for each day in the range (15 days total)
-    for (int i = 0; i <= 14; i++) {
-      final date = startDate.add(Duration(days: i));
-      final dateString = date.toIso8601String().split('T').first;
-
-      try {
-        final response = await meeting.getMeetings(dateString);
-        if (response.statusCode == 200) {
-          final jsonList = response.data["events"] as List<dynamic>;
-          final dayMeetings =
-              jsonList.map((json) => Meeting.fromJson(json)).toList();
-          allMeetings.addAll(dayMeetings);
-        }
-      } catch (e) {
-        // Silent fail for background sync
-      }
-    }
-
-    if (allMeetings.isNotEmpty) {
-      await _calendarManager.syncMeetingsFromServer(allMeetings);
-      notifyListeners();
-    }
-  }
 
   Future<void> updateMeeting(
     String id,

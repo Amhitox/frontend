@@ -22,6 +22,20 @@ class MeetingService {
     }
   }
 
+  Future<Response> getAllMeetings() async {
+    try {
+      final response = await _dio.get("/api/calendar/events");
+      return response;
+    } on DioException catch (e) {
+      return e.response ??
+          Response(
+            data: {'error': 'Network error'},
+            statusCode: 500,
+            requestOptions: RequestOptions(path: '/api/calendar/events'),
+          );
+    }
+  }
+
   Future<Response> addMeeting(
     String title,
     String description,

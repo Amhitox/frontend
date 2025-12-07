@@ -13,6 +13,7 @@ class TaskService {
     String dueDate,
     bool isCompleted,
     String category,
+    String timezoneOffset,
   ) async {
     try {
       final response = await _dio.post(
@@ -24,6 +25,7 @@ class TaskService {
           "category": category,
           "dueDate": dueDate,
           "isCompleted": isCompleted,
+          "timezoneOffset": timezoneOffset,
         },
       );
       return response;
