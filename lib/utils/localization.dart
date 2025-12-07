@@ -15,6 +15,7 @@ class AppLocalizations {
   // Common strings
   String get appTitle => _localizedValues[locale.languageCode]!['appTitle']!;
   String get tasks => _localizedValues[locale.languageCode]!['tasks']!;
+  String get completeTask => _localizedValues[locale.languageCode]!['completeTask']!;
   String get meetings => _localizedValues[locale.languageCode]!['meetings']!;
   String get settings => _localizedValues[locale.languageCode]!['settings']!;
   String get home => _localizedValues[locale.languageCode]!['home']!;
@@ -251,6 +252,7 @@ class AppLocalizations {
     'en': {
       'appTitle': 'Aixy',
       'tasks': 'Tasks',
+      'completeTask': 'Complete Task',
       'meetings': 'Meetings',
       'settings': 'Settings',
       'home': 'Home',
@@ -431,6 +433,7 @@ class AppLocalizations {
     'fr': {
       'appTitle': 'Aixy',
       'tasks': 'Tâches',
+      'completeTask': 'Terminer la tâche',
       'meetings': 'Réunions',
       'settings': 'Paramètres',
       'home': 'Accueil',

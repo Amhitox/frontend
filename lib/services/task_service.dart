@@ -25,6 +25,7 @@ class TaskService {
           "category": category,
           "dueDate": dueDate,
           "isCompleted": isCompleted,
+          "status": isCompleted ? 'completed' : 'pending',
           "timezoneOffset": timezoneOffset,
         },
       );
@@ -80,11 +81,14 @@ class TaskService {
   ) async {
     try {
       Map<String, dynamic> data = {
+        "taskId": id, 
+        "id": id, 
         "title": title,
         "description": description,
         "priority": priority,
         "dueDate": dueDate,
         "isCompleted": isCompleted,
+        "status": isCompleted == true ? 'completed' : 'pending',
         "category": category,
       };
 

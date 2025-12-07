@@ -42,30 +42,23 @@ class Meeting extends HiveObject {
     };
   }
   factory Meeting.fromJson(Map<String, dynamic> json) {
-    // Normalize date format to YYYY-MM-DD
-    String? normalizedDate;
-    if (json['date'] != null) {
-      final dateValue = json['date'].toString();
-      // Handle different date formats from backend
-      if (dateValue.contains('T')) {
-        // ISO8601 format: "2024-01-15T00:00:00Z" -> "2024-01-15"
-        normalizedDate = dateValue.split('T').first;
-      } else {
-        // Already in date format: "2024-01-15"
-        normalizedDate = dateValue;
-      }
-      // Remove any trailing whitespace or timezone info
-      normalizedDate = normalizedDate.trim();
+    String? normalizedDate = json['date'];
+    String? startTime = json['startTime'];
+    
+    if (normalizedDate == null && startTime != null && startTime.contains('T')) {
+       normalizedDate = startTime.split('T').first;
+    } else if (normalizedDate != null && normalizedDate.contains('T')) {
+       normalizedDate = normalizedDate.split('T').first;
     }
     
     return Meeting(
-      id: json['id'] ?? '',
+      id: json['eventId'] ?? json['id'] ?? '', 
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       date: normalizedDate ?? '',
-      startTime: json['startTime'] ?? '',
+      startTime: startTime ?? '',
       endTime: json['endTime'] ?? '',
-      attendees: json['attendees'] ?? [],
+      attendees: (json['attendees'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [], // Safe cast
       location: _parseLocation(json['location']),
     );
   }

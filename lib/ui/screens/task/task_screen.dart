@@ -129,7 +129,36 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     DateTime selectedDate,
     bool isCompleted,
   ) async {
+    if (task.isCompleted == true) {
+         return; 
+    }
+
     HapticFeedback.lightImpact();
+
+    if (isCompleted) {
+        final bool? confirm = await showDialog<bool>(
+            context: context,
+            builder: (BuildContext context) {
+                return AlertDialog(
+                    title: Text(AppLocalizations.of(context).completeTask),
+                    content: Text("Are you sure you want to mark this task as completed?"),
+                    actions: [
+                        TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: Text(AppLocalizations.of(context).cancel),
+                        ),
+                        TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: Text(AppLocalizations.of(context).confirm),
+                        ),
+                    ],
+                );
+            },
+        );
+
+        if (confirm != true) return;
+    }
+
     try {
       final manager = TaskManager();
       if (manager.isInitialized) {
@@ -139,10 +168,9 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             dueDate: selectedDate.toIso8601String(),
           ),
         );
-        final filteredTasks = manager.getTaskOfDate(selectedDate);
-        setState(() {
-          _tasks = filteredTasks;
-        });
+        if (mounted) {
+             _getTasksForDate(_selectedDate);
+        }
       }
       try {
         await context.read<TaskProvider>().updateTask(
@@ -154,6 +182,18 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   void _editTask(Task task) async {
+    if (task.isCompleted == true) {
+        HapticFeedback.mediumImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text("Completed tasks cannot be edited"),
+                behavior: SnackBarBehavior.floating,
+                duration: Duration(seconds: 2),
+            ),
+        );
+        return;
+    }
+
     HapticFeedback.mediumImpact();
     await context.pushNamed('addTask', extra: task);
     await _getTasksForDate(_selectedDate);
@@ -219,7 +259,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     final isLargeScreen = screenSize.width > 900;
     final l10n = AppLocalizations.of(context);
 
-    // Initialize filters with localized strings
     if (_filters.isEmpty) {
       _filters = [l10n.all, l10n.inProgress, l10n.completed];
       _selectedFilter = l10n.all;
@@ -744,16 +783,19 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap:
-                () => _toggleTaskCompletion(
-                  task,
-                  _selectedDate,
-                  !task.isCompleted!,
-                ),
+                () => _showTaskDetails(task, isTablet),
             child: Padding(
               padding: EdgeInsets.all(isTablet ? 20 : 16),
               child: Row(
                 children: [
-                  _buildCheckboxButton(task, isTablet),
+                  GestureDetector(
+                      onTap: () => _toggleTaskCompletion(
+                          task,
+                          _selectedDate,
+                          !task.isCompleted!,
+                      ),
+                      child: _buildCheckboxButton(task, isTablet),
+                  ),
                   SizedBox(width: isTablet ? 16 : 12),
                   Expanded(
                     child: Column(
@@ -950,7 +992,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: task.isCompleted! ? Colors.green : Colors.transparent,
+        color: task.isCompleted! ? Colors.green : Colors.transparent, 
         shape: BoxShape.circle,
         border: Border.all(
           color:
@@ -1057,6 +1099,214 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   String _getDateLabel() {
     return '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}';
+  }
+
+  void _showTaskDetails(Task task, bool isTablet) {
+    HapticFeedback.mediumImpact();
+    final theme = Theme.of(context);
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Center(
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.all(isTablet ? 32 : 24),
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.task_alt_rounded,
+                          color: theme.colorScheme.primary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              task.title ?? '',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildPriorityChip(task, isTablet),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  
+                  if (task.description?.isNotEmpty ?? false) ...[
+                      _buildDetailRow(
+                        Icons.description_outlined,
+                        AppLocalizations.of(context).description, 
+                        task.description!,
+                        theme,
+                      ),
+                      const SizedBox(height: 24),
+                  ],
+
+                  _buildDetailRow(
+                    Icons.calendar_today_rounded,
+                    "Date",
+                    _getDateLabel(),
+                    theme,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDetailRow(
+                    Icons.access_time_rounded,
+                    "Time",
+                    DataKey.formatTime(task.dueDate!),
+                    theme,
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  _buildDetailRow(
+                    Icons.category_outlined,
+                    "Category",
+                    task.category ?? 'General',
+                    theme,
+                  ),
+
+                  const SizedBox(height: 48),
+
+                  Row(
+                    children: [
+                      if (!task.isCompleted!) 
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                _editTask(task);
+                              },
+                              icon: const Icon(Icons.edit_rounded),
+                              label: Text(AppLocalizations.of(context).edit),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                      if (!task.isCompleted!) 
+                           const SizedBox(width: 12),
+
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            Navigator.of(context).pop();
+                            final shouldDelete = await _showDeleteConfirmation(
+                              task,
+                            );
+                            if (shouldDelete) {
+                              _deleteTask(task, _selectedDate);
+                            }
+                          },
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          label: Text(AppLocalizations.of(context).delete),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(
+    IconData icon,
+    String label,
+    String value,
+    ThemeData theme,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: theme.colorScheme.primary, size: 20),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   int _getHighPriorityCount() =>

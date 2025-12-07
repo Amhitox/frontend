@@ -27,8 +27,14 @@ class TaskProvider extends ChangeNotifier {
 
   Future<void> init(String userId) async {
     await _taskManager.init(userId);
-    _checkConnectivity();
+    await _checkConnectivity();
     _startConnectivityMonitoring();
+    
+    if (_isOnline) {
+      Future.delayed(const Duration(seconds: 1), () {
+        _performFullSync();
+      });
+    }
   }
 
   void _startConnectivityMonitoring() {
@@ -98,14 +104,21 @@ class TaskProvider extends ChangeNotifier {
     final deletedTasks = _taskManager.getDeletedTasks();
 
     for (final taskId in deletedTasks) {
+      if (taskId.startsWith('temp_')) {
+        await _taskManager.clearDeletedTask(taskId);
+        continue;
+      }
+      
       try {
         await task.deleteTask(taskId);
         await _taskManager.clearDeletedTask(taskId);
-      } catch (e) {}
+      } catch (e) {
+         print("TaskProvider: Failed to sync deleted task $taskId: $e");
+      }
     }
   }
 
-  void _checkConnectivity() async {
+  Future<void> _checkConnectivity() async {
     final connectivityResult = await Connectivity().checkConnectivity();
     _isOnline = connectivityResult.any(
       (result) => result != ConnectivityResult.none,
@@ -156,7 +169,17 @@ class TaskProvider extends ChangeNotifier {
         );
 
         if (response.statusCode == 201) {
-          taskId = response.data["taskId"];
+          final data = response.data;
+          if (data is Map && data.containsKey('data')) {
+            taskId = data['data']['taskId'];
+          } else {
+            taskId = data['taskId'];
+          }
+
+          if (taskId == null || taskId.isEmpty) {
+             print("TaskProvider: taskId not found in response: $data");
+             throw Exception("taskId not found in response");
+          }
 
           final newTask = Task(
             id: taskId,
@@ -173,6 +196,7 @@ class TaskProvider extends ChangeNotifier {
           throw Exception('Server returned status: ${response.statusCode}');
         }
       } catch (e) {
+        print("TaskProvider: Failed to add task to server: $e");
         taskId = await _createLocalTask(
           title,
           description,
@@ -264,10 +288,25 @@ class TaskProvider extends ChangeNotifier {
       print('TaskProvider: Syncing all tasks from server');
       final response = await task.getAllTasks();
 
+      print('TaskProvider: Response status: ${response.statusCode}');
+
       if (response.statusCode == 200) {
-        final data = response.data["data"];
-        if (data != null && data["tasks"] != null) {
-          final jsonList = data["tasks"] as List<dynamic>;
+        
+        List<dynamic> jsonList = [];
+        final responseData = response.data;
+
+        if (responseData is Map && responseData.containsKey('data')) {
+           final innerData = responseData['data'];
+           if (innerData is List) {
+             jsonList = innerData;
+           } else if (innerData is Map && innerData.containsKey('tasks')) {
+             jsonList = innerData['tasks'] as List<dynamic>; 
+           }
+        }
+        
+        print('TaskProvider: Found ${jsonList.length} tasks in response');
+
+        if (jsonList.isNotEmpty) {
           final serverTasks =
               jsonList.map((json) => Task.fromJson(json)).toList();
 
@@ -276,10 +315,13 @@ class TaskProvider extends ChangeNotifier {
           );
           await _taskManager.syncTasksFromServer(serverTasks);
           notifyListeners();
+        } else {
+             print('TaskProvider: No tasks found in response.data["data"] list.');
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('TaskProvider: Error in syncAllFromServer: $e');
+      print('TaskProvider: Stack trace: $stackTrace');
     }
   }
 
@@ -348,7 +390,8 @@ class TaskProvider extends ChangeNotifier {
   }
 
   Future<void> deleteTask(String id) async {
-    if (_isOnline) {
+    final isTempId = id.startsWith('temp_');
+    if (_isOnline && !isTempId) {
       try {
         await task.deleteTask(id);
         await _taskManager.deleteTask(id);
@@ -415,11 +458,21 @@ class TaskProvider extends ChangeNotifier {
         );
 
         if (response.statusCode == 201) {
-          final serverTaskId = response.data["taskId"];
+          String? serverTaskId;
+          final data = response.data;
+          if (data is Map && data.containsKey('data')) {
+            serverTaskId = data['data']['taskId'];
+          } else {
+            serverTaskId = data['taskId'];
+          }
 
-          await _taskManager.deleteTask(task.id!);
-          final updatedTask = task.copyWith(id: serverTaskId);
-          await _taskManager.addOrUpdateTask(updatedTask, isSynced: true);
+          if (serverTaskId != null && serverTaskId.isNotEmpty) {
+              await _taskManager.deleteTask(task.id!);
+              final updatedTask = task.copyWith(id: serverTaskId);
+              await _taskManager.addOrUpdateTask(updatedTask, isSynced: true);
+          } else {
+             print("TaskProvider: Could not extract taskId from sync response: $data");
+          }
         } else {}
       } finally {
         _syncingTasks.remove(task.id!);
@@ -434,7 +487,7 @@ class TaskProvider extends ChangeNotifier {
       _syncingTasks.add(task.id!);
 
       try {
-        await this.task.updateTask(
+        final response = await this.task.updateTask(
           task.id!,
           task.title,
           task.description,
@@ -443,7 +496,12 @@ class TaskProvider extends ChangeNotifier {
           task.isCompleted,
           task.category,
         );
-        await _taskManager.markTaskAsSynced(task.id!);
+        
+        if (response.statusCode == 200 || response.statusCode == 204) {
+             await _taskManager.markTaskAsSynced(task.id!);
+        } else {
+             print('TaskProvider: Failed to sync updated task ${task.id}. Status: ${response.statusCode}');
+        }
       } finally {
         _syncingTasks.remove(task.id!);
       }

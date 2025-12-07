@@ -6,10 +6,13 @@ class DataKey {
       '${date.day.toString().padLeft(2, '0')}';
   static String formatTime(String dateTimeString) {
     try {
-      final dateTime = DateTime.parse(dateTimeString);
+      final dateTime = DateTime.parse(dateTimeString).toLocal();
       return DateFormat('HH:mm').format(dateTime);
     } catch (e) {
-      return dateTimeString.split('T')[1].substring(0, 5);
+      if (dateTimeString.contains('T')) {
+          return dateTimeString.split('T')[1].substring(0, 5);
+      }
+      return dateTimeString;
     }
   }
   static bool shouldCacheTask(DateTime taskDate) {

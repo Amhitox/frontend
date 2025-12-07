@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/models/analytic_data.dart';
+import 'package:frontend/providers/analytic_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
+import 'package:provider/provider.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -13,63 +16,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   late Animation<Offset> _slideAnimation;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  String _selectedPeriod = 'This Week';
+  String _selectedPeriod = 'Today'; // Default matching user request
   final List<String> _periods = [
     'Today',
     'This Week',
     'This Month',
     'This Year',
   ];
-  final Map<String, AnalyticsData> _analyticsData = {
-    'Today': AnalyticsData(
-      emailsSent: 12,
-      emailsReceived: 24,
-      tasksCompleted: 8,
-      meetingsAttended: 3,
-      productivityScore: 85,
-      responseTime: '2.3 hours',
-      topCategories: ['Work', 'Personal', 'Meetings'],
-      categoryData: [65, 25, 10],
-      weeklyData: [8, 12, 15, 18, 22, 24, 20],
-      chartColors: [Colors.blue, Colors.green, Colors.orange],
-    ),
-    'This Week': AnalyticsData(
-      emailsSent: 89,
-      emailsReceived: 156,
-      tasksCompleted: 34,
-      meetingsAttended: 12,
-      productivityScore: 78,
-      responseTime: '3.1 hours',
-      topCategories: ['Work', 'Personal', 'Meetings'],
-      categoryData: [60, 30, 10],
-      weeklyData: [45, 52, 48, 65, 72, 68, 89],
-      chartColors: [Colors.blue, Colors.green, Colors.orange],
-    ),
-    'This Month': AnalyticsData(
-      emailsSent: 342,
-      emailsReceived: 578,
-      tasksCompleted: 127,
-      meetingsAttended: 45,
-      productivityScore: 82,
-      responseTime: '2.8 hours',
-      topCategories: ['Work', 'Personal', 'Projects'],
-      categoryData: [70, 20, 10],
-      weeklyData: [120, 145, 165, 180, 195, 210, 225],
-      chartColors: [Colors.blue, Colors.green, Colors.purple],
-    ),
-    'This Year': AnalyticsData(
-      emailsSent: 3890,
-      emailsReceived: 6234,
-      tasksCompleted: 1456,
-      meetingsAttended: 234,
-      productivityScore: 79,
-      responseTime: '3.2 hours',
-      topCategories: ['Work', 'Personal', 'Projects'],
-      categoryData: [65, 25, 10],
-      weeklyData: [300, 450, 520, 680, 750, 820, 890],
-      chartColors: [Colors.blue, Colors.green, Colors.purple],
-    ),
-  };
+
   @override
   void initState() {
     super.initState();
@@ -91,6 +45,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
     _slideController.forward();
     _fadeController.forward();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AnalyticProvider>().fetchAnalytics(_selectedPeriod);
+    });
   }
 
   @override
@@ -100,10 +58,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     super.dispose();
   }
 
-  AnalyticsData get _currentData => _analyticsData[_selectedPeriod]!;
   bool _isLargeScreen(double width) => width >= 1024;
   bool _isTablet(double width) => width >= 768 && width < 1024;
   bool _isSmallTablet(double width) => width >= 600 && width < 768;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -115,8 +73,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final double horizontalPadding = _getHorizontalPadding(screenWidth);
     final double verticalSpacing = _getVerticalSpacing(screenWidth);
     final double contentMaxWidth = _getContentMaxWidth(screenWidth);
+
     return Scaffold(
-      drawer: const SideMenu(),
+      drawer: const SideMenu(), 
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -130,32 +89,68 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           ),
         ),
         child: SafeArea(
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                child: Column(
-                  children: [
-                    _buildHeader(context, screenWidth),
-                    _buildPeriodTabs(context, screenWidth),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: horizontalPadding,
+          child: Column(
+            children: [
+               _buildHeader(context, screenWidth),
+               _buildPeriodTabs(context, screenWidth),
+               Expanded(
+                 child: Consumer<AnalyticProvider>(
+                    builder: (context, provider, child) {
+                      if (provider.isLoading) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+
+                      if (provider.error != null) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Error loading analytics",
+                                style: TextStyle(color: theme.colorScheme.error),
+                              ),
+                              SizedBox(height: 8),
+                              Text(provider.error!),
+                              ElevatedButton(
+                                onPressed: () {
+                                  provider.fetchAnalytics(_selectedPeriod, forceRefresh: true);
+                                },
+                                child: Text("Retry"),
+                              )
+                            ],
+                          ),
+                        );
+                      }
+
+                      final data = provider.getData(_selectedPeriod);
+                      if (data == null) {
+                        return Center(child: Text("No data available"));
+                      }
+                      
+                      return SlideTransition(
+                        position: _slideAnimation,
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding,
+                          ),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                              child: _buildResponsiveLayout(
+                                context,
+                                screenWidth,
+                                isLandscape,
+                                verticalSpacing,
+                                data,
+                              ),
+                            ),
+                          ),
                         ),
-                        child: _buildResponsiveLayout(
-                          context,
-                          screenWidth,
-                          isLandscape,
-                          verticalSpacing,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                      );
+                    },
+                 ),
+               ),
+            ],
           ),
         ),
       ),
@@ -187,16 +182,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     double screenWidth,
     bool isLandscape,
     double spacing,
+    AnalyticData data,
   ) {
     if ((_isTablet(screenWidth) || _isLargeScreen(screenWidth)) &&
         isLandscape) {
-      return _buildTabletLandscapeLayout(context, screenWidth, spacing);
+      return _buildTabletLandscapeLayout(context, screenWidth, spacing, data);
     } else if (_isTablet(screenWidth) || _isLargeScreen(screenWidth)) {
-      return _buildTabletPortraitLayout(context, screenWidth, spacing);
+      return _buildTabletPortraitLayout(context, screenWidth, spacing, data);
     } else if (_isSmallTablet(screenWidth)) {
-      return _buildSmallTabletLayout(context, screenWidth, spacing);
+      return _buildSmallTabletLayout(context, screenWidth, spacing, data);
     } else {
-      return _buildMobileLayout(context, screenWidth, spacing);
+      return _buildMobileLayout(context, screenWidth, spacing, data);
     }
   }
 
@@ -204,11 +200,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     BuildContext context,
     double screenWidth,
     double spacing,
+    AnalyticData data,
   ) {
     return Column(
       children: [
         SizedBox(height: spacing),
-        _buildQuickStats(context, crossAxisCount: 4, aspectRatio: 1.4),
+        _buildQuickStats(context, data, crossAxisCount: 4, aspectRatio: 1.4),
         SizedBox(height: spacing),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,19 +214,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               flex: 2,
               child: Column(
                 children: [
-                  _buildProductivityCard(context, screenWidth),
+                  _buildProductivityCard(context, screenWidth, data),
                   SizedBox(height: spacing),
-                  _buildInsightsCard(context, screenWidth),
+                  _buildInsightsCard(context, screenWidth, data),
                 ],
               ),
             ),
             SizedBox(width: spacing),
-            Expanded(flex: 2, child: _buildChartCard(context, screenWidth)),
-            SizedBox(width: spacing),
-            Expanded(
-              flex: 2,
-              child: _buildCategoryBreakdown(context, screenWidth),
-            ),
+            Expanded(flex: 2, child: _buildChartCard(context, screenWidth, data)),
           ],
         ),
         SizedBox(height: spacing * 1.5),
@@ -241,11 +233,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     BuildContext context,
     double screenWidth,
     double spacing,
+    AnalyticData data,
   ) {
     return Column(
       children: [
         SizedBox(height: spacing),
-        _buildQuickStats(context, crossAxisCount: 4, aspectRatio: 1.6),
+        _buildQuickStats(context, data, crossAxisCount: 4, aspectRatio: 1.6),
         SizedBox(height: spacing),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,9 +247,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               flex: 3,
               child: Column(
                 children: [
-                  _buildProductivityCard(context, screenWidth),
+                  _buildProductivityCard(context, screenWidth, data),
                   SizedBox(height: spacing),
-                  _buildChartCard(context, screenWidth),
+                  _buildChartCard(context, screenWidth, data),
                 ],
               ),
             ),
@@ -265,9 +258,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               flex: 2,
               child: Column(
                 children: [
-                  _buildCategoryBreakdown(context, screenWidth),
-                  SizedBox(height: spacing),
-                  _buildInsightsCard(context, screenWidth),
+                  _buildInsightsCard(context, screenWidth, data),
                 ],
               ),
             ),
@@ -282,24 +273,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     BuildContext context,
     double screenWidth,
     double spacing,
+    AnalyticData data,
   ) {
     return Column(
       children: [
         SizedBox(height: spacing),
-        _buildQuickStats(context, crossAxisCount: 2, aspectRatio: 1.8),
+        _buildQuickStats(context, data, crossAxisCount: 2, aspectRatio: 1.8),
         SizedBox(height: spacing),
-        _buildProductivityCard(context, screenWidth),
+        _buildProductivityCard(context, screenWidth, data),
         SizedBox(height: spacing),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _buildChartCard(context, screenWidth)),
-            SizedBox(width: spacing),
-            Expanded(child: _buildCategoryBreakdown(context, screenWidth)),
+            Expanded(child: _buildChartCard(context, screenWidth, data)),
+            SizedBox(width: spacing)
           ],
         ),
         SizedBox(height: spacing),
-        _buildInsightsCard(context, screenWidth),
+        _buildInsightsCard(context, screenWidth, data),
         SizedBox(height: spacing * 1.5),
       ],
     );
@@ -309,19 +300,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     BuildContext context,
     double screenWidth,
     double spacing,
+    AnalyticData data,
   ) {
     return Column(
       children: [
         SizedBox(height: spacing),
-        _buildQuickStats(context, crossAxisCount: 2, aspectRatio: 1.5),
+        _buildQuickStats(context, data, crossAxisCount: 2, aspectRatio: 1.5),
         SizedBox(height: spacing),
-        _buildProductivityCard(context, screenWidth),
+        _buildProductivityCard(context, screenWidth, data),
         SizedBox(height: spacing),
-        _buildChartCard(context, screenWidth),
+        _buildChartCard(context, screenWidth, data),
         SizedBox(height: spacing),
-        _buildCategoryBreakdown(context, screenWidth),
-        SizedBox(height: spacing),
-        _buildInsightsCard(context, screenWidth),
+        _buildInsightsCard(context, screenWidth, data),
         SizedBox(height: spacing * 1.5),
       ],
     );
@@ -335,6 +325,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final double subtitleSize = _getHeaderSubtitleSize(screenWidth);
     final double borderRadius = _getHeaderBorderRadius(screenWidth);
     final double margin = _getHeaderMargin(screenWidth);
+    
     return Container(
       margin: EdgeInsets.all(margin),
       padding: EdgeInsets.all(padding),
@@ -426,50 +417,57 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ],
           ),
           const SizedBox(height: 20),
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: _isTablet(screenWidth) ? 20 : 16,
-              vertical: _isTablet(screenWidth) ? 16 : 12,
-            ),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.secondaryContainer.withValues(
-                alpha: 0.6,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildQuickMetric(
-                  'Score',
-                  '${_currentData.productivityScore}%',
-                  _getProductivityColor(_currentData.productivityScore),
-                  screenWidth,
+          Consumer<AnalyticProvider>(
+            builder: (context, provider, child) {
+              final data = provider.getData(_selectedPeriod);
+              if (data == null) return SizedBox.shrink();
+
+              return Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: _isTablet(screenWidth) ? 20 : 16,
+                  vertical: _isTablet(screenWidth) ? 16 : 12,
                 ),
-                Container(
-                  width: 1,
-                  height: 32,
-                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondaryContainer.withValues(
+                    alpha: 0.6,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                _buildQuickMetric(
-                  'Emails',
-                  '${_currentData.emailsSent + _currentData.emailsReceived}',
-                  Colors.blue,
-                  screenWidth,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildQuickMetric(
+                      'Score',
+                      '${data.productivityScore}%',
+                      _getProductivityColor(data.productivityScore),
+                      screenWidth,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 32,
+                      color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                    _buildQuickMetric(
+                      'Emails',
+                      '${data.emailsSent + data.emailsReceived}',
+                      Colors.blue,
+                      screenWidth,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 32,
+                      color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                    _buildQuickMetric(
+                      'Tasks',
+                      '${data.tasksCompleted}',
+                      Colors.orange,
+                      screenWidth,
+                    ),
+                  ],
                 ),
-                Container(
-                  width: 1,
-                  height: 32,
-                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                ),
-                _buildQuickMetric(
-                  'Tasks',
-                  '${_currentData.tasksCompleted}',
-                  Colors.orange,
-                  screenWidth,
-                ),
-              ],
-            ),
+              );
+            }
           ),
         ],
       ),
@@ -591,7 +589,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               return Expanded(
                 child: GestureDetector(
                   onTap: () {
+                    if (isSelected) return;
                     setState(() => _selectedPeriod = period);
+                    context.read<AnalyticProvider>().fetchAnalytics(period);
                     _fadeController.reset();
                     _fadeController.forward();
                   },
@@ -657,7 +657,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   Widget _buildQuickStats(
-    BuildContext context, {
+    BuildContext context, 
+    AnalyticData data,
+    {
     int crossAxisCount = 2,
     double aspectRatio = 1.5,
   }) {
@@ -691,25 +693,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           children: [
             _buildStatCard(
               'Emails Sent',
-              _currentData.emailsSent.toString(),
+              data.emailsSent.toString(),
               Icons.send,
               Colors.blue,
             ),
             _buildStatCard(
               'Emails Received',
-              _currentData.emailsReceived.toString(),
+              data.emailsReceived.toString(),
               Icons.inbox,
               Colors.green,
             ),
             _buildStatCard(
               'Tasks Completed',
-              _currentData.tasksCompleted.toString(),
+              data.tasksCompleted.toString(),
               Icons.check_circle,
               Colors.orange,
             ),
             _buildStatCard(
               'Meetings',
-              _currentData.meetingsAttended.toString(),
+              data.meetingsAttended.toString(),
               Icons.event,
               Colors.purple,
             ),
@@ -853,7 +855,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return 10.0;
   }
 
-  Widget _buildProductivityCard(BuildContext context, double screenWidth) {
+  Widget _buildProductivityCard(BuildContext context, double screenWidth, AnalyticData data) {
     final theme = Theme.of(context);
     final double padding = _getCardPadding(screenWidth);
     final double titleSize = _getCardTitleSize(screenWidth);
@@ -891,10 +893,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '${_currentData.productivityScore}%',
+                    '${data.productivityScore}%',
                     style: TextStyle(
                       color: _getProductivityColor(
-                        _currentData.productivityScore,
+                        data.productivityScore,
                       ),
                       fontSize: subtitleSize,
                       fontWeight: FontWeight.w700,
@@ -907,10 +909,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: LinearProgressIndicator(
-                value: _currentData.productivityScore / 100,
+                value: data.productivityScore / 100,
                 backgroundColor: theme.colorScheme.surfaceContainer,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  _getProductivityColor(_currentData.productivityScore),
+                  _getProductivityColor(data.productivityScore),
                 ),
                 minHeight: _isTablet(screenWidth) ? 12 : 8,
               ),
@@ -925,7 +927,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Avg Response Time: ${_currentData.responseTime}',
+                  'Avg Response Time: ${data.responseTime}',
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: subtitleSize,
@@ -966,7 +968,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return Colors.red;
   }
 
-  Widget _buildChartCard(BuildContext context, double screenWidth) {
+  Widget _buildChartCard(BuildContext context, double screenWidth, AnalyticData data) {
     final theme = Theme.of(context);
     final double padding = _getCardPadding(screenWidth);
     final double titleSize = _getCardTitleSize(screenWidth);
@@ -993,7 +995,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             SizedBox(height: _isTablet(screenWidth) ? 24 : 20),
             SizedBox(
               height: _getChartHeight(screenWidth),
-              child: _buildSimpleChart(_currentData.weeklyData, screenWidth),
+              child: _buildSimpleChart(data.weeklyData, screenWidth),
             ),
           ],
         ),
@@ -1008,8 +1010,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return 120.0;
   }
 
-  Widget _buildSimpleChart(List<int> data, double screenWidth) {
-    final maxValue = data.reduce((a, b) => a > b ? a : b).toDouble();
+  Widget _buildSimpleChart(List<num> data, double screenWidth) {
+    final maxValue = data.isEmpty ? 1.0 : data.reduce((a, b) => a > b ? a : b).toDouble();
     final theme = Theme.of(context);
     final double barWidth = _getChartBarWidth(screenWidth);
     final double fontSize = _getChartLabelSize(screenWidth);
@@ -1020,7 +1022,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           data.asMap().entries.map((entry) {
             final index = entry.key;
             final value = entry.value;
-            final height = (value / maxValue) * _getChartMaxHeight(screenWidth);
+            final height = maxValue == 0 ? 0.0 : (value / maxValue) * _getChartMaxHeight(screenWidth);
+            final label = index < 7 
+                ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index] 
+                : '';
+                
             return TweenAnimationBuilder<double>(
               duration: Duration(milliseconds: 800 + (index * 100)),
               tween: Tween(begin: 0.0, end: height),
@@ -1030,7 +1036,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   children: [
                     Container(
                       width: barWidth,
-                      height: animatedHeight,
+                      height: animatedHeight == 0 ? 2 : animatedHeight, 
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
@@ -1045,7 +1051,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     ),
                     SizedBox(height: _isTablet(screenWidth) ? 10 : 8),
                     Text(
-                      ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index],
+                      label,
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.5,
@@ -1080,105 +1086,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return 10.0;
   }
 
-  Widget _buildCategoryBreakdown(BuildContext context, double screenWidth) {
-    final theme = Theme.of(context);
-    final double padding = _getCardPadding(screenWidth);
-    final double titleSize = _getCardTitleSize(screenWidth);
-    final double itemSize = _getCategoryItemSize(screenWidth);
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(padding),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Category Breakdown',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: titleSize,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: _isTablet(screenWidth) ? 24 : 20),
-            ...List.generate(_currentData.topCategories.length, (index) {
-              final category = _currentData.topCategories[index];
-              final percentage = _currentData.categoryData[index];
-              final color = _currentData.chartColors[index];
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: _isTablet(screenWidth) ? 20 : 16,
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: _getCategoryDotSize(screenWidth),
-                              height: _getCategoryDotSize(screenWidth),
-                              decoration: BoxDecoration(
-                                color: color,
-                                borderRadius: BorderRadius.circular(
-                                  _getCategoryDotSize(screenWidth) * 0.5,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: _isTablet(screenWidth) ? 16 : 12),
-                            Text(
-                              category,
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurface,
-                                fontSize: itemSize,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          '$percentage%',
-                          style: TextStyle(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.7,
-                            ),
-                            fontSize: itemSize,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: _isTablet(screenWidth) ? 12 : 8),
-                    TweenAnimationBuilder<double>(
-                      duration: Duration(milliseconds: 1000 + (index * 200)),
-                      tween: Tween(begin: 0.0, end: percentage / 100),
-                      builder: (context, value, child) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: LinearProgressIndicator(
-                            value: value,
-                            backgroundColor: theme.colorScheme.surfaceContainer,
-                            valueColor: AlwaysStoppedAnimation<Color>(color),
-                            minHeight: _isTablet(screenWidth) ? 8 : 6,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
 
   double _getCategoryItemSize(double width) {
     if (_isLargeScreen(width)) return 16.0;
@@ -1192,7 +1099,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return 12.0;
   }
 
-  Widget _buildInsightsCard(BuildContext context, double screenWidth) {
+  Widget _buildInsightsCard(BuildContext context, double screenWidth, AnalyticData data) {
     final theme = Theme.of(context);
     final double padding = _getCardPadding(screenWidth);
     final double titleSize = _getCardTitleSize(screenWidth);
@@ -1229,7 +1136,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             SizedBox(height: _isTablet(screenWidth) ? 20 : 16),
             _buildInsightItem(
               'Peak Activity',
-              _getPeakActivityInsight(),
+              _getPeakActivityInsight(data),
               Icons.trending_up,
               Colors.green,
               screenWidth,
@@ -1237,7 +1144,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             SizedBox(height: _isTablet(screenWidth) ? 16 : 12),
             _buildInsightItem(
               'Response Pattern',
-              _getResponsePatternInsight(),
+              _getResponsePatternInsight(data),
               Icons.schedule,
               Colors.blue,
               screenWidth,
@@ -1245,7 +1152,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             SizedBox(height: _isTablet(screenWidth) ? 16 : 12),
             _buildInsightItem(
               'Suggestion',
-              _getSuggestion(),
+              _getSuggestion(data),
               Icons.recommend,
               Colors.orange,
               screenWidth,
@@ -1328,9 +1235,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return 11.0;
   }
 
-  String _getPeakActivityInsight() {
-    final data = _currentData.weeklyData;
-    final maxIndex = data.indexOf(data.reduce((a, b) => a > b ? a : b));
+  String _getPeakActivityInsight(AnalyticData data) {
+    final weeklyData = data.weeklyData;
+    if (weeklyData.isEmpty) return "No activity data";
+    
+    int maxIndex = 0;
+    num maxValue = -1;
+    for (int i = 0; i < weeklyData.length; i++) {
+      if (weeklyData[i] > maxValue) {
+        maxValue = weeklyData[i];
+        maxIndex = i;
+      }
+    }
+    
     final days = [
       'Monday',
       'Tuesday',
@@ -1340,49 +1257,27 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       'Saturday',
       'Sunday',
     ];
-    return 'Your most productive day was ${days[maxIndex]}';
+    if (maxIndex < days.length) {
+      return 'Your most productive day was ${days[maxIndex]}';
+    }
+    return 'Consistent activity throughout the week';
   }
 
-  String _getResponsePatternInsight() {
-    if (_currentData.productivityScore > 80) {
+  String _getResponsePatternInsight(AnalyticData data) {
+    if (data.productivityScore > 80) {
       return 'You maintain excellent response times consistently';
-    } else if (_currentData.productivityScore > 60) {
+    } else if (data.productivityScore > 60) {
       return 'Your response time could be improved during peak hours';
     } else {
       return 'Consider setting up automated responses for better efficiency';
     }
   }
 
-  String _getSuggestion() {
-    if (_currentData.productivityScore > 80) {
+  String _getSuggestion(AnalyticData data) {
+    if (data.productivityScore > 80) {
       return 'Great work! Consider sharing your productivity tips with your team';
     } else {
       return 'Try time-blocking your calendar to improve focus and productivity';
     }
   }
-}
-
-class AnalyticsData {
-  final int emailsSent;
-  final int emailsReceived;
-  final int tasksCompleted;
-  final int meetingsAttended;
-  final int productivityScore;
-  final String responseTime;
-  final List<String> topCategories;
-  final List<int> categoryData;
-  final List<int> weeklyData;
-  final List<Color> chartColors;
-  AnalyticsData({
-    required this.emailsSent,
-    required this.emailsReceived,
-    required this.tasksCompleted,
-    required this.meetingsAttended,
-    required this.productivityScore,
-    required this.responseTime,
-    required this.topCategories,
-    required this.categoryData,
-    required this.weeklyData,
-    required this.chartColors,
-  });
 }

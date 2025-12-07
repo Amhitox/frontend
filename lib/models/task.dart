@@ -39,7 +39,7 @@ class Task extends HiveObject {
   }
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
-      id: json['id'] ?? '',
+      id: json['taskId'] ?? json['id'] ?? '', 
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       category: json['category'] ?? '',

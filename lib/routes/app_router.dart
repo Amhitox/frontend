@@ -27,7 +27,7 @@ import '../ui/screens/welcome/subscription_screen.dart';
 import '../ui/screens/welcome/current_plan_screen.dart';
 import '../ui/screens/calendar/addschedule_screen.dart';
 import '../ui/screens/task/addtask_screen.dart';
-import '../ui/screens/welcome/analytics_screen.dart';
+import '../ui/screens/analytic/analytic_screen.dart';
 import '../ui/screens/welcome/notification_screen.dart';
 import '../ui/screens/settings/profile_screen.dart';
 import '../ui/screens/settings/security_screen.dart';

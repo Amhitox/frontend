@@ -164,10 +164,6 @@ class _CalendarPageState extends State<CalendarPage>
   }
 
   List<Meeting> _getMeetingsForDate(DateTime date) {
-    if (_isSameDay(date, widget.date)) {
-      return widget.meetings;
-    }
-    // Use watch instead of read to listen to provider changes
     final meetingProvider = context.watch<MeetingProvider>();
     final dateString = date.toIso8601String().split('T').first;
     return meetingProvider.getMeetings(dateString);
@@ -826,7 +822,7 @@ class _CalendarPageState extends State<CalendarPage>
                     children: [
                       if (showTime) ...[
                         Text(
-                          '${meeting.startTime?.split(' ')[0]} - ${meeting.endTime?.split(' ')[0]}',
+                          '${_formatTime(meeting.startTime)} - ${_formatTime(meeting.endTime)}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontSize: timeFontSize,
                             color: theme.colorScheme.onSurface.withValues(
@@ -1254,6 +1250,15 @@ class _CalendarPageState extends State<CalendarPage>
   }
 
   int _getMeetingTimeInMinutes(String timeString) {
+    if (timeString.contains('T')) {
+      try {
+        final date = DateTime.parse(timeString).toLocal();
+        return date.hour * 60 + date.minute;
+      } catch (e) {
+        
+      }
+    }
+
     final parts = timeString.split(':');
     if (parts.length < 2) return 540;
     final hour = int.tryParse(parts[0]) ?? 9;
@@ -1264,7 +1269,11 @@ class _CalendarPageState extends State<CalendarPage>
     if (isAM) {
       hour24 = hour == 12 ? 0 : hour;
     } else {
-      hour24 = hour == 12 ? 12 : hour + 12;
+      if (timeString.toUpperCase().contains('PM')) {
+        hour24 = hour == 12 ? 12 : hour + 12;
+      } else {
+         hour24 = hour; 
+      }
     }
     return hour24 * 60 + minute;
   }
@@ -1276,6 +1285,15 @@ class _CalendarPageState extends State<CalendarPage>
   }
 
   TimeOfDay _parseTimeOfDay(String timeString) {
+    if (timeString.contains('T')) {
+      try {
+        final date = DateTime.parse(timeString).toLocal();
+        return TimeOfDay(hour: date.hour, minute: date.minute);
+      } catch (e) {
+        
+      }
+    }
+
     try {
       final RegExp regex = RegExp(
         r'(\d{1,2}):(\d{2})\s*(AM|PM)?',
@@ -1295,6 +1313,25 @@ class _CalendarPageState extends State<CalendarPage>
       }
     } catch (e) {}
     return const TimeOfDay(hour: 9, minute: 0);
+  }
+
+  String _formatTime(String? timeString) {
+    if (timeString == null || timeString.isEmpty) return '';
+    
+    if (timeString.contains('T')) {
+      try {
+        final date = DateTime.parse(timeString).toLocal();
+        final hour = date.hour;
+        final minute = date.minute;
+        final amPm = hour >= 12 ? 'PM' : 'AM';
+        final hour12 = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+        return '$hour12:${minute.toString().padLeft(2, '0')} $amPm';
+      } catch (e) {
+        return timeString;
+      }
+    }
+    
+    return timeString;
   }
 
   Widget _buildCalendarView() {

@@ -14,6 +14,7 @@ import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/providers/meeting_provider.dart';
 import 'package:frontend/providers/user_provider.dart';
 import 'package:frontend/providers/sub_provider.dart';
+import 'package:frontend/providers/analytic_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -69,6 +70,9 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(
           create: (_) => SubProvider(dio: authProvider.dio),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AnalyticProvider(dio: authProvider.dio),
         ),
       ],
       child: MainApp(),

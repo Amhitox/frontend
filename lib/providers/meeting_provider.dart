@@ -29,8 +29,14 @@ class MeetingProvider extends ChangeNotifier {
 
   Future<void> init(String userId) async {
     await _calendarManager.init(userId);
-    _checkConnectivity();
+    await _checkConnectivity();
     _startConnectivityMonitoring();
+
+    if (_isOnline) {
+      Future.delayed(const Duration(seconds: 1), () {
+        _performFullSync();
+      });
+    }
   }
 
   void _startConnectivityMonitoring() {
@@ -102,14 +108,21 @@ class MeetingProvider extends ChangeNotifier {
     final deletedMeetings = _calendarManager.getDeletedMeetings();
 
     for (final meetingId in deletedMeetings) {
+      if (meetingId.startsWith('temp_')) {
+        await _calendarManager.clearDeletedMeeting(meetingId);
+        continue;
+      }
+
       try {
         await meeting.deleteMeeting(meetingId);
         await _calendarManager.clearDeletedMeeting(meetingId);
-      } catch (e) {}
+      } catch (e) {
+        print("MeetingProvider: Failed to sync deleted meeting $meetingId: $e");
+      }
     }
   }
 
-  void _checkConnectivity() async {
+  Future<void> _checkConnectivity() async {
     final connectivityResult = await Connectivity().checkConnectivity();
     _isOnline = connectivityResult.any(
       (result) => result != ConnectivityResult.none,
@@ -134,7 +147,6 @@ class MeetingProvider extends ChangeNotifier {
   ) async {
     String meetingId;
 
-    // Combine date and time for API (in local timezone)
     final startDateTime = DateTime(
       date.year,
       date.month,
@@ -167,20 +179,31 @@ class MeetingProvider extends ChangeNotifier {
         );
 
         if (response.statusCode == 201) {
-          meetingId = response.data["event"]["eventId"];
+          final data = response.data;
+          if (data is Map && data.containsKey('data')) {
+             if (data['data'] is Map && data['data'].containsKey('event')) {
+                meetingId = data['data']['event']['eventId'];
+             } else {
+                 meetingId = '';
+             }
+          } else if (data is Map && data.containsKey('event')) {
+             meetingId = data['event']['eventId'];
+          } else {
+            meetingId = '';
+          }
 
           if (meetingId.isEmpty) {
+             print("MeetingProvider: Meeting ID not found in response: $data");
             throw Exception('No meeting ID returned from server');
           }
 
-          // Create meeting with server ID and mark as synced
           final newMeeting = Meeting(
             id: meetingId,
             title: title,
             description: description,
-            date: date.toIso8601String().split('T').first, // Store date only
-            startTime: _formatTimeOfDay(startTime), // Store time as string
-            endTime: _formatTimeOfDay(endTime), // Store time as string
+            date: date.toIso8601String().split('T').first, 
+            startTime: _formatTimeOfDay(startTime), 
+            endTime: _formatTimeOfDay(endTime), 
             attendees: attendees,
             location: location,
           );
@@ -265,21 +288,41 @@ class MeetingProvider extends ChangeNotifier {
     try {
       print('MeetingProvider: Syncing all meetings from server');
       final response = await meeting.getAllMeetings();
+      
+      print('MeetingProvider: Response status: ${response.statusCode}');
+      print('MeetingProvider: Response data type: ${response.data.runtimeType}');
 
       if (response.statusCode == 200) {
-        final jsonList = response.data["events"] as List<dynamic>;
+        List<dynamic> jsonList = [];
+        if (response.data is Map && response.data.containsKey('events')) {
+             jsonList = response.data["events"] as List<dynamic>;
+        } else if (response.data is List) {
+             jsonList = response.data as List<dynamic>;
+        } else if (response.data is Map && response.data.containsKey('data')) {
+             final data = response.data['data'];
+             if (data is Map && data.containsKey('events')) {
+                  jsonList = data['events'] as List<dynamic>;
+             }
+        }
+        
+        print('MeetingProvider: Parsed ${jsonList.length} events from response');
 
-        final serverMeetings =
-            jsonList.map((json) => Meeting.fromJson(json)).toList();
+        if (jsonList.isNotEmpty) {
+           final serverMeetings =
+               jsonList.map((json) => Meeting.fromJson(json)).toList();
 
-        print(
-          'MeetingProvider: Fetched ${serverMeetings.length} meetings from server',
-        );
-        await _calendarManager.syncMeetingsFromServer(serverMeetings);
-        notifyListeners();
+           print(
+             'MeetingProvider: Fetched ${serverMeetings.length} meetings from server',
+           );
+           await _calendarManager.syncMeetingsFromServer(serverMeetings);
+           notifyListeners();
+        } else {
+            print('MeetingProvider: No events found in response data structure: ${response.data}');
+        }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('MeetingProvider: Error in syncAllFromServer: $e');
+      print('MeetingProvider: Stack trace: $stackTrace');
     }
   }
 
@@ -362,7 +405,8 @@ class MeetingProvider extends ChangeNotifier {
   }
 
   Future<void> deleteMeeting(String id) async {
-    if (_isOnline) {
+    final isTempId = id.startsWith('temp_');
+    if (_isOnline && !isTempId) {
       try {
         await meeting.deleteMeeting(id);
         await _calendarManager.deleteMeeting(id);
@@ -438,18 +482,27 @@ class MeetingProvider extends ChangeNotifier {
         );
 
         if (response.statusCode == 201) {
-          final serverMeetingId = response.data["event"]["eventId"];
-
-          if (serverMeetingId == null || serverMeetingId.toString().isEmpty) {
-            throw Exception('No meeting ID returned from server during sync');
+          String? serverMeetingId;
+          final data = response.data;
+          
+          if (data is Map && data.containsKey('data')) {
+             if (data['data'] is Map && data['data'].containsKey('event')) {
+                serverMeetingId = data['data']['event']['eventId'];
+             }
+          } else if (data is Map && data.containsKey('event')) {
+             serverMeetingId = data['event']['eventId'];
           }
 
-          await _calendarManager.deleteMeeting(meeting.id!);
-          final updatedMeeting = meeting.copyWith(id: serverMeetingId);
-          await _calendarManager.addOrUpdateMeeting(
-            updatedMeeting,
-            isSynced: true,
-          );
+          if (serverMeetingId == null || serverMeetingId.toString().isEmpty) {
+             print("MeetingProvider: Could not extract eventId from sync response: $data");
+          } else {
+            await _calendarManager.deleteMeeting(meeting.id!);
+            final updatedMeeting = meeting.copyWith(id: serverMeetingId);
+            await _calendarManager.addOrUpdateMeeting(
+              updatedMeeting,
+              isSynced: true,
+            );
+          }
         } else {}
       } finally {
         _syncingMeetings.remove(meeting.id!);
@@ -489,7 +542,7 @@ class MeetingProvider extends ChangeNotifier {
         // Get timezone offset from the actual datetime (not DateTime.now())
         final timezoneOffset = _formatTimezoneOffset(startDateTime.timeZoneOffset);
 
-        await this.meeting.updateMeeting(
+        final response = await this.meeting.updateMeeting(
           meeting.id!,
           meeting.title ?? '',
           meeting.description ?? '',
@@ -499,7 +552,12 @@ class MeetingProvider extends ChangeNotifier {
           meeting.location?.toString().split('.').last ?? 'online',
           timezoneOffset,
         );
-        await _calendarManager.markMeetingAsSynced(meeting.id!);
+
+        if (response.statusCode == 200 || response.statusCode == 204) {
+            await _calendarManager.markMeetingAsSynced(meeting.id!);
+        } else {
+             print('MeetingProvider: Failed to sync updated meeting ${meeting.id}. Status: ${response.statusCode}');
+        }
       } finally {
         _syncingMeetings.remove(meeting.id!);
       }
