@@ -22,4 +22,25 @@ class AnalyticService {
           );
     }
   }
+  Future<Response> downloadReport(String userId, String filter) async {
+    try {
+      final response = await _dio.get(
+        '/api/analytic/report',
+        queryParameters: {'userId': userId, 'filter': filter},
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: false,
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+      return response;
+    } on DioException catch (e) {
+      return e.response ??
+          Response(
+            requestOptions: e.requestOptions,
+            statusCode: 500,
+            data: {'error': 'Network error'},
+          );
+    }
+  }
 }

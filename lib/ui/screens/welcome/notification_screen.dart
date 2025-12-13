@@ -1,97 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:frontend/models/email_message.dart';
+import 'package:provider/provider.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
+import 'package:frontend/providers/notification_provider.dart';
+import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/models/notification_model.dart';
+
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
   @override
   _NotificationsScreenState createState() => _NotificationsScreenState();
 }
+
 class _NotificationsScreenState extends State<NotificationsScreen>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
   String _selectedFilter = 'All';
   final List<String> _filters = ['All', 'Unread', 'Today', 'This Week'];
-  final List<NotificationItem> _notifications = [
-    NotificationItem(
-      id: '1',
-      title: 'New Email from Sarah Chen',
-      message:
-          'Q4 Strategic Review Meeting - The board meeting has been scheduled...',
-      time: '2m ago',
-      type: NotificationType.email,
-      isRead: false,
-      priority: NotificationPriority.high,
-    ),
-    NotificationItem(
-      id: '2',
-      title: 'Task Completed',
-      message:
-          'Budget Analysis Report has been completed and is ready for review.',
-      time: '5m ago',
-      type: NotificationType.task,
-      isRead: false,
-      priority: NotificationPriority.normal,
-    ),
-    NotificationItem(
-      id: '3',
-      title: 'Meeting Reminder',
-      message:
-          'Team standup meeting starts in 15 minutes in Conference Room A.',
-      time: '15m ago',
-      type: NotificationType.meeting,
-      isRead: true,
-      priority: NotificationPriority.high,
-    ),
-    NotificationItem(
-      id: '4',
-      title: 'System Update Available',
-      message:
-          'A new version of the app is available. Update now to get the latest features.',
-      time: '1h ago',
-      type: NotificationType.system,
-      isRead: false,
-      priority: NotificationPriority.low,
-    ),
-    NotificationItem(
-      id: '5',
-      title: 'Weekly Report Generated',
-      message: 'Your productivity report for this week is ready to view.',
-      time: '2h ago',
-      type: NotificationType.report,
-      isRead: true,
-      priority: NotificationPriority.normal,
-    ),
-    NotificationItem(
-      id: '6',
-      title: 'Security Alert',
-      message:
-          'Unusual login activity detected from a new device. Please verify.',
-      time: '3h ago',
-      type: NotificationType.security,
-      isRead: false,
-      priority: NotificationPriority.high,
-    ),
-    NotificationItem(
-      id: '7',
-      title: 'Calendar Event Added',
-      message:
-          'New event "Client Presentation" added to your calendar for tomorrow.',
-      time: '5h ago',
-      type: NotificationType.calendar,
-      isRead: true,
-      priority: NotificationPriority.normal,
-    ),
-    NotificationItem(
-      id: '8',
-      title: 'Backup Completed',
-      message: 'Your data has been successfully backed up to cloud storage.',
-      time: 'Yesterday',
-      type: NotificationType.system,
-      isRead: true,
-      priority: NotificationPriority.low,
-    ),
-  ];
+
   @override
   void initState() {
     super.initState();
@@ -104,39 +33,61 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
     _slideController.forward();
+
+    // Fetch notifications on load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<AuthProvider>().user;
+      if (user != null && user.id != null) {
+        context.read<NotificationProvider>().init(user.id!);
+      }
+    });
   }
+
   @override
   void dispose() {
     _slideController.dispose();
     super.dispose();
   }
-  List<NotificationItem> get _filteredNotifications {
+
+  List<AppNotification> get _filteredNotifications {
+    final provider = context.watch<NotificationProvider>();
+    final notifications = provider.notifications;
+    
     switch (_selectedFilter) {
       case 'Unread':
-        return _notifications
+        return notifications
             .where((notification) => !notification.isRead)
             .toList();
       case 'Today':
-        return _notifications
+        return notifications
             .where(
               (notification) =>
-                  notification.time.contains('m ago') ||
-                  notification.time.contains('h ago'),
+                  // Check if it happened today
+                  DateTime.tryParse(notification.time)?.day == DateTime.now().day
             )
             .toList();
       case 'This Week':
-        return _notifications
-            .where((notification) => !notification.time.contains('Yesterday'))
+         return notifications
+            .where((notification) {
+               final date = DateTime.tryParse(notification.time);
+               if (date == null) return false;
+               final now = DateTime.now();
+               final difference = now.difference(date).inDays;
+               return difference < 7;
+            })
             .toList();
       default:
-        return _notifications;
+        return notifications;
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final theme = Theme.of(context);
+    final provider = context.watch<NotificationProvider>();
+
     return Scaffold(
       drawer: const SideMenu(),
       body: Container(
@@ -158,10 +109,14 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 position: _slideAnimation,
                 child: Column(
                   children: [
-                    _buildHeader(isTablet, theme),
+                    _buildHeader(isTablet, theme, provider),
                     _buildFilterTabs(isTablet, theme),
-                    _buildQuickStats(isTablet, theme),
-                    Expanded(child: _buildNotificationsList(isTablet, theme)),
+                    _buildQuickStats(isTablet, theme, provider),
+                    Expanded(
+                      child: provider.isLoading && provider.notifications.isEmpty
+                          ? const Center(child: CircularProgressIndicator())
+                          : _buildNotificationsList(isTablet, theme),
+                    ),
                   ],
                 ),
               ),
@@ -172,7 +127,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-  Widget _buildHeader(bool isTablet, ThemeData theme) {
+
+  Widget _buildHeader(bool isTablet, ThemeData theme, NotificationProvider provider) {
     return Container(
       margin: EdgeInsets.all(isTablet ? 20 : 16),
       padding: EdgeInsets.all(isTablet ? 24 : 20),
@@ -260,6 +216,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
+
   Widget _buildHeaderButton(
     IconData icon,
     VoidCallback onTap,
@@ -287,6 +244,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
+
   Widget _buildFilterTabs(bool isTablet, ThemeData theme) {
     return Container(
       margin: EdgeInsets.symmetric(
@@ -344,16 +302,22 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
-  Widget _buildQuickStats(bool isTablet, ThemeData theme) {
-    final unreadCount = _notifications.where((n) => !n.isRead).length;
+
+  Widget _buildQuickStats(bool isTablet, ThemeData theme, NotificationProvider provider) {
+    final notifications = provider.notifications;
+    final unreadCount = notifications.where((n) => !n.isRead).length;
     final highPriorityCount =
-        _notifications
+        notifications
             .where((n) => n.priority == NotificationPriority.high)
             .length;
     final todayCount =
-        _notifications
-            .where((n) => n.time.contains('m ago') || n.time.contains('h ago'))
+        notifications
+            .where((n) {
+               final date = DateTime.tryParse(n.time);
+               return date != null && date.day == DateTime.now().day;
+            })
             .length;
+            
     return Container(
       margin: EdgeInsets.fromLTRB(
         isTablet ? 20 : 16,
@@ -384,6 +348,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
+
   Widget _buildStatChip(
     String count,
     String label,
@@ -432,36 +397,55 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
+
   Widget _buildNotificationsList(bool isTablet, ThemeData theme) {
     if (_filteredNotifications.isEmpty) {
-      return _buildEmptyState(isTablet, theme);
+      return RefreshIndicator(
+        onRefresh: () {
+          return context.read<NotificationProvider>().fetchNotifications(forceRefresh: true);
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.5,
+            child: _buildEmptyState(isTablet, theme),
+          ),
+        ),
+      );
     }
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
-      itemCount: _filteredNotifications.length,
-      itemBuilder: (context, index) {
-        return TweenAnimationBuilder<double>(
-          duration: Duration(milliseconds: 300 + (index * 100)),
-          tween: Tween(begin: 0.0, end: 1.0),
-          builder: (context, value, child) {
-            return Transform.translate(
-              offset: Offset(0, 20 * (1 - value)),
-              child: Opacity(
-                opacity: value,
-                child: _buildNotificationItem(
-                  _filteredNotifications[index],
-                  isTablet,
-                  theme,
-                ),
-              ),
-            );
-          },
-        );
+    return RefreshIndicator(
+      onRefresh: () {
+         return context.read<NotificationProvider>().fetchNotifications(forceRefresh: true);
       },
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
+        itemCount: _filteredNotifications.length,
+        itemBuilder: (context, index) {
+          return TweenAnimationBuilder<double>(
+            duration: Duration(milliseconds: 300 + (index * 100)),
+            tween: Tween(begin: 0.0, end: 1.0),
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, 20 * (1 - value)),
+                child: Opacity(
+                  opacity: value,
+                  child: _buildNotificationItem(
+                    _filteredNotifications[index],
+                    isTablet,
+                    theme,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
+
   Widget _buildNotificationItem(
-    NotificationItem notification,
+    AppNotification notification,
     bool isTablet,
     ThemeData theme,
   ) {
@@ -550,11 +534,70 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (notification.metadata?['audioUrl'] != null) ...[
+                      const SizedBox(height: 8),
+                      InkWell(
+                        onTap: () {
+                          // Navigate to details to play audio
+                          // We need to construct a stub email or fetch it?
+                          // The emailId is in metadata.
+                          final emailId = notification.metadata?['emailId'];
+                          final audioUrl = notification.metadata?['audioUrl'];
+                          if (emailId != null) {
+                             final stubEmail = EmailMessage(
+                                id: emailId, 
+                                threadId: '', 
+                                sender: notification.title, // Use title as sender proxy 
+                                senderEmail: '', 
+                                subject: 'Audio Notification', // Placeholder
+                                snippet: notification.message, 
+                                body: '', 
+                                date: DateTime.tryParse(notification.time) ?? DateTime.now(), 
+                                isUnread: false, 
+                                labelIds: [], 
+                                hasAttachments: false,
+                             );
+                             
+                             context.push(
+                               '/maildetail', 
+                               extra: {
+                                'email': stubEmail, 
+                                'audioUrl': audioUrl,
+                                'autoPlay': true
+                               }
+                             );
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.play_circle_fill, size: 16, color: Colors.blue),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Play Summary',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     SizedBox(height: isTablet ? 12 : 8),
                     Row(
                       children: [
                         Text(
-                          notification.time,
+                          _formatTime(notification.time),
                           style: TextStyle(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.5,
@@ -575,6 +618,21 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
+  
+  String _formatTime(String isoString) {
+     try {
+       final date = DateTime.parse(isoString);
+       final now = DateTime.now();
+       final diff = now.difference(date);
+       if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+       if (diff.inHours < 24) return '${diff.inHours}h ago';
+       if (diff.inDays < 7) return '${diff.inDays}d ago';
+       return '${date.day}/${date.month}/${date.year}';
+     } catch (e) {
+       return isoString; // Fallback if regular string
+     }
+  }
+
   Widget _buildNotificationIcon(
     NotificationType type,
     NotificationPriority priority,
@@ -591,7 +649,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         icon = Icons.task_alt_outlined;
         color = Colors.green;
         break;
-      case NotificationType.meeting:
+      case NotificationType.event: // Was meeting
         icon = Icons.event_outlined;
         color = Colors.orange;
         break;
@@ -599,17 +657,13 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         icon = Icons.system_update_outlined;
         color = Colors.purple;
         break;
-      case NotificationType.security:
-        icon = Icons.security_outlined;
-        color = Colors.red;
-        break;
-      case NotificationType.report:
-        icon = Icons.analytics_outlined;
-        color = Colors.teal;
-        break;
       case NotificationType.calendar:
         icon = Icons.calendar_today_outlined;
         color = Colors.indigo;
+        break;
+      default: // Handles unknown
+        icon = Icons.notifications_outlined;
+        color = Colors.grey;
         break;
     }
     return Container(
@@ -622,6 +676,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       child: Icon(icon, color: color, size: isTablet ? 22 : 20),
     );
   }
+
   Widget _buildPriorityBadge(NotificationPriority priority, bool isTablet) {
     if (priority == NotificationPriority.normal) return const SizedBox();
     Color color;
@@ -657,6 +712,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
+
   Widget _buildEmptyState(bool isTablet, ThemeData theme) {
     return Center(
       child: Column(
@@ -696,6 +752,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
+
   void _markAllAsRead(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -734,11 +791,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  setState(() {
-                    for (var notification in _notifications) {
-                      notification.isRead = true;
-                    }
-                  });
+                  context.read<NotificationProvider>().markAllAsRead();
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: Text(
@@ -753,6 +806,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
     );
   }
+
   void _clearAllNotifications(ThemeData theme, bool isTablet) {
     showDialog(
       context: context,
@@ -791,7 +845,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  setState(() => _notifications.clear());
+                  context.read<NotificationProvider>().clearAllNotifications();
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: Text(
@@ -806,38 +860,12 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
     );
   }
-  void _markAsRead(NotificationItem notification) {
-    setState(() => notification.isRead = true);
+
+  void _markAsRead(AppNotification notification) {
+    context.read<NotificationProvider>().markAsRead(notification.id);
   }
-  void _dismissNotification(NotificationItem notification) {
-    setState(() => _notifications.removeWhere((n) => n.id == notification.id));
+
+  void _dismissNotification(AppNotification notification) {
+     context.read<NotificationProvider>().deleteNotification(notification.id);
   }
 }
-class NotificationItem {
-  final String id;
-  final String title;
-  final String message;
-  final String time;
-  final NotificationType type;
-  bool isRead;
-  final NotificationPriority priority;
-  NotificationItem({
-    required this.id,
-    required this.title,
-    required this.message,
-    required this.time,
-    required this.type,
-    required this.isRead,
-    required this.priority,
-  });
-}
-enum NotificationType {
-  email,
-  task,
-  meeting,
-  system,
-  security,
-  report,
-  calendar,
-}
-enum NotificationPriority { high, normal, low }

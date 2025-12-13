@@ -1,10 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class EmailHeaders {
   final String? subject;
   final String? from;
   final String? to;
   final String? date;
+  final String? cc;
+  final String? bcc;
 
-  EmailHeaders({this.subject, this.from, this.to, this.date});
+  EmailHeaders({this.subject, this.from, this.to, this.date, this.cc, this.bcc});
 
   factory EmailHeaders.fromJson(Map<String, dynamic> json) {
     return EmailHeaders(
@@ -12,6 +16,8 @@ class EmailHeaders {
       from: json['from'] as String?,
       to: json['to'] as String?,
       date: json['date'] as String?,
+      cc: json['cc'] as String?,
+      bcc: json['bcc'] as String?,
     );
   }
 
@@ -21,6 +27,8 @@ class EmailHeaders {
       if (from != null) 'from': from,
       if (to != null) 'to': to,
       if (date != null) 'date': date,
+      if (cc != null) 'cc': cc,
+      if (bcc != null) 'bcc': bcc,
     };
   }
 }
@@ -40,6 +48,7 @@ class EmailMessage {
   final bool hasAttachments;
   final List<EmailAttachment>? attachments;
   final EmailHeaders? headers;
+  final String? summary;
 
   EmailMessage({
     required this.id,
@@ -56,6 +65,7 @@ class EmailMessage {
     required this.hasAttachments,
     this.attachments,
     this.headers,
+    this.summary,
   });
 
   factory EmailMessage.fromJson(Map<String, dynamic> json) {
@@ -131,6 +141,38 @@ class EmailMessage {
     if (parts.length == 1) return parts[0][0].toUpperCase();
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
   }
+
+  factory EmailMessage.fromFirestore(Map<String, dynamic> data, String id) {
+    // Parse date
+    DateTime date = DateTime.now();
+    if (data['date'] != null) {
+      if (data['date'] is Timestamp) {
+        date = (data['date'] as Timestamp).toDate();
+      } else if (data['date'] is String) {
+        try {
+          date = DateTime.parse(data['date']);
+        } catch (e) {
+          print('❌ Error parsing date: ${data['date']}');
+        }
+      }
+    }
+
+    return EmailMessage(
+      id: id,
+      threadId: data['threadId'] as String? ?? id,
+      draftId: null,
+      sender: data['from'] as String? ?? 'Unknown',
+      senderEmail: data['from'] as String? ?? '', // Parsing email from string might be needed if "Name <email>" format
+      subject: data['subject'] as String? ?? '(No Subject)',
+      snippet: data['snippet'] as String? ?? '',
+      body: '', // Body not available in summary list
+      date: date,
+      isUnread: true, // Specific field might be needed in Firestore
+      labelIds: [],
+      hasAttachments: false,
+      summary: data['summary'] as String?,
+    );
+  }
 }
 
 class EmailAttachment {
@@ -197,6 +239,8 @@ class EmailAttachment {
     }
   }
 }
+
+
 
 class EmailListResponse {
   final List<EmailMessage> messages;

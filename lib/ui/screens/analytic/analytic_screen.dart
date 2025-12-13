@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/models/analytic_data.dart';
 import 'package:frontend/providers/analytic_provider.dart';
+import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:file_saver/file_saver.dart';
+import 'dart:io';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -127,24 +132,30 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                         return Center(child: Text("No data available"));
                       }
                       
-                      return SlideTransition(
-                        position: _slideAnimation,
-                        child: SingleChildScrollView(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: horizontalPadding,
-                          ),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                              child: _buildResponsiveLayout(
-                                context,
-                                screenWidth,
-                                isLandscape,
-                                verticalSpacing,
-                                data,
-                              ),
-                            ),
-                          ),
+                      return RefreshIndicator(
+                         onRefresh: () async {
+                           await provider.fetchAnalytics(_selectedPeriod, forceRefresh: true);
+                         },
+                         child: SingleChildScrollView(
+                           physics: const AlwaysScrollableScrollPhysics(),
+                           padding: EdgeInsets.symmetric(
+                             horizontal: horizontalPadding,
+                           ),
+                           child: SlideTransition(
+                             position: _slideAnimation,
+                             child: Center(
+                               child: ConstrainedBox(
+                                 constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                                 child: _buildResponsiveLayout(
+                                   context,
+                                   screenWidth,
+                                   isLandscape,
+                                   verticalSpacing,
+                                   data,
+                                 ),
+                               ),
+                             ),
+                           ),
                         ),
                       );
                     },
@@ -407,11 +418,92 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 children: [
                   _buildHeaderButton(
                     Icons.download_outlined,
-                    () {},
+                    () async {
+                      final provider = context.read<AnalyticProvider>();
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      
+                      final path = await provider.generateAndDownloadReport(_selectedPeriod);
+                      
+                      if (path != null) {
+                        try {
+                           // User requested "just save it in download"
+                           // We will try to copy the file to the public Downloads directory without a picker.
+                           
+                           File sourceFile = File(path);
+                           String fileName = path.split(Platform.pathSeparator).last;
+                           String newPath;
+
+                           if (Platform.isAndroid) {
+                              // Attempt to save to /storage/emulated/0/Download
+                              newPath = '/storage/emulated/0/Download/$fileName';
+                              // Ensure unique name
+                              int count = 1;
+                              while (await File(newPath).exists()) {
+                                newPath = '/storage/emulated/0/Download/${fileName.replaceAll('.pdf', '')}_$count.pdf';
+                                count++;
+                              }
+                              
+                              await sourceFile.copy(newPath);
+                           } else {
+                              // On desktop/other, fallback to file saver or just keep it there if in docs
+                              // But user said "just make it save it in download", assuming Android primarily or default folder.
+                              // We'll stick to the generated path for non-Android or try FileSaver as fallback strictly for non-Android if needed.
+                              // For simplicity on Windows dev environment, we use FileSaver as it's standard there.
+                              if (!Platform.isAndroid && !Platform.isIOS) {
+                                  final bytes = await sourceFile.readAsBytes();
+                                  newPath = await FileSaver.instance.saveFile(
+                                      name: fileName.split('.').first,
+                                      bytes: bytes,
+                                      ext: 'pdf',
+                                      mimeType: MimeType.pdf,
+                                  );
+                              } else {
+                                newPath = path;
+                              }
+                           }
+                           
+                           scaffoldMessenger.showSnackBar(
+                             SnackBar(
+                               content: Text('Saved to: $newPath'),
+                               action: SnackBarAction(
+                                 label: 'OPEN',
+                                 onPressed: () {
+                                   OpenFilex.open(newPath);
+                                 },
+                               ),
+                               duration: const Duration(seconds: 5),
+                             ),
+                           );
+
+                        } catch (e) {
+                          scaffoldMessenger.showSnackBar(
+                             SnackBar(content: Text('Saved to app folder: $path')),
+                          );
+                        }
+                      } else {
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(content: Text('Failed to generate report')),
+                        );
+                      }
+                    },
                     screenWidth,
                   ),
                   const SizedBox(width: 8),
-                  _buildHeaderButton(Icons.share_outlined, () {}, screenWidth),
+                  _buildHeaderButton(Icons.share_outlined, () async {
+                      final provider = context.read<AnalyticProvider>();
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      
+                      // Check if we have a path stored or generate a new one
+                      final path = await provider.generateAndDownloadReport(_selectedPeriod);
+                       
+                      if (path != null) {
+                        await Share.shareXFiles([XFile(path)], text: 'Here is my analytics report from Aixy.');
+                      } else {
+                        scaffoldMessenger.showSnackBar(
+                          SnackBar(content: Text('Failed to generate report for sharing')),
+                        );
+                      }
+                  }, screenWidth),
                 ],
               ),
             ],

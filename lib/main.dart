@@ -6,6 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:frontend/models/task.dart';
+import 'package:frontend/models/email_message.dart';
 import 'package:frontend/models/taskpriority.dart';
 import 'package:frontend/models/meeting.dart';
 import 'package:frontend/models/meeting_location.dart';
@@ -15,6 +16,7 @@ import 'package:frontend/providers/meeting_provider.dart';
 import 'package:frontend/providers/user_provider.dart';
 import 'package:frontend/providers/sub_provider.dart';
 import 'package:frontend/providers/analytic_provider.dart';
+import 'package:frontend/providers/notification_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +27,7 @@ import 'utils/localization.dart';
 import 'routes/app_router.dart';
 import 'services/mail_service.dart';
 import 'services/notification_service.dart';
+import 'providers/mail_provider.dart';
 
 // Top-level function to handle background messages (must be top-level)
 @pragma('vm:entry-point')
@@ -74,6 +77,12 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (_) => AnalyticProvider(dio: authProvider.dio),
         ),
+        ChangeNotifierProvider(
+          create: (_) => MailProvider(dio: authProvider.dio),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NotificationProvider(dio: authProvider.dio),
+        ),
       ],
       child: MainApp(),
     ),
@@ -108,10 +117,19 @@ class _MainAppState extends State<MainApp> {
         languageProvider.setLanguageFromUser(authProvider.user!.lang);
       }
 
+      // Configure interaction handling
+      await _setupInteractedMessage();
+
       // Set up foreground message handler for FCM
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         NotificationService().handleForegroundMessage(message);
       });
+
+      // Renew Gmail Watch if logged in
+      if (authProvider.isLoggedIn) {
+        // Run in background, don't await strictly to not block UI
+        MailService(dio: authProvider.dio).watchGmail();
+      }
 
       _deepLinkService = DeepLinkService();
       await _deepLinkService!.initDeepLinks(
@@ -140,6 +158,69 @@ class _MainAppState extends State<MainApp> {
       setState(() {
         _isDeepLinkInitialized = true;
       });
+    }
+  }
+
+  Future<void> _setupInteractedMessage() async {
+    // 1. Get any messages which caused the application to open from a terminated state.
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+
+    if (initialMessage != null) {
+      _handleMessage(initialMessage);
+    }
+
+    // 2. Also handle any interaction when the app is in the background via a Stream listener
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    debugPrint('🔔 Handling notification interaction: ${message.data}');
+    
+    final data = message.data;
+    final type = data['type'];
+    final context = AppRoutes.navigatorKey.currentContext;
+
+    if (context == null) {
+      debugPrint('⚠️ Navigator context not available for notification navigation');
+      return;
+    }
+
+    if (type == 'email') {
+      final audioUrl = data['audioUrl']; // "https://..." or null
+      // Check both 'id' and 'emailId' keys
+      final emailId = data['id'] ?? data['emailId']; 
+      
+      if (emailId != null) {
+         // Create a stub email message
+         final stubEmail = EmailMessage(
+            id: emailId, 
+            threadId: '', 
+            sender: 'Loading...', 
+            senderEmail: '', 
+            subject: 'Loading...', 
+            snippet: '', 
+            body: '', 
+            date: DateTime.now(), 
+            isUnread: false, 
+            labelIds: [], 
+            hasAttachments: false,
+         );
+         
+         final extra = {
+           'email': stubEmail,
+           'audioUrl': audioUrl,
+           'autoPlay': audioUrl != null,
+         };
+         
+         context.push(AppRoutes.maildetail, extra: extra);
+         print('🔔 Navigating to mail detail: emailId=$emailId');
+      }
+    } else if (type == 'task') {
+      context.push(AppRoutes.task);
+      print('🔔 Navigating to tasks');
+    } else if (type == 'event') {
+      context.push(AppRoutes.calendar);
+      print('🔔 Navigating to calendar');
     }
   }
 

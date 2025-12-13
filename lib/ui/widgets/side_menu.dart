@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/utils/localization.dart';
 import 'package:go_router/go_router.dart';
+import 'package:frontend/providers/mail_provider.dart';
 import 'package:provider/provider.dart';
 
 class SideMenu extends StatefulWidget {
@@ -398,6 +399,8 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
             child: InkWell(
               borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
               onTap: () async {
+                // Clear mail cache
+                context.read<MailProvider>().clearCache();
                 context.read<AuthProvider>().logout();
                 context.pushNamed('login');
               },

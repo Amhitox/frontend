@@ -7,10 +7,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:frontend/services/mail_service.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/models/email_message.dart';
 
 class ComposeMailScreen extends StatefulWidget {
   final MailItem? editingMail;
-  const ComposeMailScreen({super.key, this.editingMail});
+  final EmailMessage? draft;
+  const ComposeMailScreen({super.key, this.editingMail, this.draft});
   @override
   _ComposeMailScreenState createState() => _ComposeMailScreenState();
 }
@@ -19,10 +21,21 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     with TickerProviderStateMixin {
   final TextEditingController _toController = TextEditingController();
   final TextEditingController _subjectController = TextEditingController();
-  final quill.QuillController _bodyController = quill.QuillController.basic();
+  final TextEditingController _ccController = TextEditingController();
+  final TextEditingController _bccController = TextEditingController();
+  
+  late quill.QuillController _bodyController;
   final FocusNode _toFocus = FocusNode();
   final FocusNode _subjectFocus = FocusNode();
+  final FocusNode _ccFocus = FocusNode();
+  final FocusNode _bccFocus = FocusNode();
   final FocusNode _bodyFocus = FocusNode();
+
+  // Selected recipients lists
+  final List<String> _toRecipients = [];
+  final List<String> _ccRecipients = [];
+  final List<String> _bccRecipients = [];
+
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
   bool _isSending = false;
@@ -38,6 +51,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     'david.park@company.com',
     'emma.wilson@company.com',
   ];
+
   @override
   void initState() {
     super.initState();
@@ -49,10 +63,62 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       begin: const Offset(0, 0.05),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+    
+    // Initialize body controller with content if available
+    if (widget.editingMail != null && widget.editingMail!.preview.isNotEmpty) {
+      final doc = quill.Document()..insert(0, widget.editingMail!.preview);
+      _bodyController = quill.QuillController(
+        document: doc,
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    } else {
+      _bodyController = quill.QuillController.basic();
+    }
+
     if (widget.editingMail != null) {
-      _toController.text = widget.editingMail!.sender;
+      if (widget.editingMail!.sender.isNotEmpty) {
+        _toRecipients.addAll(
+            widget.editingMail!.sender.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty)
+        );
+      }
       _subjectController.text = widget.editingMail!.subject;
-      _bodyController.document.insert(0, widget.editingMail!.preview);
+      if (widget.editingMail!.cc != null && widget.editingMail!.cc!.isNotEmpty) {
+         _ccRecipients.addAll(
+             widget.editingMail!.cc!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty)
+         );
+        _showCc = true;
+      }
+      if (widget.editingMail!.bcc != null && widget.editingMail!.bcc!.isNotEmpty) {
+        _bccRecipients.addAll(
+             widget.editingMail!.bcc!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty)
+        );
+        _showBcc = true;
+      }
+    } else if (widget.draft != null) {
+      if (widget.draft!.headers != null) {
+        final h = widget.draft!.headers!;
+        if (h.to != null && h.to!.isNotEmpty) {
+           _toRecipients.addAll(h.to!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+        }
+        if (h.cc != null && h.cc!.isNotEmpty) {
+           _ccRecipients.addAll(h.cc!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+           _showCc = true;
+        }
+        if (h.bcc != null && h.bcc!.isNotEmpty) {
+           _bccRecipients.addAll(h.bcc!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty));
+           _showBcc = true;
+        }
+        _subjectController.text = h.subject ?? widget.draft!.subject;
+      } else {
+        // Fallback if headers missing
+         _subjectController.text = widget.draft!.subject;
+      }
+      
+      // Body handling
+      final bodyText = widget.draft!.body.isNotEmpty ? widget.draft!.body : widget.draft!.snippet;
+      if (_bodyController.document.isEmpty() && bodyText.isNotEmpty) {
+          _bodyController.document.insert(0, bodyText);
+      }
     }
     _slideController.forward();
   }
@@ -62,18 +128,29 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     _slideController.dispose();
     _toController.dispose();
     _subjectController.dispose();
+    _ccController.dispose();
+    _bccController.dispose();
     _bodyController.dispose();
     _toFocus.dispose();
     _subjectFocus.dispose();
+    _ccFocus.dispose();
+    _bccFocus.dispose();
     _bodyFocus.dispose();
     super.dispose();
   }
 
-  void _sendMail() async {
-    if (_toController.text.isEmpty ||
-        _subjectController.text.isEmpty ||
-        _bodyController.document.isEmpty()) {
-      _showFeedback('Please complete all required fields', isError: true);
+  Future<void> _sendMail() async {
+    final pendingTo = _toController.text.trim();
+    if (pendingTo.isNotEmpty && !_toRecipients.contains(pendingTo)) {
+      _toRecipients.add(pendingTo);
+    }
+    
+    if (_toRecipients.isEmpty) {
+      _showFeedback('Please add at least one recipient', isError: true);
+      return;
+    }
+    if (_subjectController.text.isEmpty) {
+      _showFeedback('Please add a subject', isError: true);
       return;
     }
 
@@ -82,66 +159,55 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     try {
       final auth = context.read<AuthProvider>();
       final mailService = MailService(dio: auth.dio);
-
-      // Extract plain text from quill document
-      String bodyText = _bodyController.document.toPlainText();
-
-      // Fallback: try to extract from delta if plain text is empty
-      if (bodyText.trim().isEmpty) {
-        final delta = _bodyController.document.toDelta().toJson();
-        for (var op in delta) {
-          if (op.containsKey('insert')) {
-            final insert = op['insert'];
-            if (insert is String) {
-              bodyText += insert;
-            }
-          }
-        }
+      await mailService.initialize();
+      
+      final pendingCc = _ccController.text.trim();
+      if (pendingCc.isNotEmpty && !_ccRecipients.contains(pendingCc)) {
+        _ccRecipients.add(pendingCc);
+      }
+      final pendingBcc = _bccController.text.trim();
+      if (pendingBcc.isNotEmpty && !_bccRecipients.contains(pendingBcc)) {
+        _bccRecipients.add(pendingBcc);
       }
 
-      // Convert attachments to the format expected by the API
+      final body = _bodyController.document.toPlainText();
+      
       List<Map<String, dynamic>>? attachmentData;
       if (_attachments.isNotEmpty) {
-        attachmentData =
-            _attachments
-                .where((att) => att.bytes != null && att.bytes!.isNotEmpty)
-                .map(
-                  (att) => {
-                    'name': att.name,
-                    'bytes': att.bytes,
-                    'mimeType': _getMimeTypeFromFilename(att.name),
-                  },
-                )
-                .toList();
+        attachmentData = _attachments
+            .where((att) => att.bytes != null && att.bytes!.isNotEmpty)
+            .map((att) => {
+                  'name': att.name,
+                  'bytes': att.bytes,
+                  'mimeType': _getMimeTypeFromFilename(att.name),
+                })
+            .toList();
       }
 
-      final response = await mailService.sendEmailWithBytes(
-        _toController.text.trim(),
-        _subjectController.text.trim(),
-        bodyText.trim(),
+      final result = await mailService.sendEmailWithBytes(
+        _toRecipients.join(','),
+        _subjectController.text,
+        body,
         attachmentData,
+        cc: _ccRecipients.isNotEmpty ? _ccRecipients.join(',') : null,
+        bcc: _bccRecipients.isNotEmpty ? _bccRecipients.join(',') : null,
       );
 
       if (mounted) {
-        if (response != null && response['error'] == null) {
-          _showFeedback(
-            'Message sent successfully${_attachments.isNotEmpty ? ' with ${_attachments.length} attachment(s)' : ''}',
-          );
-          await Future.delayed(const Duration(milliseconds: 800));
-          if (mounted) context.go('/mail');
+        if (result != null && result['error'] == null) {
+          _showFeedback('Message sent successfully');
+          context.pop();
         } else {
-          final errorMsg =
-              response?['error'] ??
-              response?['message'] ??
-              'Failed to send email';
+           final errorMsg = result?['error'] ?? 'Unknown error';
           _showFeedback(errorMsg.toString(), isError: true);
-          setState(() => _isSending = false);
         }
       }
     } catch (e) {
-      print('❌ Error sending email: $e');
       if (mounted) {
-        _showFeedback('Error sending email: $e', isError: true);
+        _showFeedback('Error sending message: $e', isError: true);
+      }
+    } finally {
+      if (mounted) {
         setState(() => _isSending = false);
       }
     }
@@ -151,29 +217,84 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     final extension = filename.split('.').last.toLowerCase();
     final mimeTypes = {
       'pdf': 'application/pdf',
-      'doc': 'application/msword',
-      'docx':
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'xls': 'application/vnd.ms-excel',
-      'xlsx':
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'ppt': 'application/vnd.ms-powerpoint',
-      'pptx':
-          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
       'png': 'image/png',
-      'gif': 'image/gif',
-      'txt': 'text/plain',
-      'zip': 'application/zip',
-      'rar': 'application/x-rar-compressed',
+      // ... Add other mimes as needed
     };
     return mimeTypes[extension] ?? 'application/octet-stream';
   }
 
-  void _saveDraft() async {
-    _showFeedback('Draft saved with ${_attachments.length} attachments');
-    HapticFeedback.lightImpact();
+  Future<void> _saveDraft() async {
+    final pendingTo = _toController.text.trim();
+    if (pendingTo.isNotEmpty && !_toRecipients.contains(pendingTo)) {
+      _toRecipients.add(pendingTo);
+    }
+    
+    // Draft needs at least a recipient or subject or body
+    if (_toRecipients.isEmpty && _subjectController.text.isEmpty && _bodyController.document.toPlainText().trim().isEmpty) {
+      _showFeedback('Draft is empty', isError: true);
+      return;
+    }
+
+    setState(() => _isSending = true);
+
+    try {
+      final auth = context.read<AuthProvider>();
+      final mailService = MailService(dio: auth.dio);
+      await mailService.initialize();
+
+      final pendingCc = _ccController.text.trim();
+      if (pendingCc.isNotEmpty && !_ccRecipients.contains(pendingCc)) {
+        _ccRecipients.add(pendingCc);
+      }
+      final pendingBcc = _bccController.text.trim();
+      if (pendingBcc.isNotEmpty && !_bccRecipients.contains(pendingBcc)) {
+        _bccRecipients.add(pendingBcc);
+      }
+
+      final body = _bodyController.document.toPlainText();
+      
+      List<Map<String, dynamic>>? attachmentData;
+      if (_attachments.isNotEmpty) {
+        attachmentData = _attachments
+            .where((att) => att.bytes != null && att.bytes!.isNotEmpty)
+            .map((att) => {
+                  'name': att.name,
+                  'bytes': att.bytes,
+                  'mimeType': _getMimeTypeFromFilename(att.name),
+                })
+            .toList();
+      }
+
+      final result = await mailService.createDraft(
+        _toRecipients.join(','),
+        _subjectController.text,
+        body,
+        attachmentData,
+        cc: _ccRecipients.isNotEmpty ? _ccRecipients.join(',') : null,
+        bcc: _bccRecipients.isNotEmpty ? _bccRecipients.join(',') : null,
+      );
+
+      if (mounted) {
+        if (result != null && (result['success'] == true || result['draftId'] != null)) {
+          HapticFeedback.lightImpact();
+          _showFeedback('Draft saved successfully');
+          context.pop();
+        } else {
+           final errorMsg = result?['error'] ?? 'Failed to save draft';
+          _showFeedback(errorMsg.toString(), isError: true);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showFeedback('Error saving draft: $e', isError: true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
+    }
   }
 
   Future<void> _pickFiles() async {
@@ -182,18 +303,14 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.any,
-        allowedExtensions: null,
       );
       if (result != null) {
         for (PlatformFile file in result.files) {
           if (file.size > 25 * 1024 * 1024) {
-            _showFeedback(
-              'File "${file.name}" is too large (max 25MB)',
-              isError: true,
-            );
+            _showFeedback('File "${file.name}" is too large (max 25MB)', isError: true);
             continue;
           }
-          final attachment = AttachmentItem(
+           final attachment = AttachmentItem(
             name: file.name,
             path: file.path,
             size: file.size,
@@ -224,14 +341,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       );
       if (result != null) {
         for (PlatformFile file in result.files) {
-          if (file.size > 10 * 1024 * 1024) {
-            _showFeedback(
-              'Image "${file.name}" is too large (max 10MB)',
-              isError: true,
-            );
-            continue;
-          }
-          final attachment = AttachmentItem(
+           final attachment = AttachmentItem(
             name: file.name,
             path: file.path,
             size: file.size,
@@ -244,7 +354,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
         }
         if (result.files.isNotEmpty) {
           _showFeedback('Added ${result.files.length} image(s)');
-          HapticFeedback.lightImpact();
         }
       }
     } catch (e) {
@@ -255,7 +364,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   }
 
   void _removeAttachment(int index) {
-    setState(() {
+     setState(() {
       _attachments.removeAt(index);
     });
     HapticFeedback.lightImpact();
@@ -263,31 +372,19 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   }
 
   void _showFeedback(String message, {bool isError = false}) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-        ),
-        backgroundColor:
-            isError
-                ? Colors.red.withValues(alpha: 0.9)
-                : Colors.green.withValues(alpha: 0.9),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: Duration(milliseconds: isError ? 3000 : 2000),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: isError ? Colors.red : Colors.green,
       ),
     );
   }
 
   String _formatFileSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
+     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
   @override
@@ -309,20 +406,13 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             ],
           ),
         ),
-        child: Stack(
-          children: [
-            SafeArea(
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Column(
-                  children: [
-                    _buildHeader(isTablet, isLargeScreen),
-                    Expanded(child: _buildContent(isTablet, isLargeScreen)),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(isTablet, isLargeScreen),
+              Expanded(child: _buildContent(isTablet, isLargeScreen)),
+            ],
+          ),
         ),
       ),
     );
@@ -330,12 +420,9 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
 
   Widget _buildHeader(bool isTablet, bool isLargeScreen) {
     return Padding(
-      padding: EdgeInsets.all(
-        isLargeScreen
-            ? 24
-            : isTablet
-            ? 20
-            : 16,
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 20 : 16,
+        vertical: isTablet ? 12 : 8,
       ),
       child: Row(
         children: [
@@ -349,6 +436,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   widget.editingMail != null ? 'Edit Message' : 'Compose',
@@ -356,23 +444,11 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                     color: Theme.of(context).colorScheme.onSurface,
                     fontSize:
                         isLargeScreen
-                            ? 32
+                            ? 24
                             : isTablet
-                            ? 30
-                            : 28,
+                            ? 22
+                            : 20,
                     fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.editingMail != null
-                      ? 'Edit and send your message'
-                      : 'Create a new message',
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontSize: isTablet ? 16 : 14,
                   ),
                 ),
               ],
@@ -405,8 +481,8 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           onTap();
         },
         child: Container(
-          width: isTablet ? 48 : 40,
-          height: isTablet ? 48 : 40,
+          width: isTablet ? 40 : 36,
+          height: isTablet ? 40 : 36,
           decoration: BoxDecoration(
             color: theme.colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(24),
@@ -418,7 +494,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           child: Icon(
             icon,
             color: theme.colorScheme.primary,
-            size: isTablet ? 22 : 18,
+            size: isTablet ? 20 : 18,
           ),
         ),
       ),
@@ -455,7 +531,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           if (_attachments.isNotEmpty)
             _buildAttachmentsSection(isTablet, isLargeScreen),
           _buildCompactToolbar(isTablet, isLargeScreen),
-          Expanded(flex: 3, child: _buildMessageField(isTablet, isLargeScreen)),
+          Expanded(child: _buildMessageField(isTablet, isLargeScreen)),
           _buildSendButton(isTablet, isLargeScreen),
         ],
       ),
@@ -466,15 +542,16 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     return Padding(
       padding: EdgeInsets.fromLTRB(
         isTablet ? 24 : 16,
-        isTablet ? 20 : 12,
+        isTablet ? 16 : 12,
         isTablet ? 24 : 16,
         isTablet ? 8 : 4,
       ),
       child: Column(
         children: [
-          _buildCompactTextField(
+          _buildChipInput(
             controller: _toController,
             focusNode: _toFocus,
+            selectedValues: _toRecipients,
             hint: 'To',
             isTablet: isTablet,
             isRequired: true,
@@ -501,9 +578,10 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             ),
           if (!_showCc || !_showBcc) SizedBox(height: isTablet ? 8 : 6),
           if (_showCc) ...[
-            _buildCompactTextField(
-              controller: TextEditingController(),
-              focusNode: FocusNode(),
+            _buildChipInput(
+              controller: _ccController,
+              focusNode: _ccFocus,
+              selectedValues: _ccRecipients,
               hint: 'Cc',
               isTablet: isTablet,
               suggestions: _suggestions,
@@ -511,9 +589,10 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             SizedBox(height: isTablet ? 8 : 6),
           ],
           if (_showBcc) ...[
-            _buildCompactTextField(
-              controller: TextEditingController(),
-              focusNode: FocusNode(),
+            _buildChipInput(
+              controller: _bccController,
+              focusNode: _bccFocus,
+              selectedValues: _bccRecipients,
               hint: 'Bcc',
               isTablet: isTablet,
               suggestions: _suggestions,
@@ -562,7 +641,6 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     required String hint,
     required bool isTablet,
     bool isRequired = false,
-    List<String>? suggestions,
   }) {
     return AnimatedBuilder(
       animation: focusNode,
@@ -599,6 +677,177 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildChipInput({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required List<String> selectedValues,
+    required String hint,
+    required bool isTablet,
+    List<String>? suggestions,
+    bool isRequired = false,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return RawAutocomplete<String>(
+          textEditingController: controller,
+          focusNode: focusNode,
+          optionsBuilder: (TextEditingValue textEditingValue) {
+             if (textEditingValue.text.isEmpty) {
+               return const Iterable<String>.empty();
+             }
+             final input = textEditingValue.text.toLowerCase();
+             if (suggestions != null) {
+               return suggestions.where((String option) {
+                 return option.toLowerCase().contains(input) && !selectedValues.contains(option);
+               });
+             }
+             return const Iterable<String>.empty();
+          },
+          onSelected: (String selection) {
+            setState(() {
+              if (!selectedValues.contains(selection)) {
+                selectedValues.add(selection);
+              }
+              controller.clear();
+            });
+            focusNode.requestFocus();
+          },
+          fieldViewBuilder: (
+            BuildContext context,
+            TextEditingController fieldTextEditingController,
+            FocusNode fieldFocusNode,
+            VoidCallback onFieldSubmitted,
+          ) {
+            return AnimatedBuilder(
+              animation: fieldFocusNode,
+              builder: (context, child) {
+                // Ensure consistent container styling regardless of content
+                return Container(
+                  constraints: BoxConstraints(minHeight: isTablet ? 42 : 36),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface.withValues(
+                      alpha: fieldFocusNode.hasFocus ? 0.1 : 0.03,
+                    ),
+                    borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 12 : 10,
+                    vertical: isTablet ? 10 : 8,
+                  ),
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                       ...selectedValues.map((recipient) => Chip(
+                         visualDensity: VisualDensity.compact,
+                         padding: EdgeInsets.zero,
+                         labelPadding: EdgeInsets.symmetric(horizontal: 4),
+                         backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                         side: BorderSide.none,
+                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                         label: Text(
+                           recipient, 
+                           style: TextStyle(
+                             fontSize: isTablet ? 12 : 11,
+                             color: Theme.of(context).colorScheme.primary,
+                           ),
+                         ),
+                         onDeleted: () {
+                           setState(() {
+                             selectedValues.remove(recipient);
+                           });
+                         },
+                         deleteIcon: Icon(Icons.close, size: 14, color: Theme.of(context).colorScheme.primary),
+                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                       )),
+                       IntrinsicWidth(
+                         child: TextField(
+                             controller: fieldTextEditingController,
+                             focusNode: fieldFocusNode,
+                             style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: isTablet ? 14 : 13,
+                             ),
+                             decoration: InputDecoration(
+                               hintText: selectedValues.isEmpty ? '$hint${isRequired ? ' *' : ''}' : '',
+                               hintStyle: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                                fontSize: isTablet ? 14 : 13,
+                               ),
+                               border: InputBorder.none,
+                               isDense: true,
+                               contentPadding: EdgeInsets.zero,
+                             ),
+                             onSubmitted: (value) {
+                               if (value.trim().isNotEmpty) {
+                                  setState(() {
+                                    if (!selectedValues.contains(value.trim())) {
+                                      selectedValues.add(value.trim());
+                                    }
+                                    fieldTextEditingController.clear();
+                                  });
+                                  fieldFocusNode.requestFocus();
+                               }
+                             },
+                             onChanged: (value) {
+                               if (value.endsWith(',') || value.endsWith(' ')) {
+                                 final clean = value.replaceAll(',', '').trim();
+                                 if (clean.isNotEmpty) {
+                                   setState(() {
+                                     if (!selectedValues.contains(clean)) {
+                                       selectedValues.add(clean);
+                                     }
+                                     fieldTextEditingController.clear();
+                                   });
+                                 }
+                               }
+                             },
+                         ),
+                       ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+          optionsViewBuilder: (
+            BuildContext context,
+            AutocompleteOnSelected<String> onSelected,
+            Iterable<String> options,
+          ) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4.0,
+                borderRadius: BorderRadius.circular(8),
+                color: Theme.of(context).colorScheme.surface,
+                child: SizedBox(
+                   width: constraints.maxWidth,
+                   height: 200,
+                   child: ListView.builder(
+                     padding: EdgeInsets.zero,
+                     itemCount: options.length,
+                     itemBuilder: (BuildContext context, int index) {
+                       final String option = options.elementAt(index);
+                       return InkWell(
+                         onTap: () => onSelected(option),
+                         child: Padding(
+                           padding: const EdgeInsets.all(12.0),
+                           child: Text(option),
+                         ),
+                       );
+                     },
+                   ),
+                ),
+              ),
+            );
+          },
+        );
+      }
     );
   }
 
@@ -868,73 +1117,16 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   }
 
   Widget _buildSendButton(bool isTablet, bool isLargeScreen) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        isTablet ? 24 : 16,
-        isTablet ? 16 : 12,
-        isTablet ? 24 : 16,
-        isTablet ? 20 : 16,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
-          onTap:
-              _isSending
-                  ? null
-                  : () {
-                    HapticFeedback.mediumImpact();
-                    _sendMail();
-                  },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: double.infinity,
-            height: isTablet ? 48 : 40,
-            decoration: BoxDecoration(
-              color:
-                  _isSending
-                      ? Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.6)
-                      : Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
-            ),
-            child: Center(
-              child:
-                  _isSending
-                      ? SizedBox(
-                        width: isTablet ? 20 : 16,
-                        height: isTablet ? 20 : 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(
-                            Theme.of(context).colorScheme.onPrimary,
-                          ),
-                        ),
-                      )
-                      : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.send_rounded,
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            size: isTablet ? 18 : 16,
-                          ),
-                          SizedBox(width: isTablet ? 8 : 6),
-                          Text(
-                            widget.editingMail != null
-                                ? 'Update Message'
-                                : 'Send Message',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              fontSize: isTablet ? 14 : 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-            ),
-          ),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+           onPressed: _isSending ? null : _sendMail,
+           icon: _isSending 
+             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+             : const Icon(Icons.send),
+           label: Text(_isSending ? 'Sending...' : 'Send'),
         ),
       ),
     );
@@ -963,6 +1155,8 @@ class MailItem {
   final String time;
   final bool isUnread;
   final MailPriority priority;
+  final String? cc;
+  final String? bcc;
   MailItem({
     required this.sender,
     required this.subject,
@@ -970,6 +1164,8 @@ class MailItem {
     required this.time,
     required this.isUnread,
     required this.priority,
+    this.cc,
+    this.bcc,
   });
 }
 

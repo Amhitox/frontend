@@ -2,6 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/models/analytic_data.dart';
 import 'package:frontend/services/analytic_service.dart';
+import 'package:frontend/services/pdf_service.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+// import 'package:permission_handler/permission_handler.dart'; // Maybe needed for Android < 10 or generic file access
 
 class AnalyticProvider extends ChangeNotifier {
   final AnalyticService _analyticService;
@@ -42,6 +46,34 @@ class AnalyticProvider extends ChangeNotifier {
       }
     } catch (e) {
       _error = "An error occurred: $e";
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> generateAndDownloadReport(String period) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final data = _cache[period];
+      if (data == null) {
+        await fetchAnalytics(period);
+        if (_cache[period] == null) {
+           _error = "No data available to generate report";
+           return null;
+        }
+      }
+      
+      final pdfService = PdfService();
+      final file = await pdfService.generateAnalyticsReport(_cache[period]!, period);
+      
+      return file.path;
+    } catch (e) {
+      _error = "Report generation failed: $e";
+      return null;
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -6,6 +6,10 @@ import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/services/mail_service.dart';
 import 'package:frontend/models/email_message.dart';
+import 'package:frontend/services/notification_service.dart';
+import 'package:frontend/providers/mail_provider.dart';
+import 'package:frontend/ui/screens/mail/skeleton_mail_loader.dart';
+import 'dart:async'; // For StreamSubscription
 import 'package:provider/provider.dart';
 
 class MailScreen extends StatefulWidget {
@@ -44,6 +48,8 @@ class _MailScreenState extends State<MailScreen>
   ];
 
   bool _hasShownSnackbar = false;
+  Stream<List<EmailMessage>>? _inboxStream;
+  StreamSubscription? _notificationSub;
   late ScrollController _scrollController;
   @override
   void initState() {
@@ -82,7 +88,44 @@ class _MailScreenState extends State<MailScreen>
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
     _slideController.forward();
 
-    _checkConnectionAndLoadEmails();
+    // Load emails via provider for All filters
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkConnectionAndLoadEmails();
+    });
+    
+    // Listen for incoming notifications to refresh list active filter
+    _notificationSub = NotificationService().messageStream.listen((message) {
+      // Check if notification is related to Email
+      final data = message.data;
+      final notification = message.notification;
+      
+      bool isEmail = false;
+      
+      // Check data payload first (more reliable if backend sets type)
+      if (data.isNotEmpty) {
+        final type = data['type']?.toString().toLowerCase();
+        final category = data['category']?.toString().toLowerCase();
+        if (type == 'email' || type == 'gmail' || 
+            category == 'email' || category == 'gmail' ||
+            data.containsKey('emailId') || data.containsKey('threadId')) {
+          isEmail = true;
+        }
+      }
+
+      // Fallback check on notification content
+      if (!isEmail && notification != null) {
+        final title = notification.title?.toLowerCase() ?? '';
+        final body = notification.body?.toLowerCase() ?? '';
+        if (title.contains('email') || title.contains('gmail') || 
+            body.contains('email') || body.contains('gmail')) {
+          isEmail = true;
+        }
+      }
+
+      if (isEmail) {
+         context.read<MailProvider>().loadEmails(filter: _selectedFilter, forceRefresh: true);
+      }
+    });
   }
 
   @override
@@ -93,19 +136,23 @@ class _MailScreenState extends State<MailScreen>
     _slideController.dispose();
     _searchController.dispose();
     _scrollController.dispose();
+    _notificationSub?.cancel();
     super.dispose();
   }
 
   List<EmailMessage> get _filteredEmails {
+    final provider = context.read<MailProvider>();
+    final emails = provider.getEmailsForFilter(_selectedFilter);
     final query = _searchController.text.toLowerCase();
+    
     if (query.isNotEmpty) {
-      return _emails.where((email) {
+      return emails.where((email) {
         return email.sender.toLowerCase().contains(query) ||
             email.subject.toLowerCase().contains(query) ||
             email.snippet.toLowerCase().contains(query);
       }).toList();
     }
-    return _emails;
+    return emails;
   }
 
   String _getBackendType(String filter) {
@@ -134,18 +181,24 @@ class _MailScreenState extends State<MailScreen>
 
       await mailService.initialize();
 
+      // Initialize the stream once if we don't have it
+      if (_inboxStream == null) {
+        _inboxStream = mailService.streamEmails();
+      }
+
       final tokenData = await mailService.checkTokens();
 
       if (tokenData != null && tokenData['hasTokens'] == true) {
         print('✅ User has email tokens, connected');
-        setState(() {
-          _isConnected = true;
-          _isCheckingConnection = false;
-        });
+        if (mounted) {
+           setState(() {
+            _isConnected = true;
+            _isCheckingConnection = false;
+          });
+        }
 
-        // Only fetch emails if not already loaded
         if (!_hasInitiallyLoaded) {
-          await _fetchEmails();
+          context.read<MailProvider>().loadEmails(filter: _selectedFilter);
           _hasInitiallyLoaded = true;
         }
       } else {
@@ -161,71 +214,6 @@ class _MailScreenState extends State<MailScreen>
         _isConnected = false;
         _isCheckingConnection = false;
         _errorMessage = 'Failed to check connection status';
-      });
-    }
-  }
-
-  Future<void> _fetchEmails({bool isRefresh = false}) async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      if (isRefresh) {
-        _emails.clear();
-        _nextPageToken = null;
-        _hasMore = true;
-      }
-    });
-
-    try {
-      final auth = context.read<AuthProvider>();
-      final mailService = MailService(dio: auth.dio);
-      final type = _getBackendType(_selectedFilter);
-
-      final response = await mailService.listMails(
-        type: type,
-        maxResults: 20,
-        pageToken: _nextPageToken,
-      );
-
-      if (response != null && response['messages'] != null) {
-        final messagesList = response['messages'] as List;
-        final List<EmailMessage> newEmails =
-            messagesList.map((messageData) {
-              return _parseEmailMessage(messageData as Map<String, dynamic>);
-            }).toList();
-
-        setState(() {
-          if (isRefresh) {
-            _emails = newEmails;
-          } else {
-            _emails.addAll(newEmails);
-          }
-          _nextPageToken = response['nextPageToken'] as String?;
-          _hasMore = _nextPageToken != null;
-        });
-      } else if (response != null && response['messages'] == null) {
-        setState(() {
-          if (isRefresh) {
-            _emails = [];
-          }
-          _nextPageToken = null;
-          _hasMore = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = 'Failed to load emails';
-        });
-      }
-    } catch (e) {
-      print('❌ Error fetching emails: $e');
-      setState(() {
-        _errorMessage = 'Error loading emails: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
       });
     }
   }
@@ -295,8 +283,8 @@ class _MailScreenState extends State<MailScreen>
   }
 
   Future<void> _loadMoreEmails() async {
-    if (!_hasMore || _isLoading || _nextPageToken == null) return;
-    await _fetchEmails();
+    // Rely on provider's loadMore
+    await context.read<MailProvider>().loadMore(filter: _selectedFilter);
   }
 
   void _onScroll() {
@@ -616,24 +604,24 @@ class _MailScreenState extends State<MailScreen>
             isTablet,
           ),
           SizedBox(width: isTablet ? 12 : 8),
-          _buildHeaderButton(
-            Icons.link_rounded,
-            () async {
-              final auth = context.read<AuthProvider>();
-              final mailService = MailService(dio: auth.dio);
-              final res = await mailService.connect();
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    res == null ? 'Opening Gmail connect…' : 'Connect failed',
-                  ),
-                ),
-              );
-            },
-            Theme.of(context),
-            isTablet,
-          ),
+          // _buildHeaderButton(
+          //   Icons.link_rounded,
+          //   () async {
+          //     final auth = context.read<AuthProvider>();
+          //     final mailService = MailService(dio: auth.dio);
+          //     final res = await mailService.connect();
+          //     if (!mounted) return;
+          //     ScaffoldMessenger.of(context).showSnackBar(
+          //       SnackBar(
+          //         content: Text(
+          //           res == null ? 'Opening Gmail connect…' : 'Connect failed',
+          //         ),
+          //       ),
+          //     );
+          //   },
+          //   Theme.of(context),
+          //   isTablet,
+          // ),
         ],
       ),
     );
@@ -695,7 +683,7 @@ class _MailScreenState extends State<MailScreen>
             onTap: () {
               if (_selectedFilter != filter) {
                 setState(() => _selectedFilter = filter);
-                _fetchEmails(isRefresh: true);
+                context.read<MailProvider>().loadEmails(filter: filter);
               }
             },
             child: AnimatedContainer(
@@ -883,21 +871,29 @@ class _MailScreenState extends State<MailScreen>
     if (!_isConnected) {
       return _buildConnectGmailView(isTablet, isLargeScreen);
     }
+    
+    // Watch provider state
+    final mailProvider = context.watch<MailProvider>();
+    final emails = mailProvider.getEmailsForFilter(_selectedFilter);
+    final isLoading = mailProvider.isLoading;
+    final error = mailProvider.error;
 
-    if (_isLoading && _emails.isEmpty) {
+    if (isLoading && emails.isEmpty) {
       return _buildLoadingState();
     }
 
-    if (_errorMessage != null && _emails.isEmpty) {
+    if (error != null && emails.isEmpty) {
       return _buildErrorState(isTablet, isLargeScreen);
     }
 
-    if (_emails.isEmpty && !_isLoading) {
+    if (emails.isEmpty && !isLoading) {
       return _buildEmptyState(isTablet, isLargeScreen);
     }
 
     return _buildMailList(isTablet, isLargeScreen);
   }
+
+
 
   Widget _buildLoadingState() {
     return Center(
@@ -1149,7 +1145,7 @@ class _MailScreenState extends State<MailScreen>
                       : 8,
             ),
             Text(
-              _errorMessage ?? 'Failed to load emails',
+              context.watch<MailProvider>().error ?? 'Failed to load emails',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -1170,7 +1166,7 @@ class _MailScreenState extends State<MailScreen>
                       : 16,
             ),
             ElevatedButton.icon(
-              onPressed: () => _fetchEmails(isRefresh: true),
+              onPressed: () => context.read<MailProvider>().loadEmails(filter: _selectedFilter, forceRefresh: true),
               icon: Icon(Icons.refresh_rounded),
               label: Text('Retry'),
               style: ElevatedButton.styleFrom(
@@ -1274,29 +1270,51 @@ class _MailScreenState extends State<MailScreen>
   }
 
   Widget _buildMailList(bool isTablet, bool isLargeScreen) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        await _fetchEmails(isRefresh: true);
-      },
-      child: ListView.builder(
-        controller: _scrollController,
-        padding: EdgeInsets.symmetric(
-          horizontal:
-              isLargeScreen
-                  ? 24
-                  : isTablet
-                  ? 20
-                  : 16,
-        ),
-        itemCount: _filteredEmails.length + (_hasMore && _isLoading ? 1 : 0),
-        itemBuilder: (context, index) {
-        // Show loading indicator at bottom
-        if (index == _filteredEmails.length) {
-          return _buildPaginationLoader();
+    return Consumer<MailProvider>(
+      builder: (context, mailProvider, child) {
+        
+        final emails = mailProvider.getEmailsForFilter(_selectedFilter);
+        final isLoading = mailProvider.isLoading;
+        final hasMore = mailProvider.hasMoreForFilter(_selectedFilter);
+
+        // If loading and no data, show skeleton
+        if (isLoading && emails.isEmpty) {
+          return SkeletonMailList(isTablet: isTablet);
         }
 
+        return RefreshIndicator(
+          onRefresh: () async {
+            await mailProvider.loadEmails(
+              filter: _selectedFilter,
+              forceRefresh: true,
+            );
+          },
+          color: Theme.of(context).colorScheme.primary,
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(), // Ensure pull-to-refresh works even if list is short
+            controller: _scrollController,
+            padding: EdgeInsets.symmetric(
+              horizontal: isLargeScreen ? 24 : isTablet ? 20 : 16,
+            ),
+            itemCount: emails.length + (hasMore || isLoading ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == emails.length) {
+                return _buildPaginationLoader();
+              }
+              
+              final email = emails[index];
+              return _buildDismissibleEmailItem(email, isTablet, isLargeScreen);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // Extracted Method for cleaner code - Helper
+  Widget _buildDismissibleEmailItem(EmailMessage email, bool isTablet, bool isLargeScreen) {
         return Dismissible(
-          key: Key(_filteredEmails[index].id),
+          key: Key(email.id),
           direction: DismissDirection.endToStart,
           confirmDismiss: (direction) async {
             return await showDialog(
@@ -1324,7 +1342,7 @@ class _MailScreenState extends State<MailScreen>
             );
           },
           onDismissed: (direction) {
-            _deleteEmail(_filteredEmails[index]);
+            _deleteEmail(email);
           },
           background: Container(
             alignment: Alignment.centerRight,
@@ -1342,30 +1360,35 @@ class _MailScreenState extends State<MailScreen>
           child: GestureDetector(
             onTap: () {
               // Mark as read when tapped
-              if (_filteredEmails[index].isUnread) {
-                _markAsRead(_filteredEmails[index]);
+              if (email.isUnread) {
+                _markAsRead(email);
               }
-              // Navigate to mail details with EmailMessage
-              context.pushNamed('maildetail', extra: _filteredEmails[index]);
+
+              // Check if it's a draft
+              if (email.labelIds.contains('DRAFT')) {
+                 context.pushNamed('composemail', extra: email);
+              } else {
+                 // Navigate to mail details with EmailMessage
+                 context.pushNamed('maildetail', extra: email);
+              }
             },
             onLongPress: () {
               _showEmailContextMenu(
-                _filteredEmails[index],
+                email,
                 isTablet,
                 isLargeScreen,
               );
             },
             child: _buildMailItem(
-              _filteredEmails[index],
+              email,
               isTablet,
               isLargeScreen,
             ),
           ),
         );
-      },
-      ),
-    );
   }
+
+
 
   Widget _buildPaginationLoader() {
     return Container(
@@ -1467,7 +1490,54 @@ class _MailScreenState extends State<MailScreen>
             ),
           ),
           SizedBox(height: isTablet ? 10 : 6),
-          Text(
+                if (email.summary != null && email.summary!.isNotEmpty) ...[
+                      SizedBox(height: 8),
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.auto_awesome_rounded,
+                                  size: 14,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'AI Summary',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              email.summary!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: isLargeScreen ? 16 : isTablet ? 15 : 14,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else
+                  Text(
             email.snippet,
             style: TextStyle(
               color: Theme.of(
@@ -1503,7 +1573,15 @@ class _MailScreenState extends State<MailScreen>
       ),
       child: Center(
         child: Text(
-          name.split(' ').map((n) => n[0]).join().toUpperCase(),
+          name.trim().isEmpty 
+              ? '?' 
+              : name
+                  .split(' ')
+                  .where((n) => n.isNotEmpty)
+                  .take(2)
+                  .map((n) => n[0])
+                  .join()
+                  .toUpperCase(),
           style: TextStyle(
             color: Theme.of(context).colorScheme.primary,
             fontSize: isTablet ? 16 : 13,
@@ -1512,6 +1590,28 @@ class _MailScreenState extends State<MailScreen>
         ),
       ),
     );
+  }
+
+  String _cleanHtml(String html) {
+    // 1. Remove HTML tags
+    var text = html.replaceAll(RegExp(r'<[^>]*>'), '');
+    
+    // 2. Decode basic entities
+    text = text
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&apos;', "'");
+        
+    // 3. Remove numeric entities like &#13;
+    text = text.replaceAll(RegExp(r'&#\d+;'), '');
+    
+    // 4. Collapse multiple spaces/newlines
+    text = text.replaceAll(RegExp(r'\s+'), ' ');
+    
+    return text.trim();
   }
 }
 

@@ -11,10 +11,22 @@ import 'package:frontend/services/mail_service.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:frontend/ui/screens/mail/composemail_screen.dart';
+import 'package:audioplayers/audioplayers.dart'; // Added dependency import
 
 class MailDetailScreen extends StatefulWidget {
   final EmailMessage email;
-  const MailDetailScreen({super.key, required this.email});
+  final String? audioUrl;
+  final bool autoPlay;
+  
+  const MailDetailScreen({
+    super.key, 
+    required this.email, 
+    this.audioUrl, 
+    this.autoPlay = false
+  });
+
   @override
   State<MailDetailScreen> createState() => _MailDetailScreenState();
 }
@@ -23,6 +35,12 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
   // Email details state
   EmailMessage? _fullEmail;
   bool _isLoadingDetails = false;
+
+  // Audio state
+  // dynamic _audioPlayer; // Will lazy load audioplayers
+  bool _isPlaying = false;
+  bool _isAudioLoading = false;
+  bool _audioExpired = false;
 
   // WebView controller for email body
   late final WebViewController _webViewController;
@@ -42,6 +60,55 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
 
     // Fetch full email details
     _fetchEmailDetails();
+    
+    // Handle Auto-Play
+    if (widget.autoPlay && widget.audioUrl != null) {
+      _playAudio(widget.audioUrl!);
+    }
+  }
+
+  final AudioPlayer _player = AudioPlayer(); // Keep instance to control/stop
+
+  Future<void> _playAudio(String url) async {
+     setState(() {
+       _isAudioLoading = true;
+       _audioExpired = false;
+     });
+     
+     try {
+       await _player.play(UrlSource(url));
+       
+       if (mounted) {
+         setState(() {
+            _isPlaying = true;
+            _isAudioLoading = false;
+         });
+       }
+
+       _player.onPlayerComplete.listen((_) {
+          if (mounted) setState(() => _isPlaying = false);
+       });
+       
+       print('▶️ Playing priority audio: $url');
+     } catch (e) {
+       print('❌ Error playing audio: $e');
+        if (mounted) {
+         setState(() {
+           _isAudioLoading = false;
+           _audioExpired = true; 
+           _isPlaying = false;
+         });
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text('Audio summary expired or unavailable')),
+         );
+       }
+     }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
   }
 
   void _initWebView() {
@@ -63,6 +130,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                   });
                 }
               },
+
               onPageFinished: (String url) async {
                 // 1. Calculate Content Height
                 try {
@@ -160,6 +228,13 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
               },
             ),
           );
+
+    // Platform-specific configuration
+    if (_webViewController.platform is AndroidWebViewController) {
+      AndroidWebViewController.enableDebugging(false);
+      (_webViewController.platform as AndroidWebViewController)
+          .setMediaPlaybackRequiresUserGesture(false);
+    }
 
     // Initial load - defer until after first frame to ensure context is available
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -428,30 +503,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     }
   }
 
-  Future<void> _toggleReadStatus() async {
-    try {
-      final auth = context.read<AuthProvider>();
-      final mailService = MailService(dio: auth.dio);
 
-      final success =
-          widget.email.isUnread
-              ? await mailService.markAsRead(widget.email.id)
-              : await mailService.markAsUnread(widget.email.id);
-
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.email.isUnread ? 'Marked as read' : 'Marked as unread',
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      print('❌ Error toggling read status: $e');
-    }
-  }
 
   void _showDeleteConfirmation() {
     showDialog(
@@ -477,6 +529,101 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
             ],
           ),
     );
+  }
+
+  void _navigateToCompose({
+    required String type,
+  }) {
+    final email = _fullEmail ?? widget.email;
+    String subject = email.subject;
+    String bodyPrefix = '';
+    String to = '';
+    String cc = '';
+    String bcc = '';
+
+    final dateStr = email.date.toString();
+    if (type == 'forward') {
+      subject = 'Fwd: $subject';
+      to = '';
+      bodyPrefix = '\n\n---------- Forwarded message ---------\n'
+          'From: ${email.sender} <${email.senderEmail}>\n'
+          'Date: $dateStr\n'
+          'Subject: ${email.subject}\n'
+          'To: ${email.headers?.to ?? "Unknown"}\n\n';
+    } else {
+      // Reply or Reply All
+      if (!subject.startsWith('Re:')) {
+        subject = 'Re: $subject';
+      }
+      
+      // Default Reply: To = Sender
+      to = email.senderEmail;
+      
+      if (type == 'replyAll') {
+        // Add original recipients (To) to 'To', excluding current user if known (simplified here)
+        // Note: Real implementation should filter out the user's own email
+        final originalTo = email.headers?.to;
+        if (originalTo != null && originalTo.isNotEmpty) {
+           // Combine, avoiding duplicates vaguely (better logic requires parsing email lists)
+           if (!originalTo.contains(to)) {
+             to = '$to, $originalTo';
+           } else {
+             to = originalTo; // If sender is in To list
+           }
+        }
+        
+        // Add original CC to 'CC'
+        cc = email.headers?.cc ?? '';
+      }
+
+      bodyPrefix = '\n\n\nOn $dateStr, ${email.sender} wrote:\n';
+    }
+
+    // Append original body (stripping HTML tags and decoding entities)
+    final originalBody = _cleanHtml(email.body).trim();
+    if (originalBody.isNotEmpty) {
+      bodyPrefix += '$originalBody\n';
+    } else {
+       bodyPrefix += '${_cleanHtml(email.snippet)}\n';
+    }
+
+    // We need to construct a "MailItem" to pass to ComposeMailScreen
+    // Constructing specific data object for Compose screen
+    // Note: ComposeMailScreen expects MailItem which has specific fields. 
+    // We map our EmailMessage data to that legacy model for compatibility.
+    
+    final mailItem = MailItem(
+      sender: to, // Compose screen uses 'sender' field as the 'To' field initial value
+      subject: subject,
+      preview: bodyPrefix, // Compose screen uses 'preview' as the body initial content
+      time: '', // Not used for composing
+      isUnread: false,
+      priority: MailPriority.normal,
+    );
+
+    context.push('/composemail', extra: mailItem);
+  }
+
+  String _cleanHtml(String html) {
+    // 1. Remove HTML tags
+    var text = html.replaceAll(RegExp(r'<[^>]*>'), '');
+    
+    // 2. Decode basic entities
+    text = text
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&apos;', "'");
+        
+    // 3. Remove numeric entities like &#13; (carriage return) or whatever
+    text = text.replaceAll(RegExp(r'&#\d+;'), '');
+    
+    // 4. Collapse multiple spaces/newlines
+    text = text.replaceAll(RegExp(r'\s+'), ' ');
+    
+    return text;
   }
 
   EmailMessage _parseFullEmailMessage(Map<String, dynamic> data) {
@@ -676,10 +823,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -706,6 +850,45 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 32),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildActionButton(
+              icon: Icons.reply,
+              label: 'Reply',
+              onTap: () => _navigateToCompose(type: 'reply'),
+              theme: theme, 
+              isTablet: isTablet
+            ),
+            _buildActionButton(
+              icon: Icons.reply_all,
+              label: 'Reply All',
+              onTap: () => _navigateToCompose(type: 'replyAll'),
+              theme: theme,
+              isTablet: isTablet
+            ),
+            _buildActionButton(
+              icon: Icons.forward,
+              label: 'Forward',
+              onTap: () => _navigateToCompose(type: 'forward'),
+              theme: theme,
+              isTablet: isTablet
+            ),
+          ],
+        ),
+      ),
       // Switched to CustomScrollView for unified scrolling with conditional gesture handling
       body: CustomScrollView(
         slivers: [
@@ -824,7 +1007,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      bottomSheet: _buildActionBottomSheet(theme, isTablet),
+
     );
   }
 
@@ -1300,64 +1483,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     );
   }
 
-  Widget _buildActionBottomSheet(ThemeData theme, bool isTablet) {
-    return Container(
-      height: isTablet ? 80 : 72,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: isTablet ? 32 : 24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildActionButton(
-                icon:
-                    widget.email.isUnread
-                        ? Icons.mark_email_read_rounded
-                        : Icons.mark_email_unread_rounded,
-                label: widget.email.isUnread ? 'Mark Read' : 'Mark Unread',
-                onTap: _toggleReadStatus,
-                theme: theme,
-                isTablet: isTablet,
-              ),
-              _buildActionButton(
-                icon: Icons.reply_all_rounded,
-                label: 'Reply All',
-                onTap: () {},
-                theme: theme,
-                isTablet: isTablet,
-              ),
-              _buildActionButton(
-                icon: Icons.forward_rounded,
-                label: 'Forward',
-                onTap: () {},
-                theme: theme,
-                isTablet: isTablet,
-              ),
-              _buildActionButton(
-                icon: Icons.delete_outline_rounded,
-                label: 'Delete',
-                onTap: () => _showDeleteConfirmation(),
-                theme: theme,
-                isTablet: isTablet,
-                isDestructive: true,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildActionButton({
     required IconData icon,

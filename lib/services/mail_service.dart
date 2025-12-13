@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:frontend/models/email_message.dart';
 
 class MailService {
   final Dio _dio;
@@ -180,17 +182,27 @@ class MailService {
     String to,
     String subject,
     String body,
-    List<Map<String, dynamic>>?
-    attachments, // [{name: String, bytes: List<int>, mimeType: String?}]
-  ) async {
+    List<Map<String, dynamic>>? attachments, {
+    String? cc,
+    String? bcc,
+  }) async {
     // Backend uses cookie-based authentication - no Authorization header needed
     // Cookies are automatically handled by Dio's CookieManager interceptor
     try {
-      final formData = FormData.fromMap({
+      final formDataMap = {
         'to': to,
         'subject': subject,
         'body': body,
-      });
+      };
+
+      if (cc != null && cc.isNotEmpty) {
+        formDataMap['cc'] = cc;
+      }
+      if (bcc != null && bcc.isNotEmpty) {
+        formDataMap['bcc'] = bcc;
+      }
+
+      final formData = FormData.fromMap(formDataMap);
 
       // Backend expects attachments as File objects in FormData
       // Convert bytes to MultipartFile which Dio will send as File
@@ -210,26 +222,112 @@ class MailService {
         }
       }
 
-      final response = await _dio.post('/api/send', data: formData);
+      final options = Options(
+        headers: _accessToken != null 
+            ? {'Authorization': 'Bearer $_accessToken'} 
+            : null,
+      );
+
+      final response = await _dio.post(
+        '/api/email/gmail/send', 
+        data: formData,
+        options: options,
+      );
 
       // Backend returns: { success: true, messageId, message: "..." }
       final responseData = response.data;
 
-      if (response.statusCode == 200 &&
-          (responseData['success'] == true ||
-              responseData['messageId'] != null)) {
-        print(
-          '✅ Email sent successfully. MessageId: ${responseData['messageId']}',
-        );
-        return responseData;
-      } else {
+      if (response.statusCode == 200) {
+        if (responseData is Map<String, dynamic>) {
+          if (responseData['success'] == true || responseData['messageId'] != null) {
+            print('✅ Email sent successfully. MessageId: ${responseData['messageId']}');
+            return responseData;
+          }
+        } else if (responseData is String) {
+           // Handle string response
+           print('⚠️ Email sent but returned string: $responseData');
+           return {'success': true, 'message': responseData};
+        }
+        
         print('⚠️ Email send returned unexpected response: $responseData');
-        return responseData;
+        return responseData is Map<String, dynamic> ? responseData : {'error': responseData.toString()};
+      } else {
+        print('⚠️ Email send failed with status ${response.statusCode}: $responseData');
+        return responseData is Map<String, dynamic> ? responseData : {'error': responseData.toString()};
       }
     } on DioException catch (e) {
       print('❌ Error sending email: ${e.response?.data}');
-      // Backend returns: { error: "...", details: "...", errorCode: "..." }
-      return e.response?.data;
+      final errorData = e.response?.data;
+      if (errorData is Map<String, dynamic>) {
+        return errorData;
+      }
+      return {'error': errorData?.toString() ?? e.message ?? 'Unknown error'};
+    }
+  }
+
+  // Same structure as sendEmailWithBytes but hits the draft endpoint
+  Future<Map<String, dynamic>?> createDraft(
+    String to,
+    String subject,
+    String body,
+    List<Map<String, dynamic>>? attachments, {
+    String? cc,
+    String? bcc,
+  }) async {
+    try {
+      final formDataMap = <String, dynamic>{};
+      
+      if (to.isNotEmpty) formDataMap['to'] = to;
+      if (subject.isNotEmpty) formDataMap['subject'] = subject;
+      if (body.isNotEmpty) formDataMap['body'] = body;
+
+      if (cc != null && cc.isNotEmpty) {
+        formDataMap['cc'] = cc;
+      }
+      if (bcc != null && bcc.isNotEmpty) {
+        formDataMap['bcc'] = bcc;
+      }
+
+      final formData = FormData.fromMap(formDataMap);
+
+      if (attachments != null && attachments.isNotEmpty) {
+        for (var attachment in attachments) {
+          final name = attachment['name'] as String;
+          final bytes = attachment['bytes'] as List<int>?;
+
+          if (bytes != null && bytes.isNotEmpty) {
+            formData.files.add(
+              MapEntry(
+                'attachments',
+                MultipartFile.fromBytes(bytes, filename: name),
+              ),
+            );
+          }
+        }
+      }
+
+      final options = Options(
+        headers: _accessToken != null 
+            ? {'Authorization': 'Bearer $_accessToken'} 
+            : null,
+      );
+
+      final response = await _dio.post(
+        '/api/email/gmail/draft', 
+        data: formData,
+        options: options,
+      );
+
+      // Backend returns: { success: true, draftId: "...", message: "..." }
+      return response.data;
+      
+    } on DioException catch (e) {
+      print('❌ Error creating draft: ${e.response?.data}');
+      final errorData = e.response?.data;
+      if (errorData is Map<String, dynamic>) {
+        return errorData;
+      }
+      return {'error': errorData?.toString() ?? e.message ?? 'Unknown error'};
     }
   }
 
@@ -367,6 +465,81 @@ class MailService {
     } on DioException catch (e) {
       print('❌ Error marking email as unread: ${e.response?.data}');
       return false;
+    }
+  }
+
+  Future<void> watchGmail() async {
+    try {
+      // 1. Get tokens and email from backend
+      final tokenData = await checkTokens();
+      
+      if (tokenData != null && tokenData['hasTokens'] == true) {
+        final tokens = tokenData['tokens'];
+        final accessToken = tokens?['accessToken'];
+        final refreshToken = tokens?['refreshToken'];
+        final email = tokenData['email']; // Assuming 'email' or 'connectedEmail' is top-level or in tokens
+        
+        // Note: data structure depends on checkTokens response. 
+        // Based on typical auth flows, we check if we have what we need.
+        // User request specifically asked to send: accessToken, refreshToken, connectedEmail.
+        
+        if (accessToken != null) {
+           String? connectedEmail = email;
+           
+           // If email is missing from checkTokens, try to fetch it from Gmail Profile
+           if (connectedEmail == null) {
+             try {
+                final profileResponse = await _dio.get(
+                  'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+                  options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+                );
+                if (profileResponse.statusCode == 200) {
+                  connectedEmail = profileResponse.data['emailAddress'];
+                  print('✅ Fetched connected email from profile: $connectedEmail');
+                }
+             } catch (e) {
+               print('⚠️ Failed to fetch Gmail profile: $e');
+             }
+           }
+
+           if (connectedEmail != null) {
+              final body = {
+                'accessToken': accessToken,
+                'refreshToken': refreshToken ?? '',
+                'connectedEmail': connectedEmail,
+              };
+
+              print('🔄 Renewing Gmail watch for $connectedEmail...');
+              
+              await _dio.post('/api/email/gmail/watch', data: body);
+              print('✅ Gmail watch renewed successfully');
+           } else {
+             print('⚠️ Could not determine connected email for watch renewal');
+           }
+        } else {
+          print('⚠️ Missing access token to renew watch');
+        }
+      } else {
+        print('ℹ️ No Gmail tokens found, skipping watch renewal');
+      }
+    } catch (e) {
+      print('❌ Error renewing Gmail watch: $e');
+    }
+  }
+  Stream<List<EmailMessage>> streamEmails() {
+    try {
+      return FirebaseFirestore.instance
+          .collection('email_summaries')
+          .orderBy('date', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            return snapshot.docs.map((doc) {
+              return EmailMessage.fromFirestore(doc.data(), doc.id);
+            }).toList();
+          });
+    } catch (e) {
+      print('❌ Error streaming emails: $e');
+      return Stream.value([]);
     }
   }
 }

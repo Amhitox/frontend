@@ -22,7 +22,7 @@ import '../ui/screens/auth/signup_screen.dart';
 import '../ui/screens/calendar/calendar_screen.dart';
 import '../ui/screens/task/task_screen.dart';
 import '../ui/screens/mail/mail_screen.dart';
-import '../ui/screens/mail/composemail_screen.dart' hide MailItem;
+import '../ui/screens/mail/composemail_screen.dart' as compose;
 import '../ui/screens/welcome/subscription_screen.dart';
 import '../ui/screens/welcome/current_plan_screen.dart';
 import '../ui/screens/calendar/addschedule_screen.dart';
@@ -60,6 +60,7 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String profile = '/profile';
   static const String security = '/security';
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   static late SharedPreferences pref;
   bool firstOpen = true;
   List<Task> tasks = <Task>[];
@@ -71,6 +72,7 @@ class AppRoutes {
 
   GoRouter createRouter(BuildContext context) {
     return GoRouter(
+      navigatorKey: navigatorKey,
       initialLocation: splash,
       routes: [
         GoRoute(
@@ -260,17 +262,44 @@ class AppRoutes {
           path: maildetail,
           name: 'maildetail',
           builder: (context, state) {
-            final email = state.extra as EmailMessage?;
+            EmailMessage? email;
+            String? audioUrl;
+            bool autoPlay = false;
+
+            if (state.extra is EmailMessage) {
+              email = state.extra as EmailMessage;
+            } else if (state.extra is Map<String, dynamic>) {
+              final map = state.extra as Map<String, dynamic>;
+              email = map['email'] as EmailMessage?;
+              audioUrl = map['audioUrl'] as String?;
+              autoPlay = map['autoPlay'] == true;
+            }
+
             if (email == null) {
               return const MailScreen();
             }
-            return mailDetail.MailDetailScreen(email: email);
+            return mailDetail.MailDetailScreen(
+              email: email, 
+              audioUrl: audioUrl,
+              autoPlay: autoPlay
+            );
           },
         ),
         GoRoute(
           path: composemail,
           name: 'composemail',
-          builder: (context, state) => const ComposeMailScreen(),
+          builder: (context, state) {
+            compose.MailItem? mailItem;
+            EmailMessage? draft;
+
+            if (state.extra is compose.MailItem) {
+              mailItem = state.extra as compose.MailItem;
+            } else if (state.extra is EmailMessage) {
+              draft = state.extra as EmailMessage;
+            }
+
+            return compose.ComposeMailScreen(editingMail: mailItem, draft: draft);
+          },
         ),
         GoRoute(
           path: subscription,
