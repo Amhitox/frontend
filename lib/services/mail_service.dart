@@ -210,12 +210,21 @@ class MailService {
         for (var attachment in attachments) {
           final name = attachment['name'] as String;
           final bytes = attachment['bytes'] as List<int>?;
+          final path = attachment['path'] as String?;
 
           if (bytes != null && bytes.isNotEmpty) {
             formData.files.add(
               MapEntry(
                 'attachments',
                 MultipartFile.fromBytes(bytes, filename: name),
+              ),
+            );
+          } else if (path != null && path.isNotEmpty) {
+             // Fallback to path if bytes are not available (e.g. large files or just prefer path)
+             formData.files.add(
+              MapEntry(
+                'attachments',
+                await MultipartFile.fromFile(path, filename: name),
               ),
             );
           }
@@ -294,12 +303,20 @@ class MailService {
         for (var attachment in attachments) {
           final name = attachment['name'] as String;
           final bytes = attachment['bytes'] as List<int>?;
+          final path = attachment['path'] as String?;
 
           if (bytes != null && bytes.isNotEmpty) {
             formData.files.add(
               MapEntry(
                 'attachments',
                 MultipartFile.fromBytes(bytes, filename: name),
+              ),
+            );
+          } else if (path != null && path.isNotEmpty) {
+             formData.files.add(
+              MapEntry(
+                'attachments',
+                await MultipartFile.fromFile(path, filename: name),
               ),
             );
           }
@@ -373,13 +390,17 @@ class MailService {
   Future<bool> disconnect() async {
     try {
       await _dio.post('/api/email/gmail/disconnect');
-      _accessToken = null;
+      clearLocalData();
       print('✅ Gmail disconnected');
       return true;
     } on DioException catch (e) {
       print('❌ Error disconnecting: ${e.message}');
       return false;
     }
+  }
+
+  void clearLocalData() {
+    _accessToken = null;
   }
 
   Future<Map<String, dynamic>?> getCurrentUser() async {
@@ -540,6 +561,33 @@ class MailService {
     } catch (e) {
       print('❌ Error streaming emails: $e');
       return Stream.value([]);
+    }
+  }
+  Future<Map<String, dynamic>?> refineEmail(
+    String currentSubject,
+    String currentBody,
+    String instruction,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/api/ai/refine-email',
+        data: {
+          'currentSubject': currentSubject,
+          'currentBody': currentBody,
+          'instruction': instruction,
+        },
+        options: Options(
+          validateStatus: (status) => status! < 500,
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      return {'error': response.data['message'] ?? 'Failed to refine email'};
+    } on DioException catch (e) {
+      print('❌ Refine email error: $e');
+      return {'error': e.response?.data['message'] ?? e.message};
     }
   }
 }

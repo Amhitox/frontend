@@ -23,4 +23,39 @@ class UserProvider extends ChangeNotifier {
       await prefs.setString('user', jsonEncode(updatedUser.toJson()));
     } catch (e) {}
   }
+  List<String> _priorityEmails = [];
+  List<String> get priorityEmails => _priorityEmails;
+
+  Future<void> fetchPriorityEmails(String userId) async {
+    try {
+      _priorityEmails = await userService.getPriorityEmails(userId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error fetching priority emails: $e');
+    }
+  }
+
+  Future<void> addPriorityEmail(String userId, String email) async {
+    try {
+      await userService.addPriorityEmail(userId, email);
+      if (!_priorityEmails.contains(email)) {
+        _priorityEmails.add(email);
+        notifyListeners();
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> removePriorityEmail(String userId, String email) async {
+    try {
+      await userService.removePriorityEmail(userId, email);
+      if (_priorityEmails.contains(email)) {
+        _priorityEmails.remove(email);
+        notifyListeners();
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

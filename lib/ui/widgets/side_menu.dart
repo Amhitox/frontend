@@ -3,6 +3,7 @@ import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/utils/localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/providers/mail_provider.dart';
+import 'package:frontend/providers/notification_provider.dart';
 import 'package:provider/provider.dart';
 
 class SideMenu extends StatefulWidget {
@@ -73,11 +74,16 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
 
   void _navigateTo(String route) {
     Navigator.of(context).pop();
-    if (route != '/') {
-      context.push(route);
-    } else {
-      context.push('/');
-    }
+    // Delay slightly to allow drawer to close/pop animation to start
+    // This often fixes issues where immediate push confuses the navigator or context
+    Future.delayed(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      if (route == '/') {
+        context.go('/');
+      } else {
+        context.push(route);
+      }
+    });
   }
 
   bool _isRouteActive(String route) {
@@ -324,27 +330,68 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
                         ),
                       ),
                       const Spacer(),
-                      if (item.label == 'Mail' || item.label == 'Notifications')
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isTablet ? 10 : 8,
-                            vertical: isTablet ? 5 : 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.error,
-                            borderRadius: BorderRadius.circular(
-                              isTablet ? 12 : 10,
-                            ),
-                          ),
-                          child: Text(
-                            item.label == 'Mail' ? '3' : '7',
-                            style: TextStyle(
-                              color: colorScheme.onError,
-                              fontSize: isTablet ? 13 : 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                      if (item.label == 'Mail')
+                         Consumer<MailProvider>(
+                           builder: (context, mailProvider, child) {
+                             // Assuming we want unread count of Inbox. MailProvider doesn't expose a direct unread count yet easily synchronously without fetching.
+                             // For now we can just show a badge if there are any unread emails in the loaded list or if we add a getter. 
+                             // Based on the provider code, we only have lists. 
+                             // Let's assume we want to count unread in the currently loaded 'inbox' cache.
+                             final inboxEmails = mailProvider.getEmailsForFilter('inbox');
+                             final unreadCount = inboxEmails.where((e) => e.isUnread).length;
+                             
+                             if (unreadCount == 0) return SizedBox.shrink();
+
+                             return Container(
+                               padding: EdgeInsets.symmetric(
+                                 horizontal: isTablet ? 10 : 8,
+                                 vertical: isTablet ? 5 : 4,
+                               ),
+                               decoration: BoxDecoration(
+                                 color: colorScheme.error,
+                                 borderRadius: BorderRadius.circular(
+                                   isTablet ? 12 : 10,
+                                 ),
+                               ),
+                               child: Text(
+                                 unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                 style: TextStyle(
+                                   color: colorScheme.onError,
+                                   fontSize: isTablet ? 13 : 12,
+                                   fontWeight: FontWeight.w600,
+                                 ),
+                               ),
+                             );
+                           }
+                         ),
+                      if (item.label == 'Notifications')
+                         Consumer<NotificationProvider>(
+                           builder: (context, notifProvider, child) {
+                              final unreadCount = notifProvider.notifications.where((n) => !n.isRead).length;
+                              if (unreadCount == 0) return SizedBox.shrink();
+                              
+                              return Container(
+                               padding: EdgeInsets.symmetric(
+                                 horizontal: isTablet ? 10 : 8,
+                                 vertical: isTablet ? 5 : 4,
+                               ),
+                               decoration: BoxDecoration(
+                                 color: colorScheme.error,
+                                 borderRadius: BorderRadius.circular(
+                                   isTablet ? 12 : 10,
+                                 ),
+                               ),
+                               child: Text(
+                                 unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                 style: TextStyle(
+                                   color: colorScheme.onError,
+                                   fontSize: isTablet ? 13 : 12,
+                                   fontWeight: FontWeight.w600,
+                                 ),
+                               ),
+                             );
+                           }
+                         ),
                     ],
                   ),
                 ),

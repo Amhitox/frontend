@@ -8,6 +8,7 @@ import 'package:frontend/providers/language_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/utils/localization.dart';
+import 'package:frontend/providers/mail_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -25,7 +26,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   String _workEmail = 'amhita.maroua@gmail.com';
   String _selectedVoice = '';
   String _selectedLanguage = '';
-  String _selectedTheme = '';
+  ThemeMode _selectedTheme = ThemeMode.system;
   bool _pushNotifications = true;
   @override
   void initState() {
@@ -51,33 +52,32 @@ class _SettingsScreenState extends State<SettingsScreen>
     super.dispose();
   }
 
-  String currentLanguage(User user) {
+
+
+  void _changeTheme(ThemeMode themeMode) {
     final l10n = AppLocalizations.of(context);
-    if (user.lang == 'fr') {
-      return l10n.french;
-    }
-    return l10n.english;
-  }
-
-  void _changeTheme(String theme) {
-    final l10n = AppLocalizations.of(context);
-    ThemeMode newThemeMode;
-
-    if (theme == l10n.dark) {
-      newThemeMode = ThemeMode.dark;
-    } else if (theme == l10n.light) {
-      newThemeMode = ThemeMode.light;
-    } else {
-      newThemeMode = ThemeMode.system;
-    }
-
-    themeProvider.setTheme(newThemeMode);
+    
+    themeProvider.setTheme(themeMode);
     setState(() {
-      _selectedTheme = theme;
+      _selectedTheme = themeMode;
     });
+
+    String themeName;
+    switch (themeMode) {
+      case ThemeMode.dark:
+        themeName = l10n.dark;
+        break;
+      case ThemeMode.light:
+        themeName = l10n.light;
+        break;
+      case ThemeMode.system:
+        themeName = l10n.system;
+        break;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${l10n.theme} ${l10n.changed} $theme'),
+        content: Text('${l10n.theme} ${l10n.changed} $themeName'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -85,9 +85,8 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  void _changeLanguage(String language) async {
+  void _changeLanguage(String languageCode) async {
     final l10n = AppLocalizations.of(context);
-    final languageCode = language == l10n.english ? 'en' : 'fr';
     await languageProvider.setLanguage(languageCode);
 
     var user = context.read<AuthProvider>().user;
@@ -97,12 +96,18 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
 
     setState(() {
-      _selectedLanguage = language;
+      _selectedLanguage = languageCode;
     });
 
+    // Get display name for the new language
+    // Note: l10n is still the old localization here, effectively
+    String displayLanguage = languageCode == 'en' ? 'English' : 'Français';
+    // Ideally we would use the new localization but this is fine for feedback
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${l10n.language} ${l10n.changed} $language'),
+        content: Text('${l10n.language} ${l10n.changed} $displayLanguage'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -125,21 +130,12 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
 
     if (_selectedLanguage.isEmpty) {
-      _selectedLanguage = currentLanguage(user);
+      _selectedLanguage = AppLocalizations.of(context).locale.languageCode;
     }
 
-    if (_selectedTheme.isEmpty) {
-      switch (themeProvider.themeMode) {
-        case ThemeMode.light:
-          _selectedTheme = l10n.light;
-          break;
-        case ThemeMode.dark:
-          _selectedTheme = l10n.dark;
-          break;
-        case ThemeMode.system:
-          _selectedTheme = l10n.system;
-          break;
-      }
+    // We don't need this initialization block anymore as we use the provider or default
+    if (_selectedTheme != themeProvider.themeMode) {
+       _selectedTheme = themeProvider.themeMode;
     }
     return Scaffold(
       drawer: const SideMenu(),
@@ -180,23 +176,14 @@ class _SettingsScreenState extends State<SettingsScreen>
                           theme,
                           user,
                         ),
+                        // _buildConnectedAccountsSection(isTablet, isLargeScreen, theme),
                         _buildSection(
                           AppLocalizations.of(context).appPreferences,
                           Icons.tune_outlined,
                           [
-                            _buildVoiceSelector(isTablet, theme),
+                            // _buildVoiceSelector(isTablet, theme),
                             _buildLanguageSelector(isTablet, theme, user),
                             _buildThemeSelector(isTablet, theme),
-                            _buildSwitchItem(
-                              l10n.pushNotifications,
-                              l10n.pushNotifications,
-                              Icons.notifications_outlined,
-                              _pushNotifications,
-                              (value) =>
-                                  setState(() => _pushNotifications = value),
-                              isTablet,
-                              theme,
-                            ),
                           ],
                           isTablet,
                           isLargeScreen,
@@ -206,26 +193,26 @@ class _SettingsScreenState extends State<SettingsScreen>
                           AppLocalizations.of(context).supportFeedback,
                           Icons.help_outline,
                           [
-                            _buildSettingItem(
-                              AppLocalizations.of(context).rateUs,
-                              AppLocalizations.of(context).loveTheApp,
-                              Icons.star_outline,
-                              showArrow: false,
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: List.generate(
-                                  5,
-                                  (index) => Icon(
-                                    Icons.star,
-                                    size: isTablet ? 18 : 16,
-                                    color: Colors.orange.withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ),
-                              onTap: () => _showRateDialog(theme, isTablet),
-                              isTablet: isTablet,
-                              theme: theme,
-                            ),
+                            // _buildSettingItem(
+                            //   AppLocalizations.of(context).rateUs,
+                            //   AppLocalizations.of(context).loveTheApp,
+                            //   Icons.star_outline,
+                            //   showArrow: false,
+                            //   trailing: Row(
+                            //     mainAxisSize: MainAxisSize.min,
+                            //     children: List.generate(
+                            //       5,
+                            //       (index) => Icon(
+                            //         Icons.star,
+                            //         size: isTablet ? 18 : 16,
+                            //         color: Colors.orange.withValues(alpha: 0.7),
+                            //       ),
+                            //     ),
+                            //   ),
+                            //   onTap: () => _showRateDialog(theme, isTablet),
+                            //   isTablet: isTablet,
+                            //   theme: theme,
+                            // ),
                             _buildSettingItem(
                               AppLocalizations.of(context).shareApp,
                               AppLocalizations.of(context).tellYourFriends,
@@ -238,7 +225,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                               AppLocalizations.of(context).helpSupport,
                               AppLocalizations.of(context).getHelp,
                               Icons.support_agent_outlined,
-                              onTap: () => context.go('/support'),
+                              onTap: () => context.push('/support'),
                               isTablet: isTablet,
                               theme: theme,
                             ),
@@ -255,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                               AppLocalizations.of(context).privacyPolicy,
                               AppLocalizations.of(context).howWeProtectYourData,
                               Icons.privacy_tip_outlined,
-                              onTap: () => context.go('/privacy'),
+                              onTap: () => context.push('/privacy'),
                               isTablet: isTablet,
                               theme: theme,
                             ),
@@ -263,7 +250,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                               AppLocalizations.of(context).termsOfService,
                               AppLocalizations.of(context).termsAndConditions,
                               Icons.description_outlined,
-                              onTap: () => context.go('/terms'),
+                              onTap: () => context.push('/terms'),
                               isTablet: isTablet,
                               theme: theme,
                             ),
@@ -477,33 +464,19 @@ class _SettingsScreenState extends State<SettingsScreen>
             ],
           ),
           SizedBox(height: isTablet ? 20 : 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickActionButton(
-                  AppLocalizations.of(context).editProfile,
-                  Icons.person_outline,
-                  Colors.blue,
-                  () => context.go('/profile'),
-                  isTablet,
-                ),
-              ),
-              SizedBox(width: isTablet ? 16 : 12),
-              Expanded(
-                child: _buildQuickActionButton(
-                  AppLocalizations.of(context).security,
-                  Icons.security,
-                  Colors.orange,
-                  () => context.go('/security'),
-                  isTablet,
-                ),
-              ),
-            ],
+
+          _buildQuickActionButton(
+            AppLocalizations.of(context).editProfile,
+            Icons.person_outline,
+            Colors.blue,
+            () => context.push('/profile'),
+            isTablet,
           ),
         ],
       ),
     );
   }
+
 
   Widget _buildEmailSection(
     bool isTablet,
@@ -714,10 +687,180 @@ class _SettingsScreenState extends State<SettingsScreen>
                     ],
                   ),
                 ),
+                Container(
+                  padding: EdgeInsets.all(isTablet ? 20 : 16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: isTablet ? 44 : 40,
+                        height: isTablet ? 44 : 40,
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(
+                            isTablet ? 14 : 12,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.star_outline_rounded,
+                          color: Colors.orange,
+                          size: isTablet ? 22 : 20,
+                        ),
+                      ),
+                      SizedBox(width: isTablet ? 20 : 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Priority Emails',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface,
+                                fontSize: isTablet ? 16 : 15,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(height: isTablet ? 4 : 2),
+                            Text(
+                              'Manage VIP senders',
+                              style: TextStyle(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
+                                fontSize: isTablet ? 13 : 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => context.pushNamed('priorityEmails'),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isTablet ? 14 : 12,
+                            vertical: isTablet ? 8 : 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(
+                              isTablet ? 10 : 8,
+                            ),
+                          ),
+                          child: Text(
+                            'Manage',
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontSize: isTablet ? 12 : 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildConnectedAccountsSection(
+      bool isTablet, bool isLargeScreen, ThemeData theme) {
+    final provider = context.watch<MailProvider>();
+    final current = provider.currentProvider;
+
+    return _buildSection(
+      'Connected Accounts',
+      Icons.cloud_queue,
+      [
+        _buildRunningAccountItem(
+          'Gmail',
+          Icons.mail_outline,
+          current == 'gmail',
+          () {
+            if (current != 'gmail') {
+              provider.setProvider('gmail');
+            }
+          },
+          isTablet,
+          theme,
+        ),
+        _buildRunningAccountItem(
+          'Outlook',
+          Icons.window_sharp,
+          current == 'outlook',
+          () {
+             if (current != 'outlook') {
+              provider.setProvider('outlook');
+            }
+          },
+          isTablet,
+          theme,
+        ),
+      ],
+      isTablet,
+      isLargeScreen,
+      theme,
+    );
+  }
+
+  Widget _buildRunningAccountItem(
+    String title,
+    IconData icon,
+    bool isSelected,
+    VoidCallback onTap,
+    bool isTablet,
+    ThemeData theme,
+  ) {
+    return Container(
+      margin: EdgeInsets.only(bottom: isTablet ? 12 : 8),
+      decoration: BoxDecoration(
+        color:
+            isSelected
+                ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+        border: Border.all(
+          color:
+              isSelected
+                  ? theme.colorScheme.primary.withValues(alpha: 0.5)
+                  : theme.colorScheme.outline.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isTablet ? 20 : 16,
+            vertical: isTablet ? 16 : 12,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: theme.colorScheme.onSurface, size: isTablet ? 24 : 20),
+              SizedBox(width: isTablet ? 16 : 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: isTablet ? 16 : 14,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_circle,
+                  color: theme.colorScheme.primary,
+                  size: isTablet ? 24 : 20,
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -957,9 +1100,17 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildLanguageSelector(bool isTablet, ThemeData theme, User user) {
     final l10n = AppLocalizations.of(context);
+    
+    // Ensure _selectedLanguage is valid (it should be 'en' or 'fr')
+    // If for some reason it's not, fallback to current locale
+    String currentValue = _selectedLanguage;
+    if (currentValue != 'en' && currentValue != 'fr') {
+       currentValue = AppLocalizations.of(context).locale.languageCode;
+    }
+
     return _buildSettingItem(
       l10n.language,
-      '${l10n.language}: $_selectedLanguage',
+      '${l10n.language}: ${currentValue == 'en' ? l10n.english : l10n.french}',
       Icons.language_outlined,
       showArrow: false,
       trailing: Container(
@@ -973,19 +1124,22 @@ class _SettingsScreenState extends State<SettingsScreen>
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
-            value: _selectedLanguage,
+            value: currentValue,
             dropdownColor: theme.colorScheme.surface,
             style: TextStyle(
               color: theme.colorScheme.onSurface,
               fontSize: isTablet ? 13 : 12,
             ),
-            items:
-                [l10n.english, l10n.french].map((language) {
-                  return DropdownMenuItem(
-                    value: language,
-                    child: Text(language),
-                  );
-                }).toList(),
+            items: [
+              DropdownMenuItem(
+                value: 'en',
+                child: Text(l10n.english),
+              ),
+              DropdownMenuItem(
+                value: 'fr',
+                child: Text(l10n.french),
+              ),
+            ],
             onChanged: (value) {
               if (value != null) {
                 _changeLanguage(value);
@@ -1001,9 +1155,21 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildThemeSelector(bool isTablet, ThemeData theme) {
     final l10n = AppLocalizations.of(context);
+    
+    String getThemeName(ThemeMode mode) {
+      switch (mode) {
+        case ThemeMode.dark:
+          return l10n.dark;
+        case ThemeMode.light:
+          return l10n.light;
+        case ThemeMode.system:
+          return l10n.system;
+      }
+    }
+
     return _buildSettingItem(
       l10n.theme,
-      '${l10n.theme}: $_selectedTheme',
+      '${l10n.theme}: ${getThemeName(_selectedTheme)}',
       Icons.palette_outlined,
       showArrow: false,
       trailing: Container(
@@ -1016,21 +1182,20 @@ class _SettingsScreenState extends State<SettingsScreen>
           borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
         ),
         child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
+          child: DropdownButton<ThemeMode>(
             value: _selectedTheme,
             dropdownColor: theme.colorScheme.surface,
             style: TextStyle(
               color: theme.colorScheme.onSurface,
               fontSize: isTablet ? 13 : 12,
             ),
-            items:
-                [l10n.dark, l10n.light, l10n.system].map((themeOption) {
-                  return DropdownMenuItem(
-                    value: themeOption,
-                    child: Text(themeOption),
-                  );
-                }).toList(),
-            onChanged: (value) {
+            items: ThemeMode.values.map((ThemeMode mode) {
+              return DropdownMenuItem<ThemeMode>(
+                value: mode,
+                child: Text(getThemeName(mode)),
+              );
+            }).toList(),
+            onChanged: (ThemeMode? value) {
               if (value != null) {
                 _changeTheme(value);
               }
@@ -1229,11 +1394,30 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
               ),
               ElevatedButton(
-                onPressed: () {
-                  setState(() => _workEmail = emailController.text);
-                  user.workEmail = _workEmail;
-                  context.read<UserProvider>().updateUser(user.id, user);
-                  Navigator.of(context).pop();
+                onPressed: () async {
+                  final newEmail = emailController.text;
+                  if (newEmail != user.workEmail) {
+                    setState(() => _workEmail = newEmail);
+                    user.workEmail = newEmail;
+                    // Update user in DB
+                    context.read<UserProvider>().updateUser(user.id, user);
+                    
+                    // Disconnect Gmail session and clear local data
+                    final mailProvider = context.read<MailProvider>();
+                    await mailProvider.disconnect();
+                    
+                    if (mounted) {
+                       Navigator.of(context).pop();
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         SnackBar(
+                           content: Text('Email updated. Please reconnect your Gmail account.'),
+                           duration: Duration(seconds: 4),
+                         ),
+                       );
+                    }
+                  } else {
+                    Navigator.of(context).pop();
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
@@ -1285,7 +1469,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   Icons.person_outline,
                   () {
                     Navigator.pop(context);
-                    context.go('/profile');
+                    context.push('/profile');
                   },
                   theme,
                   isTablet,
@@ -1295,7 +1479,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   Icons.settings_outlined,
                   () {
                     Navigator.pop(context);
-                    context.go('/security');
+                    context.push('/security');
                   },
                   theme,
                   isTablet,
@@ -1499,7 +1683,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             primaryActionColor: Colors.red,
             onPrimaryAction: () {
               Navigator.of(context).pop();
-              context.go('/login');
+              context.push('/login');
             },
             theme: theme,
             isTablet: isTablet,

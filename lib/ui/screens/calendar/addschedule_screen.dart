@@ -142,7 +142,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
       );
       await Future.delayed(const Duration(milliseconds: 600));
       if (mounted) {
-        context.go('/calendar');
+        context.push('/calendar');
       }
     } catch (e) {
       _showFeedback('Failed to save meeting: $e', isError: true);
@@ -235,7 +235,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
               borderRadius: BorderRadius.circular(24),
               onTap: () {
                 HapticFeedback.lightImpact();
-                context.go('/calendar');
+                context.push('/calendar');
               },
               child: Container(
                 width: isTablet ? 48 : 40,

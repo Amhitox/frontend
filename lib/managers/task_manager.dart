@@ -99,7 +99,17 @@ class TaskManager {
   Future<void> syncTasksFromServer(List<Task> serverTasks) async {
     if (!isInitialized) return;
     for (final task in serverTasks) {
-      await addOrUpdateTask(task, isSynced: true);
+      // Only overwrite if local task is already synced (meaning no pending local changes)
+      // If we have a local task that is NOT synced, it means we have pending edits.
+      // We should NOT overwrite it with server data, otherwise we lose the edit.
+      // Exception: if the task doesn't exist locally, we add it.
+      
+      final localTask = _box!.get(task.id);
+      final isLocallySynced = _syncBox!.get('${task.id}_synced') == 'true';
+      
+      if (localTask == null || isLocallySynced) {
+         await addOrUpdateTask(task, isSynced: true);
+      }
     }
   }
   Future<void> updateTaskFromServer(Task task) async {

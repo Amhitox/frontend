@@ -75,7 +75,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
       } else if (subscriptionStatus == 'active' ||
           subscriptionStatus == 'trialing') {
         _showSuccess('Subscription is active!');
-        if (mounted) context.goNamed('home');
+        if (mounted) context.pushNamed('home');
       } else {
         _showError('Could not initialize payment. Please try again.');
       }
@@ -112,7 +112,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
       }
       _showSuccess('Success! Your subscription is active.');
       if (mounted) {
-        context.goNamed('home');
+        context.pushNamed('home');
       }
     } on StripeException catch (e) {
       if (e.error.code == FailureCode.Canceled) {

@@ -9,6 +9,7 @@ import 'package:frontend/ui/widgets/meeting_sync_status_indicator.dart';
 import 'package:frontend/providers/meeting_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../models/meeting.dart';
+import 'package:intl/intl.dart';
 
 class CalendarPage extends StatefulWidget {
   final Map<String, dynamic>? data;
@@ -304,7 +305,7 @@ class _CalendarPageState extends State<CalendarPage>
           ),
           Row(
             children: [
-              const MeetingSyncStatusIndicator(),
+              // Removed MeetingSyncStatusIndicator as requested
               SizedBox(width: isTablet ? 12 : 8),
               _buildHeaderButton(
                 Icons.calendar_month_rounded,
@@ -1009,13 +1010,29 @@ class _CalendarPageState extends State<CalendarPage>
                     ],
                   ),
                   const SizedBox(height: 24),
-                  _buildDetailRow(
-                    Icons.access_time_rounded,
-                    'Time',
-                    '${meeting.startTime} - ${meeting.endTime}',
+                if (meeting.description != null && meeting.description!.isNotEmpty) ...[
+                   _buildDetailRow(
+                    Icons.description_outlined,
+                    'Description',
+                    meeting.description!,
                     theme,
                   ),
                   const SizedBox(height: 16),
+                ],
+                _buildDetailRow(
+                  Icons.play_circle_outline_rounded,
+                  'Start',
+                  '${DateFormat('EEEE d MMM, y').format(DateTime.parse(meeting.date ?? DateTime.now().toIso8601String()))}   ${_formatTimeString(meeting.startTime)}',
+                  theme,
+                ),
+                const SizedBox(height: 16),
+                _buildDetailRow(
+                  Icons.stop_circle_outlined,
+                  'End',
+                  '${DateFormat('EEEE d MMM, y').format(DateTime.parse(meeting.date ?? DateTime.now().toIso8601String()))}   ${_formatTimeString(meeting.endTime)}',
+                  theme,
+                ),
+                const SizedBox(height: 16),
                   _buildDetailRow(
                     Icons.people_outline_rounded,
                     'Attendees',
@@ -1317,21 +1334,41 @@ class _CalendarPageState extends State<CalendarPage>
 
   String _formatTime(String? timeString) {
     if (timeString == null || timeString.isEmpty) return '';
-    
     if (timeString.contains('T')) {
       try {
         final date = DateTime.parse(timeString).toLocal();
-        final hour = date.hour;
-        final minute = date.minute;
-        final amPm = hour >= 12 ? 'PM' : 'AM';
-        final hour12 = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-        return '$hour12:${minute.toString().padLeft(2, '0')} $amPm';
+        return DateFormat('hh:mm a').format(date);
       } catch (e) {
         return timeString;
       }
     }
-    
-    return timeString;
+    // Try parsing HH:mm
+    return _formatTimeString(timeString);
+  }
+
+  String _formatTimeString(String? time) {
+    if (time == null || time.isEmpty) return '00:00 AM';
+    try {
+      // If it looks like a full ISO string (e.g. 2025-12-14T09:00:00)
+      if (time.contains('T')) {
+         final dt = DateTime.parse(time);
+         return DateFormat('hh:mm a').format(dt);
+      }
+      
+      // If it looks like "14:30" or "09:00"
+      if (time.contains(':')) {
+        final parts = time.split(':');
+        final hour = int.tryParse(parts[0]) ?? 0;
+        final minute = int.tryParse(parts[1]) ?? 0;
+        // Construct a dummy date to use DateFormat
+        final dt = DateTime(2022, 1, 1, hour, minute);
+        return DateFormat('hh:mm a').format(dt);
+      }
+      
+      return time;
+    } catch (e) {
+      return time;
+    }
   }
 
   Widget _buildCalendarView() {

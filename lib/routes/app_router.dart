@@ -35,6 +35,9 @@ import '../ui/screens/welcome/splash_screen.dart';
 import '../ui/screens/welcome/onboarding_screen.dart';
 import '../ui/screens/auth/forgetpassword_screen.dart';
 import '../models/task.dart';
+import '../ui/screens/settings/priority_emails_screen.dart';
+import '../ui/screens/settings/legal_screen.dart';
+import '../ui/screens/settings/support_screen.dart';
 
 class AppRoutes {
   static final AppRoutes _instance = AppRoutes._internal();
@@ -70,7 +73,14 @@ class AppRoutes {
     firstOpen = pref.getBool('firstOpen') ?? true;
   }
 
-  GoRouter createRouter(BuildContext context) {
+  GoRouter? _router;
+
+  GoRouter get router {
+    _router ??= _createRouter();
+    return _router!;
+  }
+
+  GoRouter _createRouter() {
     return GoRouter(
       navigatorKey: navigatorKey,
       initialLocation: splash,
@@ -291,14 +301,27 @@ class AppRoutes {
           builder: (context, state) {
             compose.MailItem? mailItem;
             EmailMessage? draft;
+            bool isFromAi = false;
 
             if (state.extra is compose.MailItem) {
               mailItem = state.extra as compose.MailItem;
             } else if (state.extra is EmailMessage) {
               draft = state.extra as EmailMessage;
+            } else if (state.extra is Map<String, dynamic>) {
+              final map = state.extra as Map<String, dynamic>;
+              if (map['draft'] != null) {
+                draft = map['draft'] as EmailMessage;
+              }
+              if (map['isFromAi'] == true) {
+                isFromAi = true;
+              }
             }
 
-            return compose.ComposeMailScreen(editingMail: mailItem, draft: draft);
+            return compose.ComposeMailScreen(
+              editingMail: mailItem, 
+              draft: draft,
+              isFromAi: isFromAi,
+            );
           },
         ),
         GoRoute(
@@ -352,6 +375,26 @@ class AppRoutes {
           name: 'security',
           builder: (context, state) => const SecurityScreen(),
         ),
+      GoRoute(
+          path: '/settings/priority',
+          name: 'priorityEmails',
+          builder: (context, state) => const PriorityEmailsScreen(),
+        ),
+        GoRoute(
+          path: '/support',
+          name: 'support',
+          builder: (context, state) => const SupportScreen(),
+        ),
+        GoRoute(
+          path: '/privacy',
+          name: 'privacy',
+          builder: (context, state) => const LegalScreen(initialIndex: 0),
+        ),
+        GoRoute(
+          path: '/terms',
+          name: 'terms',
+          builder: (context, state) => const LegalScreen(initialIndex: 1),
+        ),
       ],
       errorBuilder:
           (context, state) => Scaffold(
@@ -367,7 +410,7 @@ class AppRoutes {
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => context.go(home),
+                    onPressed: () => context.push(home),
                     child: const Text('Go Home'),
                   ),
                 ],

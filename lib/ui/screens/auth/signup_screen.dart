@@ -289,7 +289,7 @@ class _SignupScreenState extends State<SignupScreen> {
       selected: AuthTab.signup,
       onChanged: (value) {
         if (value == AuthTab.login) {
-          context.go('/login');
+          context.push('/login');
         }
       },
     );
@@ -728,7 +728,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const TextSpan(text: 'I agree to the '),
                 WidgetSpan(
                   child: GestureDetector(
-                    onTap: () => context.go('/terms'),
+                    onTap: () => context.push('/terms'),
                     child: Text(
                       'Terms of Service',
                       style: TextStyle(
@@ -744,7 +744,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const TextSpan(text: ' and '),
                 WidgetSpan(
                   child: GestureDetector(
-                    onTap: () => context.go('/privacy'),
+                    onTap: () => context.push('/privacy'),
                     child: Text(
                       'Privacy Policy',
                       style: TextStyle(
@@ -991,7 +991,7 @@ class _SignupScreenState extends State<SignupScreen> {
         );
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
-            context.go('/login');
+            context.push('/login');
           }
         });
       } else if (mounted && success == false) {

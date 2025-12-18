@@ -82,7 +82,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               top: screenHeight * headerTopPercent,
               left: screenWidth * 0.05,
               child: GestureDetector(
-                onTap: () => context.goNamed('login'),
+                onTap: () => context.pushNamed('login'),
                 child: Container(
                   width:
                       isSmallScreen
@@ -501,7 +501,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             width: double.infinity,
             height: buttonHeight - 4,
             child: TextButton(
-              onPressed: () => context.go('/login'),
+              onPressed: () => context.push('/login'),
               style: TextButton.styleFrom(
                 foregroundColor: colorScheme.onSurface.withValues(alpha: 0.7),
               ),
@@ -652,7 +652,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           width: double.infinity,
           height: buttonHeight,
           child: ElevatedButton(
-            onPressed: () => context.go('/login'),
+            onPressed: () => context.push('/login'),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF3B77D8),
               foregroundColor: Colors.white,
@@ -735,7 +735,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           ),
           const SizedBox(height: 16),
           GestureDetector(
-            onTap: () => context.go('/support'),
+            onTap: () => context.push('/support'),
             child: Row(
               children: [
                 Icon(

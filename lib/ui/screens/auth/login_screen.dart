@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -498,7 +499,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   final success = await authProvider.login(email, password);
                   if (success && context.mounted) {
                     await TaskManager().init(authProvider.user!.id!);
-                    context.goNamed('home');
+                    context.pushNamed('home');
                   } else if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -609,7 +610,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 await TaskManager().init(
                   context.read<AuthProvider>().user!.id!,
                 );
-                context.goNamed('home');
+                context.pushNamed('home');
               } else if (context.mounted) {
                 final errorMsg = context.read<AuthProvider>().errorMessage;
                 // Only show error if there's an actual error message (not null)
@@ -651,12 +652,33 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         const SizedBox(height: 12),
+        if (!Platform.isAndroid)
         SizedBox(
           width: double.infinity,
           height: buttonHeight,
           child: ElevatedButton(
             style: socialButtonStyle,
-            onPressed: () {},
+            onPressed: () async {
+              final success =
+                  await context.read<AuthProvider>().signInWithApple();
+              if (success && context.mounted) {
+                await TaskManager().init(
+                  context.read<AuthProvider>().user!.id!,
+                );
+                context.pushNamed('home');
+              } else if (context.mounted) {
+                final errorMsg = context.read<AuthProvider>().errorMessage;
+                if (errorMsg != null && errorMsg.isNotEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(errorMsg),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

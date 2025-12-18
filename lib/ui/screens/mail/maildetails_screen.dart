@@ -7,13 +7,16 @@ import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/models/email_message.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/user_provider.dart';
 import 'package:frontend/services/mail_service.dart';
+import 'package:frontend/providers/mail_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:frontend/ui/screens/mail/composemail_screen.dart';
-import 'package:audioplayers/audioplayers.dart'; // Added dependency import
+import 'package:audioplayers/audioplayers.dart'; // Keep for types if needed, or remove if provider manages completely. Provider exposes simple states.
+import 'package:frontend/providers/audio_provider.dart';
 
 class MailDetailScreen extends StatefulWidget {
   final EmailMessage email;
@@ -36,11 +39,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
   EmailMessage? _fullEmail;
   bool _isLoadingDetails = false;
 
-  // Audio state
-  // dynamic _audioPlayer; // Will lazy load audioplayers
-  bool _isPlaying = false;
-  bool _isAudioLoading = false;
-  bool _audioExpired = false;
+  bool _isSummarizing = false;
 
   // WebView controller for email body
   late final WebViewController _webViewController;
@@ -48,9 +47,8 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
   bool _hasWebViewError = false;
   double _contentHeight = 0;
 
-  // CRITICAL: The safety limit to prevent crashes on huge emails
-  // 4000 logical pixels is roughly 4-5 screens long. Safe for textures.
   static const double _maxSafeHeight = 4000.0;
+  
   @override
   void initState() {
     super.initState();
@@ -62,53 +60,36 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     _fetchEmailDetails();
     
     // Handle Auto-Play
-    if (widget.autoPlay && widget.audioUrl != null) {
-      _playAudio(widget.audioUrl!);
-    }
-  }
-
-  final AudioPlayer _player = AudioPlayer(); // Keep instance to control/stop
-
-  Future<void> _playAudio(String url) async {
-     setState(() {
-       _isAudioLoading = true;
-       _audioExpired = false;
-     });
-     
-     try {
-       await _player.play(UrlSource(url));
-       
-       if (mounted) {
-         setState(() {
-            _isPlaying = true;
-            _isAudioLoading = false;
-         });
-       }
-
-       _player.onPlayerComplete.listen((_) {
-          if (mounted) setState(() => _isPlaying = false);
+    if (widget.audioUrl != null) {
+       // Defer to ensure context is ready
+       WidgetsBinding.instance.addPostFrameCallback((_) {
+         if (widget.autoPlay) {
+            context.read<AudioProvider>().play(widget.audioUrl!);
+         }
        });
-       
-       print('▶️ Playing priority audio: $url');
-     } catch (e) {
-       print('❌ Error playing audio: $e');
-        if (mounted) {
-         setState(() {
-           _isAudioLoading = false;
-           _audioExpired = true; 
-           _isPlaying = false;
-         });
-         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(content: Text('Audio summary expired or unavailable')),
-         );
-       }
-     }
+    }
   }
 
   @override
   void dispose() {
-    _player.dispose();
+    // Optional: Stop audio when leaving screen? 
+    // context.read<AudioProvider>().stop(); 
+    // For now, let it play (like a mini-player would allow)
     super.dispose();
+  }
+
+  // Helper to toggle audio
+  void _toggleAudio() {
+    final provider = context.read<AudioProvider>();
+    final audioUrl = widget.audioUrl;
+    
+    if (audioUrl == null) return;
+
+    if (provider.isPlaying && provider.currentUrl == audioUrl) {
+      provider.pause();
+    } else {
+      provider.play(audioUrl);
+    }
   }
 
   void _initWebView() {
@@ -307,7 +288,13 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
         -webkit-transform: translateZ(0);
         transform: translateZ(0);
         will-change: scroll-position;
+        will-change: scroll-position;
+        line-height: 1.6; /* Fresher look */
+        font-size: 16px; /* Readability */
+        color: #$textColor;
       }
+      a { color: #2196F3; text-decoration: none; }
+      p { margin-bottom: 1.5em; }
       img { 
         max-width: 100% !important; 
         height: auto !important; 
@@ -370,11 +357,10 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     });
 
     try {
-      final auth = context.read<AuthProvider>();
-      final mailService = MailService(dio: auth.dio);
+    final mailProvider = context.read<MailProvider>();
 
-      // Try to fetch full email details from API
-      final response = await mailService.getEmailDetails(widget.email.id);
+    // Try to fetch full email details from API
+    final response = await mailProvider.getEmailDetails(widget.email.id);
 
       if (response != null) {
         // Parse the full email details from API
@@ -448,9 +434,9 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       }
 
       // Mark email as read when viewed
-      if (widget.email.isUnread) {
-        await mailService.markAsRead(widget.email.id);
-      }
+    if (widget.email.isUnread) {
+      await mailProvider.markAsRead(widget.email.id);
+    }
     } catch (e) {
       print('❌ Error fetching email details: $e');
       // Fallback to using existing email data
@@ -463,6 +449,39 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       setState(() {
         _isLoadingDetails = false;
       });
+    }
+  }
+
+  Future<void> _summarizeEmail() async {
+    setState(() => _isSummarizing = true);
+    try {
+      final summary = await context.read<MailProvider>().summarizeEmail(widget.email.id);
+      
+      if (mounted) {
+        if (summary != null) {
+           // Update full email with new summary if needed (though provider updates list)
+           // We might need to refresh local view if it depends on widget.email which is final
+           // But context.watch should handle list updates. 
+           // Local _fullEmail might need manual patch?
+           if (_fullEmail != null) {
+             setState(() {
+               _fullEmail = _fullEmail!.copyWith(summary: summary);
+             });
+           }
+        } else {
+           ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to generate summary')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error summarizing: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSummarizing = false);
     }
   }
 
@@ -602,6 +621,138 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     );
 
     context.push('/composemail', extra: mailItem);
+  }
+
+  Widget _buildAudioPlayer(ThemeData theme, bool isTablet) {
+    // Watch provider for updates
+    final provider = context.watch<AudioProvider>();
+    final isPlaying = provider.isPlaying;
+    final isLoading = provider.isLoading;
+    final currentUrl = provider.currentUrl;
+    
+    // Check if this specific email's audio is the one active in provider
+    // If provider URL matches widget.audioUrl, we reflect provider state.
+    // Otherwise, we are in "stopped" state for this specific UI.
+    final isActive = currentUrl == widget.audioUrl;
+    final showPlaying = isActive && isPlaying;
+    final showLoading = isActive && isLoading;
+    
+    // Duration/Position (only valid if active)
+    final position = isActive ? provider.position : Duration.zero;
+    final duration = isActive ? provider.duration : Duration.zero; // Max duration, usually known after start
+    
+    // Formatting helper
+    String formatDuration(Duration d) {
+       final minutes = d.inMinutes.remainder(60).toString().padLeft(1, '0');
+       final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+       return '$minutes:$seconds';
+    }
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: isTablet ? 20 : 16,
+        vertical: 12,
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+               // Play/Pause Button
+               Container(
+                 decoration: BoxDecoration(
+                   color: theme.colorScheme.surface,
+                   shape: BoxShape.circle,
+                   boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                 ),
+                 child: IconButton(
+                   iconSize: 32,
+                   icon: showLoading 
+                      ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Icon(
+                          showPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                          color: theme.colorScheme.primary,
+                        ),
+                   onPressed: _toggleAudio,
+                 ),
+               ),
+               
+               SizedBox(width: 16),
+               
+               // Info
+               Expanded(
+                 child: Column(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
+                      Text(
+                        'Priority Audio Summary',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                          fontSize: 14,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      if (isActive && duration.inSeconds > 0)
+                        Text(
+                          '${formatDuration(position)} / ${formatDuration(duration)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        )
+                      else 
+                        Text(
+                          'Tap to play',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                   ],
+                 ),
+               ),
+               
+               // Waveform or Visual (Static icon for now)
+               Icon(
+                 Icons.graphic_eq_rounded,
+                 color: showPlaying ? theme.colorScheme.primary : theme.colorScheme.onSurface.withValues(alpha: 0.2),
+               ),
+               SizedBox(width: 8),
+            ],
+          ),
+          
+          // Slider if active
+          if (isActive && duration.inSeconds > 0)
+            SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 2,
+                thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: RoundSliderOverlayShape(overlayRadius: 12),
+                activeTrackColor: theme.colorScheme.primary,
+                inactiveTrackColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+                thumbColor: theme.colorScheme.primary,
+              ),
+              child: Slider(
+                value: position.inSeconds.toDouble().clamp(0, duration.inSeconds.toDouble()),
+                min: 0,
+                max: duration.inSeconds.toDouble(),
+                onChanged: (val) {
+                   provider.seek(Duration(seconds: val.toInt()));
+                },
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   String _cleanHtml(String html) {
@@ -900,7 +1051,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                 borderRadius: BorderRadius.circular(24),
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  context.goNamed('mail');
+                  context.pushNamed('mail');
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(8),
@@ -912,37 +1063,90 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                 ),
               ),
             ),
-            title: Row(
-              children: [
-                _buildEnhancedAvatar(isTablet, theme),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.email.sender,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: isTablet ? 18 : 16,
-                        ),
-                      ),
-                      Text(
-                        widget.email.formattedTime,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.6,
-                          ),
-                          fontSize: isTablet ? 14 : 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            title: null, // Removed title from AppBar (Gmail style)
             actions: [
+              // Keep only essential actions in AppBar (VIP, etc)
+              // VIP Toggle
+              Builder(
+                builder: (context) {
+                  final senderEmail = widget.email.senderEmail;
+                  final isPriority = context
+                      .watch<UserProvider>()
+                      .priorityEmails
+                      .contains(senderEmail);
+                  
+                  return GestureDetector(
+                    onTap: () async {
+                      final userProvider = context.read<UserProvider>();
+                      final user = context.read<AuthProvider>().user;
+                       if (user == null || (user.uid == null && user.id == null)) return;
+              
+                      final userId = user.uid ?? user.id!;
+                      
+                      try {
+                        if (isPriority) {
+                          await userProvider.removePriorityEmail(userId, senderEmail);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Removed from VIP list')),
+                            );
+                          }
+                        } else {
+                          await userProvider.addPriorityEmail(userId, senderEmail);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Added to VIP list')),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                         if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to update VIP status')),
+                            );
+                          }
+                      }
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                         color: isPriority 
+                            ? Colors.orange.withValues(alpha: 0.2) 
+                            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isPriority 
+                              ? Colors.orange.withValues(alpha: 0.5) 
+                              : Colors.transparent,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                           Icon(
+                            isPriority ? Icons.star_rounded : Icons.star_outline_rounded,
+                            color: isPriority ? Colors.orange : theme.colorScheme.onSurfaceVariant,
+                            size: isTablet ? 18 : 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'VIP',
+                            style: TextStyle(
+                              color: isPriority ? Colors.orange : theme.colorScheme.onSurfaceVariant,
+                              fontSize: isTablet ? 12 : 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              ),
+              const SizedBox(width: 4),
+              // Removed Important Tag Here
+              /*
               if (widget.email.labelIds.contains('IMPORTANT'))
                 Container(
                   margin: const EdgeInsets.only(right: 8),
@@ -977,6 +1181,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                     ],
                   ),
                 ),
+                */
             ],
             floating: true, // Appears immediately on scroll up
             snap: true, // Snaps into view
@@ -987,7 +1192,19 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
           ),
 
           // The Metadata Section (Subject and Date)
-          SliverToBoxAdapter(child: _buildMetadataSection(theme, isTablet)),
+
+          // Audio Player Section (only if audioUrl is present)
+          if (widget.audioUrl != null)
+            SliverToBoxAdapter(child: _buildAudioPlayer(theme, isTablet)),
+
+          // The Metadata Section (Subject)
+          SliverToBoxAdapter(child: _buildSubjectSection(theme, isTablet)),
+
+          // The Sender Row (Avatar, Name, Detail Expansion)
+          SliverToBoxAdapter(child: _buildSenderSection(theme, isTablet)),
+          
+          // Summary Section (Button or Card)
+          SliverToBoxAdapter(child: _buildSummarySection(theme, isTablet)),
 
           // Attachments Section (if any)
           if (widget.email.hasAttachments && widget.email.attachments != null)
@@ -1012,6 +1229,9 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
   }
 
   Widget _buildEnhancedHeader(ThemeData theme, bool isTablet) {
+    final senderEmail = widget.email.senderEmail;
+    final isPriority = context.watch<UserProvider>().priorityEmails.contains(senderEmail);
+
     return Padding(
       padding: EdgeInsets.all(isTablet ? 20 : 16),
       child: Row(
@@ -1022,7 +1242,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
               borderRadius: BorderRadius.circular(24),
               onTap: () {
                 HapticFeedback.lightImpact();
-                context.goNamed('mail');
+                context.pushNamed('mail');
               },
               child: Padding(
                 padding: const EdgeInsets.all(8),
@@ -1059,6 +1279,75 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
               ],
             ),
           ),
+          // VIP Toggle Chip
+          GestureDetector(
+            onTap: () async {
+              final userProvider = context.read<UserProvider>();
+              final user = context.read<AuthProvider>().user;
+              if (user == null || (user.uid == null && user.id == null)) return;
+              
+              final userId = user.uid ?? user.id!;
+              
+              try {
+                if (isPriority) {
+                  await userProvider.removePriorityEmail(userId, senderEmail);
+                  if (mounted) {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Removed from VIP list')),
+                    );
+                  }
+                } else {
+                  await userProvider.addPriorityEmail(userId, senderEmail);
+                   if (mounted) {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Added to VIP list')),
+                    );
+                  }
+                }
+              } catch (e) {
+                 if (mounted) {
+                     ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to update VIP status')),
+                    );
+                  }
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isPriority 
+                    ? Colors.orange.withValues(alpha: 0.2) 
+                    : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isPriority 
+                      ? Colors.orange.withValues(alpha: 0.5) 
+                      : Colors.transparent,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   Icon(
+                    isPriority ? Icons.star_rounded : Icons.star_outline_rounded,
+                    color: isPriority ? Colors.orange : theme.colorScheme.onSurfaceVariant,
+                    size: isTablet ? 18 : 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'VIP',
+                    style: TextStyle(
+                      color: isPriority ? Colors.orange : theme.colorScheme.onSurfaceVariant,
+                      fontSize: isTablet ? 12 : 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
           if (widget.email.labelIds.contains('IMPORTANT'))
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1529,5 +1818,200 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
 
   bool _isUnread() {
     return widget.email.isUnread;
+  }
+
+  Widget _buildSubjectSection(ThemeData theme, bool isTablet) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        isTablet ? 24 : 20,
+        16,
+        isTablet ? 24 : 20,
+        12,
+      ),
+      child: SelectableText( // Use SelectableText for subject copy
+        _fullEmail?.subject ?? widget.email.subject,
+        style: theme.textTheme.headlineSmall?.copyWith( // Larger font like Gmail
+          fontWeight: FontWeight.w600,
+          fontSize: isTablet ? 24 : 22,
+          height: 1.3,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSenderSection(ThemeData theme, bool isTablet) {
+    final senderInitials = widget.email.senderInitials;
+    final sender = widget.email.sender;
+    final email = widget.email.senderEmail;
+    final date = widget.email.formattedTime;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 24 : 20,
+        vertical: 4,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar
+          Container(
+            width: isTablet ? 48 : 42,
+            height: isTablet ? 48 : 42,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              senderInitials,
+              style: TextStyle(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.bold,
+                fontSize: isTablet ? 18 : 16,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Info Column
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        sender,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isTablet ? 16 : 15,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      date,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                // Dropdown-like toggle (Visual only for now, can implement expansion later)
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'to me',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded, 
+                      size: 16, 
+                      color: theme.colorScheme.onSurfaceVariant
+                    )
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummarySection(ThemeData theme, bool isTablet) {
+    final summary = _fullEmail?.summary ?? widget.email.summary;
+    final hasSummary = summary != null && summary.isNotEmpty;
+
+    if (!hasSummary && !_isSummarizing) {
+       // Show "Summarize" Button
+       return Padding(
+         padding: EdgeInsets.symmetric(
+           horizontal: isTablet ? 24 : 20,
+           vertical: 12,
+         ),
+         child: Align(
+           alignment: Alignment.centerLeft,
+           child: OutlinedButton.icon(
+             onPressed: _summarizeEmail,
+             icon: Icon(Icons.auto_awesome, size: 18),
+             label: Text('Summarize with AI'),
+             style: OutlinedButton.styleFrom(
+               foregroundColor: theme.colorScheme.primary,
+               side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
+               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+             ),
+           ),
+         ),
+       );
+    }
+
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: isTablet ? 24 : 20,
+        vertical: 16,
+      ),
+      padding: EdgeInsets.all(isTablet ? 20 : 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+             theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+             theme.colorScheme.surface,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, size: 20, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'AI Summary',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+               if (_isSummarizing)
+                 SizedBox(
+                   width: 16, height: 16, 
+                   child: CircularProgressIndicator(strokeWidth: 2)
+                 ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_isSummarizing && !hasSummary)
+            Text(
+               'Generating summary...',
+               style: TextStyle(
+                 fontStyle: FontStyle.italic,
+                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+               ),
+            )
+          else
+            SelectableText(
+              summary ?? '',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.5,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

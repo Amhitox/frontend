@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/user_provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/mail_provider.dart';
 import 'package:frontend/models/user.dart';
+import 'package:frontend/services/mail_service.dart';
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
   @override
@@ -142,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => context.goNamed('settings'),
+            onTap: () => context.pushNamed('settings'),
             child: Container(
               width: isTablet ? 44 : 40,
               height: isTablet ? 44 : 40,
@@ -306,44 +308,86 @@ class _ProfileScreenState extends State<ProfileScreen>
     bool isLargeScreen,
     ThemeData theme,
   ) {
-    return _buildSection(
-      'Personal Information',
-      Icons.person_outline,
-      [
-        _buildFormField(
-          'First Name',
-          _firstNameController,
+    return Column(
+      children: [
+        _buildSection(
+          'Personal Information',
+          Icons.person_outline,
+          [
+            _buildFormField(
+              'First Name',
+              _firstNameController,
+              isTablet: isTablet,
+              theme: theme,
+            ),
+            _buildFormField(
+              'Last Name',
+              _lastNameController,
+              isTablet: isTablet,
+              theme: theme,
+            ),
+            _buildFormField(
+              'Email',
+              _emailController,
+              isTablet: isTablet,
+              theme: theme,
+            ),
+            _buildFormField(
+              'Work Email',
+              _workEmailController,
+              isTablet: isTablet,
+              theme: theme,
+            ),
+            _buildFormField(
+              'Language',
+              _langController,
+              isTablet: isTablet,
+              theme: theme,
+            ),
+          ],
           isTablet: isTablet,
+          isLargeScreen: isLargeScreen,
           theme: theme,
         ),
-        _buildFormField(
-          'Last Name',
-          _lastNameController,
+        SizedBox(height: isTablet ? 20 : 16),
+        _buildSection(
+          'Security',
+          Icons.lock_outline,
+          [
+            GestureDetector(
+              onTap: () => _changePassword(theme, isTablet),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isTablet ? 20 : 16,
+                  vertical: isTablet ? 16 : 12,
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      'Change Password',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        fontSize: isTablet ? 15 : 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(
+                       Icons.arrow_forward_ios,
+                       size: isTablet ? 16 : 14,
+                       color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
           isTablet: isTablet,
-          theme: theme,
-        ),
-        _buildFormField(
-          'Email',
-          _emailController,
-          isTablet: isTablet,
-          theme: theme,
-        ),
-        _buildFormField(
-          'Work Email',
-          _workEmailController,
-          isTablet: isTablet,
-          theme: theme,
-        ),
-        _buildFormField(
-          'Language',
-          _langController,
-          isTablet: isTablet,
+          isLargeScreen: isLargeScreen,
           theme: theme,
         ),
       ],
-      isTablet: isTablet,
-      isLargeScreen: isLargeScreen,
-      theme: theme,
     );
   }
   Widget _buildSection(
@@ -670,14 +714,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (currentUser == null) {
         throw Exception('No user logged in');
       }
+
+      final newWorkEmail = _workEmailController.text.trim().isEmpty ? null : _workEmailController.text.trim();
       final updatedUser = User(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         email: _emailController.text.trim(),
-        workEmail:
-            _workEmailController.text.trim().isEmpty
-                ? null
-                : _workEmailController.text.trim(),
+        workEmail: newWorkEmail,
         lang:
             _langController.text.trim().isEmpty
                 ? 'en'
@@ -687,13 +730,48 @@ class _ProfileScreenState extends State<ProfileScreen>
         status: currentUser.status,
         subscriptionTier: currentUser.subscriptionTier,
       );
-      final response = await _userProvider.updateUser(
-        currentUser.id,
-        updatedUser,
-      );
-      if (response != null) {
-        await _userProvider.updateUserData(updatedUser);
-        _authProvider.updateUserInMemory(updatedUser);
+
+      final userId = currentUser.uid ?? currentUser.id;
+    debugPrint('Updating user profile for ID: $userId');
+    
+    if (userId == null || userId.isEmpty) {
+      throw Exception('User ID is missing');
+    }
+
+    final response = await _userProvider.updateUser(
+      userId,
+      updatedUser,
+    );
+      if (response != null && response.statusCode == 200) {
+        
+        // Handle side effect: If work email changed, backend disconnected Gmail.
+        // We must reset local state.
+        if (currentUser.workEmail != newWorkEmail) {
+           if (mounted) {
+              final mailProvider = Provider.of<MailProvider>(context, listen: false);
+              await mailProvider.resetLocalState();
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Work email updated. Gmail disconnected.'),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+           }
+        }
+
+        final responseData = response.data;
+        if (responseData['user'] != null) {
+          final serverUser = User.fromJson(responseData['user']);
+          await _userProvider.updateUserData(serverUser);
+          _authProvider.updateUserInMemory(serverUser);
+        } else {
+           // Fallback if user object is not in response (though it should be)
+           await _userProvider.updateUserData(updatedUser);
+           _authProvider.updateUserInMemory(updatedUser);
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Profile saved successfully!'),
@@ -701,7 +779,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             behavior: SnackBarBehavior.floating,
           ),
         );
-        context.goNamed('settings');
+        context.pushNamed('settings');
       } else {
         throw Exception('Failed to update profile');
       }
@@ -719,4 +797,118 @@ class _ProfileScreenState extends State<ProfileScreen>
       });
     }
   }
+
+  void _changePassword(ThemeData theme, bool isTablet) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            backgroundColor: theme.colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+            ),
+            title: Text(
+              'Change Password',
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
+                fontSize: isTablet ? 20 : 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  obscureText: true,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: isTablet ? 16 : 14,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Current Password',
+                    labelStyle: TextStyle(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: theme.colorScheme.primary),
+                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                    ),
+                  ),
+                ),
+                SizedBox(height: isTablet ? 20 : 16),
+                TextField(
+                  obscureText: true,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: isTablet ? 16 : 14,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'New Password',
+                    labelStyle: TextStyle(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: theme.colorScheme.primary),
+                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: isTablet ? 16 : 14,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Password updated successfully!'),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
+                  ),
+                ),
+                child: Text(
+                  'Update',
+                  style: TextStyle(
+                    color: theme.colorScheme.onPrimary,
+                    fontSize: isTablet ? 16 : 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
 }
+

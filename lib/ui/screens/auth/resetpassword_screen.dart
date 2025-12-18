@@ -83,7 +83,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
               top: screenHeight * headerTopPercent,
               left: screenWidth * 0.05,
               child: GestureDetector(
-                onTap: () => context.goNamed('login'),
+                onTap: () => context.pushNamed('login'),
                 child: Container(
                   width:
                       isSmallScreen
@@ -523,7 +523,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             width: double.infinity,
             height: buttonHeight - 4,
             child: TextButton(
-              onPressed: () => context.go('/login'),
+              onPressed: () => context.push('/login'),
               style: TextButton.styleFrom(
                 foregroundColor: colorScheme.onSurface.withValues(alpha: 0.7),
               ),
@@ -578,7 +578,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         );
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
-            context.goNamed('login');
+            context.pushNamed('login');
           }
         });
       } else if (mounted) {

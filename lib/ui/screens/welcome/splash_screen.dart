@@ -88,18 +88,28 @@ class _SplashScreenState extends State<SplashScreen>
     final auth = context.read<AuthProvider>();
     final pref = await SharedPreferences.getInstance();
     final firstOpen = pref.getBool("firstOpen") ?? true;
+    // Check if we are still on the splash screen before navigating
+    // This prevents overwriting deep link navigations that might have happened
+    final router = GoRouter.of(context);
+    final currentLoc = router.routerDelegate.currentConfiguration.uri.toString();
+    
+    if (currentLoc != '/splash') {
+      print('⚠️ Navigation interrupted: User already at $currentLoc');
+      return;
+    }
+
     if (firstOpen) {
       if (mounted) {
-        context.go('/onboarding');
+        context.push('/onboarding');
       }
     } else {
       if (auth.isLoggedIn) {
         if (mounted) {
-          context.go('/');
+          context.push('/');
         }
       } else {
         if (mounted) {
-          context.go('/login');
+          context.push('/login');
         }
       }
     }

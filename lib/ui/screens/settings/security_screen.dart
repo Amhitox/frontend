@@ -76,9 +76,8 @@ class _SecurityScreenState extends State<SecurityScreen>
                           theme,
                         ),
                         SizedBox(height: isTablet ? 20 : 16),
-                        _buildPrivacySection(isTablet, isLargeScreen, theme),
                         SizedBox(height: isTablet ? 20 : 16),
-                        _buildActivitySection(isTablet, isLargeScreen, theme),
+                        _buildPrivacySection(isTablet, isLargeScreen, theme),
                         SizedBox(height: isTablet ? 48 : 40),
                       ],
                     ),
@@ -103,7 +102,7 @@ class _SecurityScreenState extends State<SecurityScreen>
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => context.goNamed('settings'),
+            onTap: () => context.pushNamed('settings'),
             child: Container(
               width: isTablet ? 44 : 40,
               height: isTablet ? 44 : 40,
@@ -257,24 +256,6 @@ class _SecurityScreenState extends State<SecurityScreen>
           isTablet: isTablet,
           theme: theme,
         ),
-        _buildSwitchItem(
-          'Two-Factor Authentication',
-          _twoFactorEnabled ? 'Enabled via SMS' : 'Add extra security layer',
-          Icons.verified_user,
-          _twoFactorEnabled,
-          (value) => setState(() => _twoFactorEnabled = value),
-          isTablet: isTablet,
-          theme: theme,
-        ),
-        _buildSwitchItem(
-          'Biometric Login',
-          'Use fingerprint or face recognition',
-          Icons.fingerprint,
-          _biometricEnabled,
-          (value) => setState(() => _biometricEnabled = value),
-          isTablet: isTablet,
-          theme: theme,
-        ),
       ],
       isTablet: isTablet,
       isLargeScreen: isLargeScreen,
@@ -290,23 +271,6 @@ class _SecurityScreenState extends State<SecurityScreen>
       'Privacy & Lock',
       Icons.privacy_tip_outlined,
       [
-        _buildSwitchItem(
-          'Auto Lock',
-          'Lock app when inactive',
-          Icons.lock_clock,
-          _autoLock,
-          (value) => setState(() => _autoLock = value),
-          isTablet: isTablet,
-          theme: theme,
-        ),
-        _buildSecurityItem(
-          'Auto Lock Timer',
-          'Lock after: $_autoLockTime',
-          Icons.schedule,
-          onTap: () => _changeAutoLockTime(theme, isTablet),
-          isTablet: isTablet,
-          theme: theme,
-        ),
         _buildSecurityItem(
           'Login History',
           'View recent login activity',
@@ -713,7 +677,7 @@ class _SecurityScreenState extends State<SecurityScreen>
     );
   }
   void _showLoginHistory() {
-    context.go('/login-history');
+    context.push('/login-history');
   }
   void _showActiveSessions(ThemeData theme, bool isTablet) {
     showDialog(

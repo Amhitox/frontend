@@ -91,6 +91,29 @@ class AuthService {
     }
   }
 
+  Future<dynamic> signInWithApple(
+    String idToken,
+    String? firstName,
+    String? lastName,
+    Map<String, String>? fcmData,
+  ) async {
+    try {
+      final data = {
+        'token': idToken,
+        if (firstName != null) 'firstName': firstName,
+        if (lastName != null) 'lastName': lastName,
+        if (fcmData != null) ...fcmData,
+      };
+      final response = await _dio.post(
+        '/api/auth/Oauth/apple',
+        data: data,
+      );
+      return response;
+    } on DioException catch (e) {
+      return e.response;
+    }
+  }
+
   Future<dynamic> forgotPassword(String email) async {
     try {
       final response = await _dio.post(

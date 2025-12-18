@@ -5,7 +5,6 @@ import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/calendar_view.dart';
-import 'package:frontend/ui/widgets/sync_status_indicator.dart';
 import 'package:frontend/utils/data_key.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +12,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
 import '../../../utils/localization.dart';
+import 'package:intl/intl.dart';
 
 class TaskScreen extends StatefulWidget {
   final List<Task> tasks;
@@ -346,8 +346,6 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                         fontSize: isTablet ? 16 : 14,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const SyncStatusIndicator(),
                   ],
                 ),
               ],
@@ -988,33 +986,38 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   Widget _buildCheckboxButton(Task task, bool isTablet) {
     final size = isTablet ? 28.0 : 24.0;
+    // Increase hitbox with outer transparent container
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: task.isCompleted! ? Colors.green : Colors.transparent, 
-        shape: BoxShape.circle,
-        border: Border.all(
-          color:
-              task.isCompleted!
-                  ? Colors.green
-                  : Theme.of(
-                    context,
-                  ).colorScheme.outline.withValues(alpha: 0.4),
-          width: 2,
+      padding: const EdgeInsets.all(12.0), // Hitbox padding
+      color: Colors.transparent,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: task.isCompleted! ? Colors.green : Colors.transparent, 
+          shape: BoxShape.circle,
+          border: Border.all(
+            color:
+                task.isCompleted!
+                    ? Colors.green
+                    : Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.4),
+            width: 2,
+          ),
         ),
-      ),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
-        child:
-            task.isCompleted!
-                ? Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: isTablet ? 16 : 14,
-                  key: const ValueKey('check'),
-                )
-                : const SizedBox.shrink(key: ValueKey('empty')),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child:
+              task.isCompleted!
+                  ? Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: isTablet ? 16 : 14,
+                    key: const ValueKey('check'),
+                  )
+                  : const SizedBox.shrink(key: ValueKey('empty')),
+        ),
       ),
     );
   }
@@ -1098,7 +1101,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   }
 
   String _getDateLabel() {
-    return '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}';
+    return DateFormat('EEEE d MMM, y').format(_selectedDate);
   }
 
   void _showTaskDetails(Task task, bool isTablet) {
@@ -1186,19 +1189,12 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   ],
 
                   _buildDetailRow(
-                    Icons.calendar_today_rounded,
-                    "Date",
-                    _getDateLabel(),
-                    theme,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDetailRow(
-                    Icons.access_time_rounded,
-                    "Time",
-                    DataKey.formatTime(task.dueDate!),
-                    theme,
-                  ),
-                  const SizedBox(height: 24),
+                  Icons.calendar_today_rounded,
+                  "Date & Time",
+                  "${DateFormat('EEEE d MMM, y').format(_selectedDate)} ${DataKey.formatTime(task.dueDate!)}",
+                  theme,
+                ),
+                const SizedBox(height: 24),
                   
                   _buildDetailRow(
                     Icons.category_outlined,

@@ -13,6 +13,9 @@ class AppLocalizations {
       _AppLocalizationsDelegate();
 
   // Common strings
+  String get retry => _localizedValues[locale.languageCode]!['retry']!;
+  String get emails => _localizedValues[locale.languageCode]!['emails']!;
+  String get errorLoadingAnalytics => _localizedValues[locale.languageCode]!['errorLoadingAnalytics']!;
   String get appTitle => _localizedValues[locale.languageCode]!['appTitle']!;
   String get tasks => _localizedValues[locale.languageCode]!['tasks']!;
   String get completeTask => _localizedValues[locale.languageCode]!['completeTask']!;
@@ -248,8 +251,106 @@ class AppLocalizations {
       _localizedValues[locale.languageCode]!['updateTask']!;
   String get createTask =>
       _localizedValues[locale.languageCode]!['createTask']!;
+  String get legalPrivacyPolicy =>
+      _localizedValues[locale.languageCode]!['legal_privacy_policy']!;
+  String get legalTermsOfService =>
+      _localizedValues[locale.languageCode]!['legal_terms_of_service']!;
+  String get howCanWeHelp =>
+      _localizedValues[locale.languageCode]!['howCanWeHelp']!;
+  String get supportDescription =>
+      _localizedValues[locale.languageCode]!['supportDescription']!;
+  String get emailUs => _localizedValues[locale.languageCode]!['emailUs']!;
+
+  // Notifications
+  String get markAllAsRead => _localizedValues[locale.languageCode]!['markAllAsRead']!;
+  String get clearAll => _localizedValues[locale.languageCode]!['clearAll']!;
+  String get unread => _localizedValues[locale.languageCode]!['unread']!;
+  String get noNotifications => _localizedValues[locale.languageCode]!['noNotifications']!;
+  String get caughtUp => _localizedValues[locale.languageCode]!['caughtUp']!;
+  String get playSummary => _localizedValues[locale.languageCode]!['playSummary']!;
+  String get confirmMarkAllRead => _localizedValues[locale.languageCode]!['confirmMarkAllRead']!;
+  
+  // Analytics
+  String get analyticsDashboard => _localizedValues[locale.languageCode]!['analyticsDashboard']!;
+  String get analyticsSubtitle => _localizedValues[locale.languageCode]!['analyticsSubtitle']!;
+  String get productivityScore => _localizedValues[locale.languageCode]!['productivityScore']!;
+  String get emailsSent => _localizedValues[locale.languageCode]!['emailsSent']!;
+  String get emailsReceived => _localizedValues[locale.languageCode]!['emailsReceived']!;
+  String get tasksCompleted => _localizedValues[locale.languageCode]!['tasksCompleted']!;
+  String get meetingDuration => _localizedValues[locale.languageCode]!['meetingDuration']!;
+  String get focusTime => _localizedValues[locale.languageCode]!['focusTime']!;
+  String get keyInsights => _localizedValues[locale.languageCode]!['keyInsights']!;
+  String get activityTrends => _localizedValues[locale.languageCode]!['activityTrends']!;
+  String get score => _localizedValues[locale.languageCode]!['score']!;
+  String get savedTo => _localizedValues[locale.languageCode]!['savedTo']!;
+  String get failedToGenerate => _localizedValues[locale.languageCode]!['failedToGenerate']!;
+
+  // Email
+  String get inbox => _localizedValues[locale.languageCode]!['inbox']!;
+  String get sent => _localizedValues[locale.languageCode]!['sent']!;
+  String get drafts => _localizedValues[locale.languageCode]!['drafts']!;
+  String get important => _localizedValues[locale.languageCode]!['important']!;
+  String get trash => _localizedValues[locale.languageCode]!['trash']!;
+  String get searchMail => _localizedValues[locale.languageCode]!['searchMail']!;
+  String get messages => _localizedValues[locale.languageCode]!['messages']!;
+  String get markAsRead => _localizedValues[locale.languageCode]!['markAsRead']!;
+  String get markAsUnread => _localizedValues[locale.languageCode]!['markAsUnread']!;
+  String get emptyInbox => _localizedValues[locale.languageCode]!['emptyInbox']!;
+  String get emptyDrafts => _localizedValues[locale.languageCode]!['emptyDrafts']!;
+  String get emptySent => _localizedValues[locale.languageCode]!['emptySent']!;
+  String get emptyTrash => _localizedValues[locale.languageCode]!['emptyTrash']!;
+  String get connectGmail => _localizedValues[locale.languageCode]!['connectGmail']!;
+  String get connectDescription => _localizedValues[locale.languageCode]!['connectDescription']!;
+  String get deleteEmail => _localizedValues[locale.languageCode]!['deleteEmail']!;
+  String get confirmDeleteEmail => _localizedValues[locale.languageCode]!['confirmDeleteEmail']!;
+  String get connectEmailAccount => _localizedValues[locale.languageCode]!['connectEmailAccount']!;
+  String get noEmailsFound => _localizedValues[locale.languageCode]!['noEmailsFound']!;
+  String get somethingWentWrong => _localizedValues[locale.languageCode]!['somethingWentWrong']!;
+
+  String get reply => _localizedValues[locale.languageCode]!['reply']!;
+  String get replyAll => _localizedValues[locale.languageCode]!['replyAll']!;
+  String get forward => _localizedValues[locale.languageCode]!['forward']!;
+  String get vip => _localizedValues[locale.languageCode]!['vip']!;
+  String get addedToVIP => _localizedValues[locale.languageCode]!['addedToVIP']!;
+  String get removedFromVIP => _localizedValues[locale.languageCode]!['removedFromVIP']!;
+  String get vipStatusUpdateFailed => _localizedValues[locale.languageCode]!['vipStatusUpdateFailed']!;
+  String get loadingEmail => _localizedValues[locale.languageCode]!['loadingEmail']!;
+  String get failedToLoadEmail => _localizedValues[locale.languageCode]!['failedToLoadEmail']!;
+  String get noContentAvailable => _localizedValues[locale.languageCode]!['noContentAvailable']!;
+  String get priorityAudioSummary => _localizedValues[locale.languageCode]!['priorityAudioSummary']!;
+  String get tapToPlay => _localizedValues[locale.languageCode]!['tapToPlay']!;
+
+  String get compose => _localizedValues[locale.languageCode]!['compose']!;
+  String get editMessage => _localizedValues[locale.languageCode]!['editMessage']!;
+  String get to => _localizedValues[locale.languageCode]!['to']!;
+  String get cc => _localizedValues[locale.languageCode]!['cc']!;
+  String get bcc => _localizedValues[locale.languageCode]!['bcc']!;
+  String get subject => _localizedValues[locale.languageCode]!['subject']!;
+  String get send => _localizedValues[locale.languageCode]!['send']!;
+  String get sending => _localizedValues[locale.languageCode]!['sending']!;
+  String get attachments => _localizedValues[locale.languageCode]!['attachments']!;
+  String get total => _localizedValues[locale.languageCode]!['total']!;
+  String get messageSent => _localizedValues[locale.languageCode]!['messageSent']!;
+  String get draftSaved => _localizedValues[locale.languageCode]!['draftSaved']!;
+  String get draftEmpty => _localizedValues[locale.languageCode]!['draftEmpty']!;
+  String get attachmentRemoved => _localizedValues[locale.languageCode]!['attachmentRemoved']!;
+  String get fileTooLarge => _localizedValues[locale.languageCode]!['fileTooLarge']!;
+  String get voiceRefinementLimit => _localizedValues[locale.languageCode]!['voiceRefinementLimit']!;
+  String get listeningTapStop => _localizedValues[locale.languageCode]!['listeningTapStop']!;
+  String get transcribing => _localizedValues[locale.languageCode]!['transcribing']!;
+  String get noVoiceDetected => _localizedValues[locale.languageCode]!['noVoiceDetected']!;
+  String get refinementFailed => _localizedValues[locale.languageCode]!['refinementFailed']!;
+  String get emailRefined => _localizedValues[locale.languageCode]!['emailRefined']!;
+  String get pleaseAddRecipient => _localizedValues[locale.languageCode]!['pleaseAddRecipient']!;
+  String get pleaseAddSubject => _localizedValues[locale.languageCode]!['pleaseAddSubject']!;
+
+
+
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
+      'retry': 'Retry',
+      'emails': 'Emails',
+      'errorLoadingAnalytics': 'Error loading analytics',
       'appTitle': 'Aixy',
       'tasks': 'Tasks',
       'completeTask': 'Complete Task',
@@ -401,7 +502,7 @@ class AppLocalizations {
       'termsOfService': 'Terms of Service',
       'termsAndConditions': 'Terms and conditions of use',
       'appVersion': 'App Version',
-      'version123': 'Version 1.0.0',
+      'version123': 'Version 0.0.1',
       'appPreferences': 'App Preferences',
       'selectDate': 'Select Date',
       'pleaseEnterATaskTitle': 'Please enter a task title',
@@ -429,8 +530,100 @@ class AppLocalizations {
       'other': 'Other',
       'updateTask': 'Update Task',
       'createTask': 'Create Task',
+      'legal_privacy_policy': 'This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service...',
+      'legal_terms_of_service': 'Please read these terms and conditions carefully before using Our Service...',
+      'howCanWeHelp': 'How can we help?',
+      'supportDescription': 'For any questions, feedback, or issues,\nplease contact our development team directly.',
+      'emailUs': 'Email Us',
+
+      // Notifications
+      'markAllAsRead': 'Mark All as Read',
+      'clearAll': 'Clear All',
+      'unread': 'Unread',
+      'noNotifications': 'No Notifications',
+      'caughtUp': 'You\'re all caught up!',
+      'playSummary': 'Play Summary',
+      'confirmMarkAllRead': 'Are you sure you want to mark all notifications as read?',
+
+      // Analytics
+      'analyticsDashboard': 'Analytics Dashboard',
+      'analyticsSubtitle': 'Track your productivity & performance',
+      'productivityScore': 'Productivity Score',
+      'emailsSent': 'Emails Sent',
+      'emailsReceived': 'Emails Received',
+      'tasksCompleted': 'Tasks Completed',
+      'meetingDuration': 'Meeting Duration',
+      'focusTime': 'Focus Time',
+      'keyInsights': 'Key Insights',
+      'activityTrends': 'Activity Trends',
+      'score': 'Score',
+      'savedTo': 'Saved to',
+      'failedToGenerate': 'Failed to generate report',
+
+      // Email
+      'inbox': 'Inbox',
+      'sent': 'Sent',
+      'drafts': 'Drafts',
+      'important': 'Important',
+      'trash': 'Trash',
+      'searchMail': 'Search mail...',
+      'messages': 'messages',
+      'markAsRead': 'Mark as Read',
+      'markAsUnread': 'Mark as Unread',
+      'emptyInbox': 'Your inbox is empty',
+      'emptyDrafts': 'No drafts saved',
+      'emptySent': 'No sent messages',
+      'emptyTrash': 'Trash is empty',
+      'connectGmail': 'Connect Gmail',
+      'connectDescription': 'Connect your Gmail account to manage emails and get AI summaries.',
+      'deleteEmail': 'Delete Email',
+      'confirmDeleteEmail': 'Are you sure you want to delete this email?',
+      'connectEmailAccount': 'Connect Email Account',
+      'noEmailsFound': 'No emails found',
+      'somethingWentWrong': 'Something went wrong',
+      'reply': 'Reply',
+      'replyAll': 'Reply All',
+      'forward': 'Forward',
+      'vip': 'VIP',
+      'addedToVIP': 'Added to VIP list',
+      'removedFromVIP': 'Removed from VIP list',
+      'vipStatusUpdateFailed': 'Failed to update VIP status',
+      'loadingEmail': 'Loading email...',
+      'failedToLoadEmail': 'Failed to load email content',
+      'noContentAvailable': 'No content available',
+      'priorityAudioSummary': 'Priority Audio Summary',
+      'tapToPlay': 'Tap to play',
+      'compose': 'Compose',
+      'editMessage': 'Edit Message',
+      'to': 'To',
+      'cc': 'Cc',
+      'bcc': 'Bcc',
+      'subject': 'Subject',
+      'send': 'Send',
+      'sending': 'Sending...',
+      'attachments': 'Attachments',
+      'total': 'Total',
+      'messageSent': 'Message sent successfully',
+      'draftSaved': 'Draft saved successfully',
+      'draftEmpty': 'Draft is empty',
+      'attachmentRemoved': 'Attachment removed',
+      'fileTooLarge': 'File is too large (max 25MB)',
+      'voiceRefinementLimit': 'Voice refinement limit reached (2/2). Edit manually.',
+      'listeningTapStop': 'Listening... Tap stop to refine.',
+      'transcribing': 'Transcribing...',
+      'noVoiceDetected': 'No voice detected',
+      'refinementFailed': 'Refinement failed',
+      'emailRefined': 'Email refined by AI',
+      'pleaseAddRecipient': 'Please add at least one recipient',
+      'pleaseAddSubject': 'Please add a subject',
+
+
+
     },
     'fr': {
+      'retry': 'Réessayer',
+      'emails': 'Emails',
+      'errorLoadingAnalytics': 'Erreur de chargement des analyses',
       'appTitle': 'Aixy',
       'tasks': 'Tâches',
       'completeTask': 'Terminer la tâche',
@@ -613,6 +806,95 @@ class AppLocalizations {
       'other': 'Autre',
       'updateTask': 'Mettre à jour la tâche',
       'createTask': 'Créer la tâche',
+      'legal_privacy_policy': 'Cette Politique de Confidentialité décrit nos politiques et procédures sur la collecte, l\'utilisation et la divulgation de vos informations lorsque vous utilisez le Service...',
+      'legal_terms_of_service': 'Veuillez lire attentivement ces termes et conditions avant d\'utiliser notre Service...',
+      'howCanWeHelp': 'Comment pouvons-nous vous aider ?',
+      'supportDescription': 'Pour toute question, retour ou problème,\nveuillez contacter notre équipe de développement directement.',
+      'emailUs': 'Envoyez-nous un email',
+
+      // Notifications
+      'markAllAsRead': 'Tout marquer comme lu',
+      'clearAll': 'Tout effacer',
+      'unread': 'Non lu',
+      'noNotifications': 'Aucune notification',
+      'caughtUp': 'Vous êtes à jour !',
+      'playSummary': 'Écouter le résumé',
+      'confirmMarkAllRead': 'Êtes-vous sûr de vouloir marquer toutes les notifications comme lues ?',
+
+      // Analytics
+      'analyticsDashboard': 'Tableau de bord',
+      'analyticsSubtitle': 'Suivez votre productivité et performance',
+      'productivityScore': 'Score de productivité',
+      'emailsSent': 'Emails envoyés',
+      'emailsReceived': 'Emails reçus',
+      'tasksCompleted': 'Tâches terminées',
+      'meetingDuration': 'Durée des réunions',
+      'focusTime': 'Temps de concentration',
+      'keyInsights': 'Insights clés',
+      'activityTrends': 'Tendances d\'activité',
+      'score': 'Score',
+      'savedTo': 'Enregistré dans',
+      'failedToGenerate': 'Échec de la génération du rapport',
+
+      // Email
+      'inbox': 'Boîte de réception',
+      'sent': 'Envoyés',
+      'drafts': 'Brouillons',
+      'important': 'Important',
+      'trash': 'Corbeille',
+      'searchMail': 'Rechercher un courriel...',
+      'messages': 'messages',
+      'markAsRead': 'Marquer comme lu',
+      'markAsUnread': 'Marquer comme non lu',
+      'emptyInbox': 'Votre boîte de réception est vide',
+      'emptyDrafts': 'Aucun brouillon',
+      'emptySent': 'Aucun message envoyé',
+      'emptyTrash': 'La corbeille est vide',
+      'connectGmail': 'Connecter Gmail',
+      'connectDescription': 'Connectez votre compte Gmail pour gérer vos emails et obtenir des résumés IA.',
+      'deleteEmail': 'Supprimer l\'email',
+      'confirmDeleteEmail': 'Êtes-vous sûr de vouloir supprimer cet email ?',
+      'connectEmailAccount': 'Connecter un compte email',
+      'noEmailsFound': 'Aucun email trouvé',
+      'somethingWentWrong': 'Quelque chose s\'est mal passé',
+      'reply': 'Répondre',
+      'replyAll': 'Répondre à tous',
+      'forward': 'Transférer',
+      'vip': 'VIP',
+      'addedToVIP': 'Ajouté à la liste VIP',
+      'removedFromVIP': 'Retiré de la liste VIP',
+      'vipStatusUpdateFailed': 'Échec de la mise à jour du statut VIP',
+      'loadingEmail': 'Chargement de l\'email...',
+      'failedToLoadEmail': 'Échec du chargement du contenu de l\'email',
+      'noContentAvailable': 'Aucun contenu disponible',
+      'priorityAudioSummary': 'Résumé audio prioritaire',
+      'tapToPlay': 'Appuyez pour lire',
+      'compose': 'Nouveau message',
+      'editMessage': 'Modifier le message',
+      'to': 'À',
+      'cc': 'Cc',
+      'bcc': 'Cci',
+      'subject': 'Objet',
+      'send': 'Envoyer',
+      'sending': 'Envoi...',
+      'attachments': 'Pièces jointes',
+      'total': 'Total',
+      'messageSent': 'Message envoyé avec succès',
+      'draftSaved': 'Brouillon enregistré avec succès',
+      'draftEmpty': 'Le brouillon est vide',
+      'attachmentRemoved': 'Pièce jointe supprimée',
+      'fileTooLarge': 'Le fichier est trop volumineux (max 25 Mo)',
+      'voiceRefinementLimit': 'Limite de raffinement vocal atteinte (2/2). Modifiez manuellement.',
+      'listeningTapStop': 'Écoute... Appuyez sur stop pour affiner.',
+      'transcribing': 'Transcription...',
+      'noVoiceDetected': 'Aucune voix détectée',
+      'refinementFailed': 'Échec du raffinement',
+      'emailRefined': 'Email affiné par l\'IA',
+      'pleaseAddRecipient': 'Veuillez ajouter au moins un destinataire',
+      'pleaseAddSubject': 'Veuillez ajouter un objet',
+
+
+
     },
   };
 }

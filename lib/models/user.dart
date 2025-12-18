@@ -23,13 +23,13 @@ class User {
   });
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      uid: json['uid'] as String?,
+      uid: (json['uid'] ?? json['id']) as String?,
       email: json['email'] as String?,
       lang: json['lang'] as String?,
       lastName: json['lastName'] as String?,
       status: json['status'] as String?,
       firstName: json['firstName'] as String?,
-      id: json['id'] as String?,
+      id: (json['id'] ?? json['uid']) as String?,
       workEmail: json['workEmail'] as String?,
       subscriptionTier: json['subscriptionTier'] as String?,
     );

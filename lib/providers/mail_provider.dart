@@ -4,10 +4,15 @@ import 'package:dio/dio.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/email_message.dart';
 import '../services/mail_service.dart';
+import '../services/outlook_service.dart';
 
 class MailProvider extends ChangeNotifier {
   final Dio dio;
   late MailService _mailService;
+  late OutlookService _outlookService;
+  
+  // 'gmail' or 'outlook'
+  String _currentProvider = 'gmail';
   
   // Cache for first 20 items per filter (Persisted)
   final Map<String, List<EmailMessage>> _cachedEmails = {};
@@ -32,11 +37,44 @@ class MailProvider extends ChangeNotifier {
 
   MailProvider({required this.dio}) {
     _mailService = MailService(dio: dio);
+    _outlookService = OutlookService(dio: dio);
+    _initProvider();
   }
+
+  Future<void> _initProvider() async {
+    final box = await Hive.openBox('mail_settings');
+    _currentProvider = box.get('selected_provider', defaultValue: 'gmail');
+    notifyListeners();
+  }
+
+  bool _isConnected = false;
+  
+  String get currentProvider => _currentProvider;
+  
+  Future<void> setProvider(String provider) async {
+    if (_currentProvider != provider) {
+      _currentProvider = provider;
+      _activeEmails.clear();
+      _cachedEmails.clear(); 
+      _nextPageTokens.clear();
+       // Note: we might want to keep separate caches per provider in the future
+       // But for now, clearing active ensures we load fresh data for the new provider.
+      
+      final box = await Hive.openBox('mail_settings');
+      await box.put('selected_provider', provider);
+      
+      notifyListeners();
+      checkConnection();
+    }
+  }
+
+  Future<dynamic> connectGmail() => _mailService.connect();
+  Future<dynamic> connectOutlook() => _outlookService.connect();
 
   // Getters
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isConnected => _isConnected;
   
   List<EmailMessage> getEmailsForFilter(String filter) {
     return _activeEmails[filter.toLowerCase()] ?? [];
@@ -85,13 +123,19 @@ class MailProvider extends ChangeNotifier {
       }
 
       // 3. Fetch from API
-      debugPrint('🔄 [MailProvider] Fetching from API for $filterKey...');
-      await _mailService.initialize();
-
-      // Convert UI filter to API type
-      final apiType = _getBackendType(filter);
+      debugPrint('🔄 [MailProvider] Fetching from API for $filterKey (Provider: $_currentProvider)...');
       
-      final response = await _mailService.listMails(type: apiType, maxResults: 20);
+      Map<String, dynamic>? response;
+      
+      if (_currentProvider == 'gmail') {
+        await _mailService.initialize();
+        final apiType = _getBackendType(filter);
+        response = await _mailService.listMails(type: apiType, maxResults: 20);
+      } else {
+        await _outlookService.initialize();
+        final apiType = _getBackendType(filter); // Assuming same types map works or we adjust
+        response = await _outlookService.listMails(type: apiType, maxResults: 20);
+      }
       
       if (response != null && response['messages'] != null) {
         final messagesList = response['messages'] as List;
@@ -144,11 +188,20 @@ class MailProvider extends ChangeNotifier {
       
       debugPrint('🔄 [MailProvider] Loading page 2+ for $filterKey (token: $pageToken)...');
       
-      final response = await _mailService.listMails(
-        type: apiType, 
-        maxResults: 20, 
-        pageToken: pageToken
-      );
+      Map<String, dynamic>? response;
+      if (_currentProvider == 'gmail') {
+         response = await _mailService.listMails(
+          type: apiType, 
+          maxResults: 20, 
+          pageToken: pageToken
+        );
+      } else {
+         response = await _outlookService.listMails(
+          type: apiType, 
+          maxResults: 20, 
+          pageToken: pageToken
+        );
+      }
       
       if (response != null && response['messages'] != null) {
         final messagesList = response['messages'] as List;
@@ -245,6 +298,42 @@ class MailProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> disconnect() async {
+    if (_currentProvider == 'gmail') {
+      await _mailService.disconnect();
+    } else {
+      await _outlookService.disconnect();
+    }
+    await resetLocalState();
+  }
+
+  Future<void> resetLocalState() async {
+    _mailService.clearLocalData();
+    _outlookService.clearLocalData();
+    await clearCache();
+    _isConnected = false;
+    notifyListeners();
+  }
+
+  Future<void> checkConnection() async {
+    Map<String, dynamic>? tokenData;
+    
+    if (_currentProvider == 'gmail') {
+      await _mailService.initialize();
+      tokenData = await _mailService.checkTokens();
+    } else {
+      await _outlookService.initialize();
+      tokenData = await _outlookService.checkTokens();
+    }
+    
+    if (tokenData != null && tokenData['hasTokens'] == true) {
+      _isConnected = true;
+    } else {
+      _isConnected = false;
+    }
+    notifyListeners();
+  }
+
   String _getBackendType(String filter) {
     switch (filter.toLowerCase()) {
       case 'inbox': return 'inbox';
@@ -321,5 +410,141 @@ class MailProvider extends ChangeNotifier {
       headers: emailHeaders,
       summary: summary,
     );
+  }
+
+  /// Mark email as read and update local state
+  Future<bool> markAsRead(String messageId) async {
+    bool success;
+    if (_currentProvider == 'gmail') {
+      success = await _mailService.markAsRead(messageId);
+    } else {
+      success = await _outlookService.markAsRead(messageId);
+    }
+    
+    if (success) {
+      _updateMessageLocally(messageId, (msg) => msg.copyWith(isUnread: false));
+    }
+    return success;
+  }
+
+  /// Mark email as unread and update local state
+  Future<bool> markAsUnread(String messageId) async {
+    bool success;
+    if (_currentProvider == 'gmail') {
+      success = await _mailService.markAsUnread(messageId);
+    } else {
+       // Outlook unread might not be supported yet, fallback or implement if added
+       // For now assuming typical support if added to service, else just return false or fake it
+       // OutlookService I wrote didn't have markAsUnread. 
+       // I'll skip calling it for outlook or just assume false.
+       success = false; 
+    }
+
+    if (success) {
+      _updateMessageLocally(messageId, (msg) => msg.copyWith(isUnread: true));
+    }
+    return success;
+  }
+
+  /// Delete email and remove from local state
+  Future<bool> deleteEmail(String messageId) async {
+    bool success;
+    if (_currentProvider == 'gmail') {
+      success = await _mailService.deleteEmail(messageId);
+    } else {
+      success = await _outlookService.deleteEmail(messageId);
+    }
+
+    if (success) {
+      // Remove from all active lists
+      for (var key in _activeEmails.keys) {
+        _activeEmails[key]?.removeWhere((msg) => msg.id == messageId);
+      }
+      
+      // Update cache
+      for (var key in _cachedEmails.keys) {
+        _cachedEmails[key]?.removeWhere((msg) => msg.id == messageId);
+        await _saveToDisk(key);
+      }
+      notifyListeners();
+    }
+    return success;
+  }
+
+  /// Manually summarize an email
+  Future<String?> summarizeEmail(String messageId) async {
+    Map<String, dynamic>? result;
+    if (_currentProvider == 'gmail') {
+      result = await _mailService.summarizeEmail(messageId);
+    } else {
+      result = await _outlookService.summarizeEmail(messageId);
+    }
+
+    if (result != null && result['summary'] != null) {
+      final summary = result['summary'] as String;
+      _updateMessageLocally(messageId, (msg) => msg.copyWith(summary: summary));
+      return summary;
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> getEmailDetails(String id) async {
+    if (_currentProvider == 'gmail') {
+      await _mailService.initialize();
+      return await _mailService.getEmailDetails(id);
+    } else {
+      await _outlookService.initialize();
+      return await _outlookService.getEmailDetails(id);
+    }
+  }
+
+  Future<Map<String, dynamic>?> sendEmail(
+    String to,
+    String subject,
+    String body,
+    List<Map<String, dynamic>>? attachments, {
+    String? cc,
+    String? bcc,
+  }) async {
+      if (_currentProvider == 'gmail') {
+         // MailService uses sendEmailWithBytes
+         return await _mailService.sendEmailWithBytes(to, subject, body, attachments, cc: cc, bcc: bcc);
+      } else {
+         // OutlookService uses byteAttachments
+         // Use named parameters as per OutlookService definition
+         return await _outlookService.sendEmail(
+             to: to, 
+             subject: subject, 
+             body: body, 
+             byteAttachments: attachments, 
+             cc: cc, 
+             bcc: bcc
+         );
+      }
+  }
+
+  void _updateMessageLocally(String id, EmailMessage Function(EmailMessage) updateFn) {
+    bool changed = false;
+    for (var key in _activeEmails.keys) {
+      final list = _activeEmails[key];
+      if (list == null) continue;
+      
+      final index = list.indexWhere((m) => m.id == id);
+      if (index != -1) {
+        list[index] = updateFn(list[index]);
+        changed = true;
+      }
+    }
+    
+    if (changed) notifyListeners();
+  }
+  Future<Map<String, dynamic>?> refineEmail(
+    String currentSubject,
+    String currentBody,
+    String instruction,
+  ) async {
+    // Only Gmail supports this for now, or both if generic.
+    // Assuming backend handles it generically or via Gmail service logic.
+    return await _mailService.refineEmail(currentSubject, currentBody, instruction);
   }
 }

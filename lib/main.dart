@@ -28,6 +28,7 @@ import 'routes/app_router.dart';
 import 'services/mail_service.dart';
 import 'services/notification_service.dart';
 import 'providers/mail_provider.dart';
+import 'package:frontend/providers/audio_provider.dart';
 
 // Top-level function to handle background messages (must be top-level)
 @pragma('vm:entry-point')
@@ -83,6 +84,7 @@ Future<void> main() async {
         ChangeNotifierProvider(
           create: (_) => NotificationProvider(dio: authProvider.dio),
         ),
+        ChangeNotifierProvider(create: (_) => AudioProvider()), // Register AudioProvider
       ],
       child: MainApp(),
     ),
@@ -116,6 +118,17 @@ class _MainAppState extends State<MainApp> {
       if (authProvider.user?.lang != null) {
         languageProvider.setLanguageFromUser(authProvider.user!.lang);
       }
+      
+      // Pre-fetch priority emails for UI
+      if (authProvider.isLoggedIn) {
+        final user = authProvider.user;
+        if (user != null) {
+           final userId = user.uid ?? user.id;
+           if (userId != null) {
+             context.read<UserProvider>().fetchPriorityEmails(userId);
+           }
+        }
+      }
 
       // Configure interaction handling
       await _setupInteractedMessage();
@@ -140,8 +153,11 @@ class _MainAppState extends State<MainApp> {
 
           if (mounted && context.mounted) {
             Future.delayed(const Duration(milliseconds: 100), () {
-              if (mounted && context.mounted) {
-                context.pushReplacement('/callback');
+              if (mounted) {
+                 final navContext = AppRoutes.navigatorKey.currentContext;
+                 if (navContext != null) {
+                   GoRouter.of(navContext).pushReplacement('/callback');
+                 }
               }
             });
           }
@@ -177,7 +193,7 @@ class _MainAppState extends State<MainApp> {
     debugPrint('🔔 Handling notification interaction: ${message.data}');
     
     final data = message.data;
-    final type = data['type'];
+    final type = data['type'] ?? data['notificationType']; // Check both keys
     final context = AppRoutes.navigatorKey.currentContext;
 
     if (context == null) {
@@ -185,7 +201,7 @@ class _MainAppState extends State<MainApp> {
       return;
     }
 
-    if (type == 'email') {
+    if (type == 'email' || type == 'email_new') {
       final audioUrl = data['audioUrl']; // "https://..." or null
       // Check both 'id' and 'emailId' keys
       final emailId = data['id'] ?? data['emailId']; 
@@ -195,9 +211,9 @@ class _MainAppState extends State<MainApp> {
          final stubEmail = EmailMessage(
             id: emailId, 
             threadId: '', 
-            sender: 'Loading...', 
+            sender: data['title'] ?? 'Loading...', 
             senderEmail: '', 
-            subject: 'Loading...', 
+            subject: data['body']?.toString().split('\n').first ?? 'Loading...', 
             snippet: '', 
             body: '', 
             date: DateTime.now(), 
@@ -209,7 +225,7 @@ class _MainAppState extends State<MainApp> {
          final extra = {
            'email': stubEmail,
            'audioUrl': audioUrl,
-           'autoPlay': audioUrl != null,
+           'autoPlay': audioUrl != null, // Auto-play if opened from background tap
          };
          
          context.push(AppRoutes.maildetail, extra: extra);
@@ -230,11 +246,12 @@ class _MainAppState extends State<MainApp> {
     super.dispose();
   }
 
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final languageProvider = Provider.of<LanguageProvider>(context);
-    final router = AppRoutes().createRouter(context);
+    final router = AppRoutes().router;
 
     return MaterialApp.router(
       title: 'Aixy',

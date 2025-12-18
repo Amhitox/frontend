@@ -225,7 +225,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             ),
           ),
           GestureDetector(
-            onTap: () => context.go('/login'),
+            onTap: () => context.push('/login'),
             child: Container(
               padding: EdgeInsets.symmetric(
                 horizontal: skipButtonPadding,
@@ -633,7 +633,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       curve: Curves.easeInOut,
                     );
                   } else {
-                    context.go('/login');
+                    context.push('/login');
                   }
                 },
                 style: ElevatedButton.styleFrom(

@@ -34,7 +34,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       });
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
-          context.go('/login');
+          context.push('/login');
         }
       });
     } catch (e) {
@@ -73,7 +73,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               if (!_isVerifying && !_isVerified) ...[
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () => context.push('/login'),
                   child: const Text('Go to Login'),
                 ),
               ],

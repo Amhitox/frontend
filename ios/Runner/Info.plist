@@ -52,7 +52,15 @@
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to your camera to take photos for email attachments.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>We may need access to your microphone for future audio features.</string>
+	<string>We need access to your microphone for voice commands, audio notes, and email transcription.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We need access to speech recognition to convert your voice commands and notes into text.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+		<string>audio</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

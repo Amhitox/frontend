@@ -173,6 +173,42 @@ class EmailMessage {
       summary: data['summary'] as String?,
     );
   }
+  // CopyWith method
+  EmailMessage copyWith({
+    String? id,
+    String? threadId,
+    String? draftId,
+    String? sender,
+    String? senderEmail,
+    String? subject,
+    String? snippet,
+    String? body,
+    DateTime? date,
+    bool? isUnread,
+    List<String>? labelIds,
+    bool? hasAttachments,
+    List<EmailAttachment>? attachments,
+    EmailHeaders? headers,
+    String? summary,
+  }) {
+    return EmailMessage(
+      id: id ?? this.id,
+      threadId: threadId ?? this.threadId,
+      draftId: draftId ?? this.draftId,
+      sender: sender ?? this.sender,
+      senderEmail: senderEmail ?? this.senderEmail,
+      subject: subject ?? this.subject,
+      snippet: snippet ?? this.snippet,
+      body: body ?? this.body,
+      date: date ?? this.date,
+      isUnread: isUnread ?? this.isUnread,
+      labelIds: labelIds ?? this.labelIds,
+      hasAttachments: hasAttachments ?? this.hasAttachments,
+      attachments: attachments ?? this.attachments,
+      headers: headers ?? this.headers,
+      summary: summary ?? this.summary,
+    );
+  }
 }
 
 class EmailAttachment {

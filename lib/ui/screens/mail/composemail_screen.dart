@@ -8,11 +8,20 @@ import 'package:frontend/services/mail_service.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/models/email_message.dart';
+import 'package:frontend/providers/mail_provider.dart';
+import 'package:frontend/services/transcription_service.dart';
+import 'dart:convert'; // For encoding/decoding if needed
 
 class ComposeMailScreen extends StatefulWidget {
   final MailItem? editingMail;
   final EmailMessage? draft;
-  const ComposeMailScreen({super.key, this.editingMail, this.draft});
+  final bool isFromAi;
+  const ComposeMailScreen({
+    super.key, 
+    this.editingMail, 
+    this.draft,
+    this.isFromAi = false,
+  });
   @override
   _ComposeMailScreenState createState() => _ComposeMailScreenState();
 }
@@ -29,6 +38,12 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   final FocusNode _subjectFocus = FocusNode();
   final FocusNode _ccFocus = FocusNode();
   final FocusNode _bccFocus = FocusNode();
+  
+  // AI Refinement State
+  final TranscriptionService _transcriptionService = TranscriptionService();
+  int _refinementAttempts = 0;
+  bool _isRefining = false;
+  bool _isRecording = false;
   final FocusNode _bodyFocus = FocusNode();
 
   // Selected recipients lists
@@ -66,7 +81,8 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     
     // Initialize body controller with content if available
     if (widget.editingMail != null && widget.editingMail!.preview.isNotEmpty) {
-      final doc = quill.Document()..insert(0, widget.editingMail!.preview);
+      final cleanText = _stripHtml(widget.editingMail!.preview);
+      final doc = quill.Document()..insert(0, cleanText);
       _bodyController = quill.QuillController(
         document: doc,
         selection: const TextSelection.collapsed(offset: 0),
@@ -115,12 +131,23 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       }
       
       // Body handling
-      final bodyText = widget.draft!.body.isNotEmpty ? widget.draft!.body : widget.draft!.snippet;
+      String bodyText = widget.draft!.body.isNotEmpty ? widget.draft!.body : widget.draft!.snippet;
+      bodyText = _stripHtml(bodyText); // Strip HTML here too if needed
+      
       if (_bodyController.document.isEmpty() && bodyText.isNotEmpty) {
           _bodyController.document.insert(0, bodyText);
       }
     }
     _slideController.forward();
+  }
+
+  String _stripHtml(String htmlString) {
+    if (htmlString.isEmpty) return '';
+    final RegExp exp = RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
+    // Replace <br> and <p> with newlines for better text formatting before stripping
+    String intermediate = htmlString.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+                                  .replaceAll(RegExp(r'</p>', caseSensitive: false), '\n');
+    return intermediate.replaceAll(exp, '').trim();
   }
 
   @override
@@ -135,6 +162,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     _subjectFocus.dispose();
     _ccFocus.dispose();
     _bccFocus.dispose();
+    _transcriptionService.dispose();
     _bodyFocus.dispose();
     super.dispose();
   }
@@ -157,9 +185,8 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     setState(() => _isSending = true);
 
     try {
-      final auth = context.read<AuthProvider>();
-      final mailService = MailService(dio: auth.dio);
-      await mailService.initialize();
+      final provider = context.read<MailProvider>();
+      await provider.checkConnection();
       
       final pendingCc = _ccController.text.trim();
       if (pendingCc.isNotEmpty && !_ccRecipients.contains(pendingCc)) {
@@ -175,16 +202,18 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       List<Map<String, dynamic>>? attachmentData;
       if (_attachments.isNotEmpty) {
         attachmentData = _attachments
-            .where((att) => att.bytes != null && att.bytes!.isNotEmpty)
+            // Allow if bytes exist OR path exists
+            .where((att) => (att.bytes != null && att.bytes!.isNotEmpty) || (att.path != null && att.path!.isNotEmpty))
             .map((att) => {
                   'name': att.name,
                   'bytes': att.bytes,
+                  'path': att.path,
                   'mimeType': _getMimeTypeFromFilename(att.name),
                 })
             .toList();
       }
 
-      final result = await mailService.sendEmailWithBytes(
+      final result = await provider.sendEmail(
         _toRecipients.join(','),
         _subjectController.text,
         body,
@@ -258,10 +287,11 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       List<Map<String, dynamic>>? attachmentData;
       if (_attachments.isNotEmpty) {
         attachmentData = _attachments
-            .where((att) => att.bytes != null && att.bytes!.isNotEmpty)
+            .where((att) => (att.bytes != null && att.bytes!.isNotEmpty) || (att.path != null && att.path!.isNotEmpty))
             .map((att) => {
                   'name': att.name,
                   'bytes': att.bytes,
+                  'path': att.path,
                   'mimeType': _getMimeTypeFromFilename(att.name),
                 })
             .toList();
@@ -428,7 +458,13 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
         children: [
           _buildHeaderButton(
             Icons.arrow_back_ios_new,
-            () => context.go('/mail'),
+            () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.push('/mail');
+              }
+            },
             Theme.of(context),
             isTablet,
           ),
@@ -454,7 +490,16 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               ],
             ),
           ),
-          SizedBox(width: isTablet ? 12 : 8),
+          if (widget.isFromAi) ...[
+            _buildHeaderButton(
+              _isRecording ? Icons.stop_circle_outlined : Icons.auto_awesome,
+              _isRecording ? _stopAndRefine : _startVoiceRefinement,
+              Theme.of(context),
+              isTablet,
+              color: _isRecording ? Colors.red : Theme.of(context).colorScheme.primary,
+            ),
+            SizedBox(width: isTablet ? 12 : 8),
+          ],
           _buildHeaderButton(
             Icons.save_outlined,
             _saveDraft,
@@ -470,8 +515,9 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     IconData icon,
     VoidCallback onTap,
     ThemeData theme,
-    bool isTablet,
-  ) {
+    bool isTablet, {
+    Color? color,
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -484,18 +530,23 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           width: isTablet ? 40 : 36,
           height: isTablet ? 40 : 36,
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            color: (color ?? theme.colorScheme.primary).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: theme.colorScheme.primary.withValues(alpha: 0.2),
+              color: (color ?? theme.colorScheme.primary).withValues(alpha: 0.2),
               width: 1,
             ),
           ),
-          child: Icon(
-            icon,
-            color: theme.colorScheme.primary,
-            size: isTablet ? 20 : 18,
-          ),
+          child: _isRefining 
+            ? Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.primary),
+              )
+            : Icon(
+                icon,
+                color: color ?? theme.colorScheme.primary,
+                size: isTablet ? 20 : 18,
+              ),
         ),
       ),
     );
@@ -681,175 +732,266 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   }
 
   Widget _buildChipInput({
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    required List<String> selectedValues,
-    required String hint,
-    required bool isTablet,
-    List<String>? suggestions,
-    bool isRequired = false,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return RawAutocomplete<String>(
-          textEditingController: controller,
-          focusNode: focusNode,
-          optionsBuilder: (TextEditingValue textEditingValue) {
-             if (textEditingValue.text.isEmpty) {
-               return const Iterable<String>.empty();
-             }
-             final input = textEditingValue.text.toLowerCase();
-             if (suggestions != null) {
-               return suggestions.where((String option) {
-                 return option.toLowerCase().contains(input) && !selectedValues.contains(option);
-               });
-             }
-             return const Iterable<String>.empty();
-          },
-          onSelected: (String selection) {
-            setState(() {
-              if (!selectedValues.contains(selection)) {
-                selectedValues.add(selection);
-              }
-              controller.clear();
+  required TextEditingController controller,
+  required FocusNode focusNode,
+  required List<String> selectedValues,
+  required String hint,
+  required bool isTablet,
+  List<String>? suggestions,
+  bool isRequired = false,
+}) {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      return RawAutocomplete<String>(
+        textEditingController: controller,
+        focusNode: focusNode,
+        optionsBuilder: (TextEditingValue textEditingValue) {
+          if (textEditingValue.text.isEmpty) {
+            return const Iterable<String>.empty();
+          }
+          final input = textEditingValue.text.toLowerCase();
+          if (suggestions != null) {
+            return suggestions.where((String option) {
+              return option.toLowerCase().contains(input) && 
+                     !selectedValues.contains(option);
             });
-            focusNode.requestFocus();
-          },
-          fieldViewBuilder: (
-            BuildContext context,
-            TextEditingController fieldTextEditingController,
-            FocusNode fieldFocusNode,
-            VoidCallback onFieldSubmitted,
-          ) {
-            return AnimatedBuilder(
-              animation: fieldFocusNode,
-              builder: (context, child) {
-                // Ensure consistent container styling regardless of content
-                return Container(
-                  constraints: BoxConstraints(minHeight: isTablet ? 42 : 36),
+          }
+          return const Iterable<String>.empty();
+        },
+        onSelected: (String selection) {
+          setState(() {
+            if (!selectedValues.contains(selection)) {
+              selectedValues.add(selection);
+            }
+            controller.clear();
+          });
+          focusNode.requestFocus();
+        },
+        fieldViewBuilder: (
+          BuildContext context,
+          TextEditingController fieldTextEditingController,
+          FocusNode fieldFocusNode,
+          VoidCallback onFieldSubmitted,
+        ) {
+          return AnimatedBuilder(
+            animation: fieldFocusNode,
+            builder: (context, child) {
+              final isFocused = fieldFocusNode.hasFocus;
+              
+              return GestureDetector(
+                onTap: () {
+                  fieldFocusNode.requestFocus();
+                },
+                child: Container(
+                  width: double.infinity,
+                  constraints: BoxConstraints(minHeight: isTablet ? 40 : 36),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface.withValues(
-                      alpha: fieldFocusNode.hasFocus ? 0.1 : 0.03,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isFocused 
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                        width: isFocused ? 2 : 1,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(isTablet ? 8 : 6),
                   ),
                   padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 12 : 10,
-                    vertical: isTablet ? 10 : 8,
+                    horizontal: 0,
+                    vertical: isTablet ? 6 : 4,
                   ),
                   child: Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                       ...selectedValues.map((recipient) => Chip(
-                         visualDensity: VisualDensity.compact,
-                         padding: EdgeInsets.zero,
-                         labelPadding: EdgeInsets.symmetric(horizontal: 4),
-                         backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                         side: BorderSide.none,
-                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                         label: Text(
-                           recipient, 
-                           style: TextStyle(
-                             fontSize: isTablet ? 12 : 11,
-                             color: Theme.of(context).colorScheme.primary,
-                           ),
-                         ),
-                         onDeleted: () {
-                           setState(() {
-                             selectedValues.remove(recipient);
-                           });
-                         },
-                         deleteIcon: Icon(Icons.close, size: 14, color: Theme.of(context).colorScheme.primary),
-                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                       )),
-                       IntrinsicWidth(
-                         child: TextField(
-                             controller: fieldTextEditingController,
-                             focusNode: fieldFocusNode,
-                             style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: isTablet ? 14 : 13,
-                             ),
-                             decoration: InputDecoration(
-                               hintText: selectedValues.isEmpty ? '$hint${isRequired ? ' *' : ''}' : '',
-                               hintStyle: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                                fontSize: isTablet ? 14 : 13,
-                               ),
-                               border: InputBorder.none,
-                               isDense: true,
-                               contentPadding: EdgeInsets.zero,
-                             ),
-                             onSubmitted: (value) {
-                               if (value.trim().isNotEmpty) {
-                                  setState(() {
-                                    if (!selectedValues.contains(value.trim())) {
-                                      selectedValues.add(value.trim());
-                                    }
-                                    fieldTextEditingController.clear();
-                                  });
-                                  fieldFocusNode.requestFocus();
-                               }
-                             },
-                             onChanged: (value) {
-                               if (value.endsWith(',') || value.endsWith(' ')) {
-                                 final clean = value.replaceAll(',', '').trim();
-                                 if (clean.isNotEmpty) {
-                                   setState(() {
-                                     if (!selectedValues.contains(clean)) {
-                                       selectedValues.add(clean);
-                                     }
-                                     fieldTextEditingController.clear();
-                                   });
-                                 }
-                               }
-                             },
-                         ),
-                       ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
-          optionsViewBuilder: (
-            BuildContext context,
-            AutocompleteOnSelected<String> onSelected,
-            Iterable<String> options,
-          ) {
-            return Align(
-              alignment: Alignment.topLeft,
-              child: Material(
-                elevation: 4.0,
-                borderRadius: BorderRadius.circular(8),
-                color: Theme.of(context).colorScheme.surface,
-                child: SizedBox(
-                   width: constraints.maxWidth,
-                   height: 200,
-                   child: ListView.builder(
-                     padding: EdgeInsets.zero,
-                     itemCount: options.length,
-                     itemBuilder: (BuildContext context, int index) {
-                       final String option = options.elementAt(index);
-                       return InkWell(
-                         onTap: () => onSelected(option),
-                         child: Padding(
-                           padding: const EdgeInsets.all(12.0),
-                           child: Text(option),
-                         ),
-                       );
-                     },
-                   ),
+                  spacing: 4,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    ...selectedValues.map((recipient) {
+                      final initial = recipient.isNotEmpty 
+                        ? recipient[0].toUpperCase() 
+                        : '?';
+                      
+                      return Container(
+                        height: isTablet ? 28 : 24,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                             color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                             width: 0.5,
+                          ),
+                        ),
+                        padding: const EdgeInsets.only(left: 2, right: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: isTablet ? 11 : 10,
+                              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                              child: Text(
+                                initial,
+                                style: TextStyle(
+                                  fontSize: isTablet ? 10 : 9,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 200),
+                              child: Text(
+                                recipient,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: isTablet ? 13 : 12,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  selectedValues.remove(recipient);
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(10),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(
+                                  Icons.close,
+                                  size: 14,
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    IntrinsicWidth(
+                      child: TextField(
+                        controller: fieldTextEditingController,
+                        focusNode: fieldFocusNode,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: isTablet ? 15 : 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: selectedValues.isEmpty 
+                            ? '$hint${isRequired ? ' *' : ''}' 
+                            : '',
+                          hintStyle: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                            fontSize: isTablet ? 15 : 14,
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 3, // slightly better vertical alignment
+                          ),
+                        ),
+                        onSubmitted: (value) {
+                          if (value.trim().isNotEmpty) {
+                            setState(() {
+                              if (!selectedValues.contains(value.trim())) {
+                                selectedValues.add(value.trim());
+                              }
+                              fieldTextEditingController.clear();
+                            });
+                            fieldFocusNode.requestFocus();
+                          }
+                        },
+                        onChanged: (value) {
+                          if (value.endsWith(',') || value.endsWith(';')) {
+                            final clean = value.replaceAll(RegExp(r'[,;]'), '').trim();
+                            if (clean.isNotEmpty) {
+                              setState(() {
+                                if (!selectedValues.contains(clean)) {
+                                  selectedValues.add(clean);
+                                }
+                                fieldTextEditingController.clear();
+                              });
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             );
-          },
-        );
-      }
-    );
-  }
+            },
+          );
+        },
+        optionsViewBuilder: (
+          BuildContext context,
+          AutocompleteOnSelected<String> onSelected,
+          Iterable<String> options,
+        ) {
+          return Align(
+            alignment: Alignment.topLeft,
+            child: Material(
+              elevation: 8.0,
+              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).colorScheme.surface,
+              shadowColor: Colors.black.withValues(alpha: 0.2),
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 240),
+                width: constraints.maxWidth,
+                margin: const EdgeInsets.only(top: 4),
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: options.length,
+                  shrinkWrap: true,
+                  itemBuilder: (BuildContext context, int index) {
+                    final String option = options.elementAt(index);
+                    return InkWell(
+                      onTap: () => onSelected(option),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                              child: Text(
+                                option.isNotEmpty ? option[0].toUpperCase() : '?',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                option,
+                                style: TextStyle(
+                                  fontSize: isTablet ? 15 : 14,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 
   Widget _buildAttachmentsSection(bool isTablet, bool isLargeScreen) {
     return Container(
@@ -1130,6 +1272,97 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
         ),
       ),
     );
+  }
+
+  // AI Refinement Methods
+  Future<void> _startVoiceRefinement() async {
+    if (_refinementAttempts >= 2) {
+      _showFeedback('Voice refinement limit reached (2/2). Edit manually.', isError: true);
+      return;
+    }
+
+    try {
+      setState(() => _isRecording = true);
+      await _transcriptionService.startRecording(
+        onSilenceDetected: () async {
+          await _stopAndRefine();
+        },
+      );
+      _showFeedback('Listening... Tap stop to refine.');
+    } catch (e) {
+      setState(() => _isRecording = false);
+      _showFeedback('Failed to start recording: $e', isError: true);
+    }
+  }
+
+  Future<void> _stopAndRefine() async {
+    if (!_isRecording) return;
+    
+    try {
+      final path = await _transcriptionService.stopRecording();
+      setState(() => _isRecording = false);
+      
+      if (path != null) {
+        _showFeedback('Transcribing...', isError: false);
+        final instruction = await _transcriptionService.transcribe(path);
+        if (instruction != null && instruction.isNotEmpty) {
+           _refineWithInstruction(instruction);
+        } else {
+           _showFeedback('No voice detected', isError: true);
+        }
+      }
+    } catch (e) {
+      setState(() => _isRecording = false);
+      _showFeedback('Refinement failed: $e', isError: true);
+    }
+  }
+  
+  Future<void> _refineWithInstruction(String instruction) async {
+    setState(() {
+      _isRefining = true;
+      _refinementAttempts++;
+    });
+
+    try {
+       // Get current content
+       final currentSubject = _subjectController.text;
+       final currentBody = _bodyController.document.toPlainText();
+       
+       final provider = context.read<MailProvider>();
+       final result = await provider.refineEmail(currentSubject, currentBody, instruction);
+       
+       if (result != null && !result.containsKey('error')) {
+          final newSubject = result['subject'];
+          final newBodyHtml = result['body']; 
+          
+          // Update Subject
+          if (newSubject != null) {
+             _subjectController.text = newSubject;
+          }
+          
+          // Update Body - Strip HTML for Quill (Basic approach)
+          if (newBodyHtml != null) {
+             String plainText = newBodyHtml
+                .replaceAll(RegExp(r'<br\s*/?>'), '\n')
+                .replaceAll(RegExp(r'</p>'), '\n\n')
+                .replaceAll(RegExp(r'<[^>]*>'), '')
+                .trim();
+                
+             _bodyController.clear();
+             _bodyController.document.insert(0, plainText);
+          }
+          
+          _showFeedback('Email refined by AI');
+       } else {
+          _showFeedback(result?['error'] ?? 'Refinement failed', isError: true);
+       }
+    } catch (e) {
+       _showFeedback('Error during refinement: $e', isError: true);
+    } finally {
+       if (mounted) {
+         setState(() => _isRefining = false);
+       }
+    }
   }
 }
 

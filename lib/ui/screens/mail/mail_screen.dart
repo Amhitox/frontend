@@ -33,7 +33,6 @@ class _MailScreenState extends State<MailScreen>
   bool _hasMore = true;
   String? _errorMessage;
 
-  bool _isConnected = false;
   bool _isCheckingConnection = true;
   bool _hasInitiallyLoaded = false;
 
@@ -175,47 +174,19 @@ class _MailScreenState extends State<MailScreen>
   }
 
   Future<void> _checkConnectionAndLoadEmails() async {
-    try {
-      final auth = context.read<AuthProvider>();
-      final mailService = MailService(dio: auth.dio);
-
-      await mailService.initialize();
-
-      // Initialize the stream once if we don't have it
-      if (_inboxStream == null) {
-        _inboxStream = mailService.streamEmails();
-      }
-
-      final tokenData = await mailService.checkTokens();
-
-      if (tokenData != null && tokenData['hasTokens'] == true) {
-        print('✅ User has email tokens, connected');
-        if (mounted) {
-           setState(() {
-            _isConnected = true;
-            _isCheckingConnection = false;
-          });
-        }
-
+    final provider = context.read<MailProvider>();
+    await provider.checkConnection();
+    
+    if (provider.isConnected) {
         if (!_hasInitiallyLoaded) {
-          context.read<MailProvider>().loadEmails(filter: _selectedFilter);
+          provider.loadEmails(filter: _selectedFilter);
           _hasInitiallyLoaded = true;
         }
-      } else {
-        print('⚠️ No email tokens found, showing connect button');
-        setState(() {
-          _isConnected = false;
-          _isCheckingConnection = false;
-        });
-      }
-    } catch (e) {
-      print('❌ Error checking connection: $e');
-      setState(() {
-        _isConnected = false;
-        _isCheckingConnection = false;
-        _errorMessage = 'Failed to check connection status';
-      });
     }
+    
+    setState(() {
+       _isCheckingConnection = false;
+    });
   }
 
   EmailMessage _parseEmailMessage(Map<String, dynamic> data) {
@@ -296,15 +267,9 @@ class _MailScreenState extends State<MailScreen>
 
   Future<void> _deleteEmail(EmailMessage email) async {
     try {
-      final auth = context.read<AuthProvider>();
-      final mailService = MailService(dio: auth.dio);
-
-      final success = await mailService.deleteEmail(email.id);
+      final success = await context.read<MailProvider>().deleteEmail(email.id);
 
       if (success && mounted) {
-        setState(() {
-          _emails.removeWhere((e) => e.id == email.id);
-        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Email deleted successfully'),
@@ -320,7 +285,6 @@ class _MailScreenState extends State<MailScreen>
         );
       }
     } catch (e) {
-      print('❌ Error deleting email: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -334,34 +298,7 @@ class _MailScreenState extends State<MailScreen>
 
   Future<void> _markAsRead(EmailMessage email) async {
     try {
-      final auth = context.read<AuthProvider>();
-      final mailService = MailService(dio: auth.dio);
-
-      final success = await mailService.markAsRead(email.id);
-
-      if (success && mounted) {
-        setState(() {
-          final index = _emails.indexWhere((e) => e.id == email.id);
-          if (index != -1) {
-            _emails[index] = EmailMessage(
-              id: email.id,
-              threadId: email.threadId,
-              draftId: email.draftId,
-              sender: email.sender,
-              senderEmail: email.senderEmail,
-              subject: email.subject,
-              snippet: email.snippet,
-              body: email.body,
-              date: email.date,
-              isUnread: false,
-              labelIds: email.labelIds,
-              hasAttachments: email.hasAttachments,
-              attachments: email.attachments,
-              headers: email.headers,
-            );
-          }
-        });
-      }
+      await context.read<MailProvider>().markAsRead(email.id);
     } catch (e) {
       print('❌ Error marking email as read: $e');
     }
@@ -369,34 +306,7 @@ class _MailScreenState extends State<MailScreen>
 
   Future<void> _markAsUnread(EmailMessage email) async {
     try {
-      final auth = context.read<AuthProvider>();
-      final mailService = MailService(dio: auth.dio);
-
-      final success = await mailService.markAsUnread(email.id);
-
-      if (success && mounted) {
-        setState(() {
-          final index = _emails.indexWhere((e) => e.id == email.id);
-          if (index != -1) {
-            _emails[index] = EmailMessage(
-              id: email.id,
-              threadId: email.threadId,
-              draftId: email.draftId,
-              sender: email.sender,
-              senderEmail: email.senderEmail,
-              subject: email.subject,
-              snippet: email.snippet,
-              body: email.body,
-              date: email.date,
-              isUnread: true,
-              labelIds: email.labelIds,
-              hasAttachments: email.hasAttachments,
-              attachments: email.attachments,
-              headers: email.headers,
-            );
-          }
-        });
-      }
+      await context.read<MailProvider>().markAsUnread(email.id);
     } catch (e) {
       print('❌ Error marking email as unread: $e');
     }
@@ -495,7 +405,7 @@ class _MailScreenState extends State<MailScreen>
                 child: Column(
                   children: [
                     _buildHeader(isTablet, isLargeScreen),
-                    if (_isConnected) ...[
+                    if (context.watch<MailProvider>().isConnected) ...[
                       _buildFilterTabs(isTablet, isLargeScreen),
                       _buildQuickStats(isTablet, isLargeScreen),
                     ],
@@ -738,6 +648,10 @@ class _MailScreenState extends State<MailScreen>
   }
 
   Widget _buildQuickStats(bool isTablet, bool isLargeScreen) {
+    // Watch provider to get real-time stats
+    final mailProvider = context.watch<MailProvider>();
+    final emails = mailProvider.getEmailsForFilter(_selectedFilter);
+    
     return Container(
       margin: EdgeInsets.fromLTRB(
         isLargeScreen
@@ -757,9 +671,9 @@ class _MailScreenState extends State<MailScreen>
           isLargeScreen
               ? Row(
                 children: [
-                  Expanded(
+                   Expanded(
                     child: _buildStatChip(
-                      '${_emails.where((e) => e.isUnread).length}',
+                      '${emails.where((e) => e.isUnread).length}',
                       'Unread',
                       Colors.blue,
                       isTablet,
@@ -768,7 +682,7 @@ class _MailScreenState extends State<MailScreen>
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildStatChip(
-                      '${_emails.where((e) => e.labelIds.contains('IMPORTANT')).length}',
+                      '${emails.where((e) => e.labelIds.contains('IMPORTANT')).length}',
                       'Important',
                       Colors.red,
                       isTablet,
@@ -777,7 +691,7 @@ class _MailScreenState extends State<MailScreen>
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildStatChip(
-                      '${_emails.length}',
+                      '${emails.length}',
                       'Total',
                       Colors.green,
                       isTablet,
@@ -788,21 +702,21 @@ class _MailScreenState extends State<MailScreen>
               : Row(
                 children: [
                   _buildStatChip(
-                    '${_emails.where((e) => e.isUnread).length}',
+                    '${emails.where((e) => e.isUnread).length}',
                     'Unread',
                     Colors.blue,
                     isTablet,
                   ),
                   SizedBox(width: isTablet ? 16 : 12),
                   _buildStatChip(
-                    '${_emails.where((e) => e.labelIds.contains('IMPORTANT')).length}',
+                    '${emails.where((e) => e.labelIds.contains('IMPORTANT')).length}',
                     'Important',
                     Colors.red,
                     isTablet,
                   ),
                   SizedBox(width: isTablet ? 16 : 12),
                   _buildStatChip(
-                    '${_emails.length}',
+                    '${emails.length}',
                     'Total',
                     Colors.green,
                     isTablet,
@@ -868,15 +782,16 @@ class _MailScreenState extends State<MailScreen>
       return _buildLoadingState();
     }
 
-    if (!_isConnected) {
-      return _buildConnectGmailView(isTablet, isLargeScreen);
-    }
-    
     // Watch provider state
     final mailProvider = context.watch<MailProvider>();
     final emails = mailProvider.getEmailsForFilter(_selectedFilter);
     final isLoading = mailProvider.isLoading;
     final error = mailProvider.error;
+    final isConnected = mailProvider.isConnected;
+
+    if (!isConnected) {
+      return _buildConnectView(isTablet, isLargeScreen);
+    }
 
     if (isLoading && emails.isEmpty) {
       return _buildLoadingState();
@@ -916,176 +831,122 @@ class _MailScreenState extends State<MailScreen>
     );
   }
 
-  Widget _buildConnectGmailView(bool isTablet, bool isLargeScreen) {
+  Widget _buildConnectView(bool isTablet, bool isLargeScreen) {
     final theme = Theme.of(context);
     return Center(
-      child: Padding(
-        padding: EdgeInsets.all(
-          isLargeScreen
-              ? 48
-              : isTablet
-              ? 32
-              : 24,
-        ),
-        child: Card(
-          elevation: 8,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(
-              isLargeScreen
-                  ? 48
-                  : isTablet
-                  ? 32
-                  : 24,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width:
-                      isLargeScreen
-                          ? 120
-                          : isTablet
-                          ? 100
-                          : 80,
-                  height:
-                      isLargeScreen
-                          ? 120
-                          : isTablet
-                          ? 100
-                          : 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.red, Colors.red.shade400],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withValues(alpha: 0.3),
-                        blurRadius: 20,
-                        offset: Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(isTablet ? 32 : 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Connect Email Account',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Wrap(
+                spacing: 24,
+                runSpacing: 24,
+                alignment: WrapAlignment.center,
+                children: [
+                  _buildProviderCard(
+                    'Gmail',
                     Icons.mail_outline_rounded,
-                    color: Colors.white,
-                    size:
-                        isLargeScreen
-                            ? 60
-                            : isTablet
-                            ? 50
-                            : 40,
-                  ),
-                ),
-                SizedBox(
-                  height:
-                      isLargeScreen
-                          ? 32
-                          : isTablet
-                          ? 24
-                          : 20,
-                ),
-                Text(
-                  'Connect Your Gmail',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize:
-                        isLargeScreen
-                            ? 28
-                            : isTablet
-                            ? 24
-                            : 22,
-                  ),
-                ),
-                SizedBox(
-                  height:
-                      isLargeScreen
-                          ? 16
-                          : isTablet
-                          ? 12
-                          : 10,
-                ),
-                Text(
-                  'Connect your Gmail account to start managing your emails efficiently. Access your inbox, drafts, sent items, and more.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    fontSize:
-                        isLargeScreen
-                            ? 18
-                            : isTablet
-                            ? 16
-                            : 15,
-                    height: 1.5,
-                  ),
-                ),
-                SizedBox(
-                  height:
-                      isLargeScreen
-                          ? 32
-                          : isTablet
-                          ? 24
-                          : 20,
-                ),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final auth = context.read<AuthProvider>();
-                    final mailService = MailService(dio: auth.dio);
-                    final res = await mailService.connect();
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          res == null
-                              ? 'Opening Gmail connect…'
-                              : 'Connect failed',
+                    Colors.red,
+                    () async {
+                      final provider = context.read<MailProvider>();
+                      provider.setProvider('gmail');
+                      final res = await provider.connectGmail();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            (res == null || (res is Map && res['authUrl'] != null))
+                                ? 'Opening Gmail connect…'
+                                : 'Connect failed',
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.link_rounded),
-                  label: Text(
-                    'Connect Gmail',
-                    style: TextStyle(
-                      fontSize:
-                          isLargeScreen
-                              ? 18
-                              : isTablet
-                              ? 16
-                              : 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                      );
+                    },
+                    isTablet,
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(
-                      horizontal:
-                          isLargeScreen
-                              ? 32
-                              : isTablet
-                              ? 24
-                              : 20,
-                      vertical:
-                          isLargeScreen
-                              ? 16
-                              : isTablet
-                              ? 14
-                              : 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 4,
+                  _buildProviderCard(
+                    'Outlook',
+                    Icons.window_sharp, // Microsoft-ish icon
+                    Colors.blue,
+                    () async {
+                      final provider = context.read<MailProvider>();
+                      provider.setProvider('outlook');
+                      final res = await provider.connectOutlook();
+                      if (!mounted) return;
+                     // Assuming connectOutlook also returns authUrl or similar map
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            (res == null || (res is Map && res['authUrl'] != null))
+                                ? 'Opening Outlook connect…'
+                                : 'Connect failed',
+                          ),
+                        ),
+                      );
+                    },
+                    isTablet,
                   ),
+                ],
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProviderCard(
+    String name,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+    bool isTablet,
+  ) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: isTablet ? 200 : 160,
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+               Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
                 ),
-              ],
-            ),
+                child: Icon(icon, size: 40, color: color),
+               ),
+               const SizedBox(height: 16),
+               Text(
+                 name,
+                 style: theme.textTheme.titleMedium?.copyWith(
+                   fontWeight: FontWeight.bold,
+                 ),
+               ),
+               const SizedBox(height: 8),
+               Text(
+                 'Connect $name',
+                 style: theme.textTheme.bodySmall?.copyWith(
+                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                 ),
+               ),
+            ],
           ),
         ),
       ),
@@ -1490,54 +1351,7 @@ class _MailScreenState extends State<MailScreen>
             ),
           ),
           SizedBox(height: isTablet ? 10 : 6),
-                if (email.summary != null && email.summary!.isNotEmpty) ...[
-                      SizedBox(height: 8),
-                      Container(
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.auto_awesome_rounded,
-                                  size: 14,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'AI Summary',
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              email.summary!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: isLargeScreen ? 16 : isTablet ? 15 : 14,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ] else
-                  Text(
+          Text(
             email.snippet,
             style: TextStyle(
               color: Theme.of(

@@ -10,6 +10,13 @@ import 'package:frontend/utils/localization.dart';
 import 'dart:math' as math;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:frontend/models/ai_response.dart';
+import 'package:frontend/models/email_message.dart';
+import 'package:frontend/services/ai_service.dart';
+import 'package:frontend/services/transcription_service.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'dart:io';
+import 'package:frontend/routes/app_router.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -28,9 +35,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _glowController;
   late ConnectivityService connectivityService;
   late FirebaseSyncService firebaseSyncService;
+  
+  late TranscriptionService _transcriptionService;
+  late AiService _aiService;
+  bool _isProcessing = false;
+  String? _transcribedText;
+  String _typewriterText = '';
+
+  // Debug - Audio Playback
+  String? _lastAudioPath;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
   @override
   void initState() {
     super.initState();
+    _transcriptionService = TranscriptionService();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeServices();
     });
@@ -73,22 +92,277 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _pulseController.dispose();
     _orbitalController.dispose();
     _glowController.dispose();
+    _transcriptionService.dispose();
     super.dispose();
   }
 
-  void _toggleListening() {
+  Future<void> _toggleListening() async {
+    if (_isProcessing) return; // Ignore taps while processing
+
     setState(() => _isListening = !_isListening);
+    
     if (_isListening) {
       _waveController.repeat();
+      try {
+        await _transcriptionService.startRecording(
+          onSilenceDetected: () {
+            // This runs on a timer/background isolate usually, safeguard with mounted check
+            if (mounted) {
+              print('🎙️ Silence detected callback received.');
+              // We need to stop recording. _toggleListening handles the toggle logic.
+              // But we are already in "Listening" state. calling it will flip it to false/stop.
+              _toggleListening(); 
+            }
+          },
+        );
+      } catch (e) {
+        print('Error starting recording: $e');
+        if (mounted) {
+          setState(() => _isListening = false);
+          _waveController.stop();
+          _waveController.reset();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not access microphone: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     } else {
       _waveController.stop();
       _waveController.reset();
+      
+      try {
+        final path = await _transcriptionService.stopRecording();
+        if (path != null && mounted) {
+          _processAudio(path);
+        }
+      } catch (e) {
+        print('Error stopping recording: $e');
+      }
+    }
+  }
+
+  Future<void> _processAudio(String path) async {
+    if (!mounted) return;
+    setState(() {
+       _isProcessing = true;
+       _lastAudioPath = path; // Save for debug playback
+    });
+    
+    // Optional: Cancelable operation? For now just show processing state.
+    
+    try {
+      final text = await _transcriptionService.transcribe(path);
+      
+      if (text != null && text.isNotEmpty) {
+        if (mounted) {
+           // Start typewriter effect
+           _transcribedText = text;
+           _typewriterText = ''; // Reset
+           setState(() {});
+           
+           final words = text.split(' ');
+           for (int i = 0; i < words.length; i++) {
+             if (!mounted || !_isProcessing) break;
+             await Future.delayed(const Duration(milliseconds: 200)); 
+             setState(() {
+               _typewriterText += '${words[i]} ';
+             });
+           }
+
+           await _processAiRequest(text);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not understand audio'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _transcribedText = null;
+          _typewriterText = '';
+        });
+      }
+    }
+  }
+
+  Future<void> _playLastAudio() async {
+    if (_lastAudioPath != null && File(_lastAudioPath!).existsSync()) {
+      try {
+        await _audioPlayer.stop();
+        await _audioPlayer.play(DeviceFileSource(_lastAudioPath!));
+        ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(
+               content: Text('Playing last recorded audio...'),
+               duration: Duration(seconds: 2),
+               behavior: SnackBarBehavior.floating,
+             ),
+        );
+      } catch (e) {
+        print('Error playing audio: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('Error playing audio: $e')),
+        );
+      }
+    } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text('No audio recorded yet')),
+        );
+    }
+  }
+
+  Future<void> _processAiRequest(String text) async {
+    final auth = context.read<AuthProvider>();
+    final userId = auth.user?.id ?? 'guest';
+    
+    // Calculate timezone offset
+    final offset = DateTime.now().timeZoneOffset;
+    final timezoneOffset = _formatTimezoneOffset(offset);
+    
+    final response = await _aiService.processQuery(text, userId, timezoneOffset);
+    if (!mounted) return;
+
+    if (response != null) {
+      // 1. Construct concise message and refresh data
+      // 1. Process actions
+      String message = '';
+      bool taskUpdated = false;
+      bool eventUpdated = false;
+
+      if (response.actions != null && response.actions!.isNotEmpty) {
+        for (final action in response.actions!) {
+           // Task Actions
+           if (action.type == 'task') {
+             if (action.deletedId != null) {
+               await context.read<TaskProvider>().deleteTask(action.deletedId!);
+               message += 'Task deleted. ';
+             } else {
+               taskUpdated = true;
+               message += 'Task processed. '; 
+             }
+           }
+           
+           // Event Actions
+           if (action.type == 'event') {
+             if (action.deletedId != null) {
+               await context.read<MeetingProvider>().deleteMeeting(action.deletedId!);
+                message += 'Meeting deleted. ';
+             } else {
+               eventUpdated = true;
+               message += 'Meeting scheduled. ';
+             }
+           }
+           
+           if (action.type == 'email') {
+              message += 'Email drafted. ';
+           }
+           
+           if (action.type == 'list_tasks') {
+              message += 'Opening tasks... ';
+              if (mounted) context.pushNamed('task');
+           }
+           
+           if (action.type == 'list_events') {
+              message += 'Opening calendar... ';
+              if (mounted) context.pushNamed('calendar');
+           }
+        }
+        
+        // Sync if needed
+        if (taskUpdated && mounted) context.read<TaskProvider>().forceSync();
+        if (eventUpdated && mounted) context.read<MeetingProvider>().forceSync();
+      }
+      
+      if (message.isEmpty && response.summary != null) {
+         message = response.summary!;
+      }
+
+      if (message.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+               message.trim(),
+               style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green, // Use green for success
+          ),
+        );
+      }
+
+      // 2. Handle generated email
+      if (response.generatedEmail != null) {
+        final emailData = response.generatedEmail!;
+        final draft = EmailMessage(
+          id: 'ai_draft_${DateTime.now().millisecondsSinceEpoch}',
+          threadId: '',
+          sender: 'Me', 
+          senderEmail: '',
+          subject: emailData.subject ?? '',
+          snippet: emailData.body ?? '',
+          body: emailData.body ?? '',
+          date: DateTime.now(),
+          isUnread: false,
+          labelIds: [],
+          hasAttachments: false,
+        );
+      context.push(
+        AppRoutes.composemail, 
+        extra: {
+          'draft': draft,
+          'isFromAi': response.isFromAi ?? true,
+        }
+      );
+      return;
+    }
+
+      // 3. Actions (tasks/events) - Status is "success" so we can refresh
+      if (response.actions != null && response.actions!.isNotEmpty) {
+         // Refresh data providers basically
+         // We can do this silently in background
+         // Assuming backend handled DB updates, local providers need fetch
+         // But TaskProvider and MeetingProvider handle local DB + Sync
+         // connectivityService.syncService.fullSync(context); // This might be too heavy?
+         // Let's rely on standard refresh or next load
+      }
+    } else {
+       ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('AI request failed'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+       );
     }
   }
 
   Future<void> _initializeServices() async {
     try {
       final authProvider = context.read<AuthProvider>();
+      // Initialize AiService with AuthProvider's dio
+      _aiService = AiService(dio: authProvider.dio);
+
       final taskProvider = context.read<TaskProvider>();
       final meetingProvider = context.read<MeetingProvider>();
       if (authProvider.user?.id != null) {
@@ -324,132 +598,44 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildPremiumBadge(bool isTablet, bool isLargeScreen) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        final subscriptionTier =
-            authProvider.user?.subscriptionTier ?? 'FREE_TRIAL';
-        if (subscriptionTier == 'ESSENTIAL' || subscriptionTier == 'PREMIUM') {
-          return GestureDetector(
-            onTap: () => context.pushNamed('currentPlan'),
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal:
-                    isLargeScreen
-                        ? 18
-                        : isTablet
-                        ? 16
-                        : 14,
-                vertical: isTablet ? 10 : 8,
-              ),
-              decoration: BoxDecoration(
-                gradient:
-                    subscriptionTier == 'ESSENTIAL'
-                        ? const LinearGradient(
-                          colors: [Color(0xFF6B7280), Color(0xFF4B5563)],
-                        )
-                        : const LinearGradient(
-                          colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-                        ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: (subscriptionTier == 'ESSENTIAL'
-                            ? const Color(0xFF4B5563)
-                            : const Color(0xFF667EEA))
-                        .withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    subscriptionTier == 'ESSENTIAL'
-                        ? Icons.mic
-                        : Icons.auto_awesome,
-                    color: Colors.white,
-                    size: isTablet ? 16 : 14,
-                  ),
-                  SizedBox(width: isTablet ? 8 : 6),
-                  Text(
-                    subscriptionTier,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize:
-                          isLargeScreen
-                              ? 13
-                              : isTablet
-                              ? 12
-                              : 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        return GestureDetector(
-          onTap: () => context.pushNamed('subscription'),
-          child: AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, child) {
-              return Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal:
-                      isLargeScreen
-                          ? 18
-                          : isTablet
-                          ? 16
-                          : 14,
-                  vertical: isTablet ? 10 : 8,
-                ),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF10B981), Color(0xFF059669)],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
-                      blurRadius: 8 + (_pulseController.value * 4),
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.star_rounded,
-                      color: Colors.white,
-                      size: isTablet ? 16 : 14,
-                    ),
-                    SizedBox(width: isTablet ? 8 : 6),
-                    Text(
-                      'Free Trial',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize:
-                            isLargeScreen
-                                ? 13
-                                : isTablet
-                                ? 12
-                                : 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isLargeScreen ? 18 : isTablet ? 16 : 14,
+        vertical: isTablet ? 10 : 8,
+      ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF9966), Color(0xFFFF5E62)], // Sunset orange gradient
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF5E62).withValues(alpha: 0.3),
+            blurRadius: 8,
+            spreadRadius: 1,
           ),
-        );
-      },
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.science_rounded,
+            color: Colors.white,
+            size: isTablet ? 16 : 14,
+          ),
+          SizedBox(width: isTablet ? 8 : 6),
+          Text(
+            'BETA',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: isLargeScreen ? 13 : isTablet ? 12 : 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.0,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -472,7 +658,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           SizedBox(height: spacing * 0.5),
           _buildWelcomeSection(isTablet, isLargeScreen),
           _buildCentralMicrophone(isTablet, isLargeScreen),
+           if (_isProcessing && _transcribedText != null)
+             _buildTranscribedText(isTablet),
           _buildVoiceIndicator(isTablet),
+          // Debug Play Button
+          if (_lastAudioPath != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: IconButton(
+                icon: const Icon(Icons.play_circle_outline, color: Colors.white70),
+                onPressed: _playLastAudio,
+                tooltip: 'Play Last Audio',
+              ),
+            ),
           // _buildQuickActions(isTablet, isLargeScreen),
           SizedBox(height: spacing * 0.3),
         ],
@@ -673,8 +871,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             height: micSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient:
-                  _isListening
+              gradient: _isProcessing 
+                  ? LinearGradient(
+                      colors: [Colors.grey.shade400, Colors.grey.shade600],
+                    )
+                  : (_isListening
                       ? LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -696,7 +897,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             context,
                           ).colorScheme.surface.withValues(alpha: 0.08),
                         ],
-                      ),
+                      )),
               border: Border.all(
                 color:
                     _isListening
@@ -725,18 +926,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ],
             ),
-            child: Icon(
-              _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-              size: isTablet ? 40 : 36,
-              color:
-                  _isListening
-                      ? Colors.white
-                      : Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.85),
+            child: _isProcessing 
+                ? const SizedBox(
+                    width: 24, 
+                    height: 24, 
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                  )
+                : Icon(
+                    _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                    size: isTablet ? 40 : 36,
+                    color: _isListening
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
+                  ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -794,6 +998,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             }),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTranscribedText(bool isTablet) {
+    return FadeTransition(
+      opacity: _glowController, 
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        margin: const EdgeInsets.only(top: 10, bottom: 10),
+        child: Text(
+          '"$_typewriterText"',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontSize: isTablet ? 18 : 16,
+            fontWeight: FontWeight.w500,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
       ),
     );
   }
@@ -871,5 +1095,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  String _formatTimezoneOffset(Duration offset) {
+    final totalMinutes = offset.inMinutes;
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes.remainder(60).abs();
+    final sign = totalMinutes >= 0 ? '+' : '-';
+    return '$sign${hours.abs().toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
   }
 }

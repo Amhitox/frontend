@@ -52,7 +52,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     _fadeController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AnalyticProvider>().fetchAnalytics(_selectedPeriod);
+      context.read<AnalyticProvider>().fetchAnalytics(_selectedPeriod, forceRefresh: true);
     });
   }
 

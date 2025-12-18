@@ -7,6 +7,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:frontend/managers/calendar_manager.dart';
 import 'package:frontend/managers/task_manager.dart';
 import 'package:frontend/models/user.dart';
 import 'package:frontend/services/auth_service.dart';
@@ -14,6 +15,7 @@ import 'package:frontend/utils/constants.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthProvider extends ChangeNotifier {
   late AuthService _authService;
@@ -40,6 +42,7 @@ class AuthProvider extends ChangeNotifier {
     if (userJson != null) {
       _user = User.fromJson(jsonDecode(userJson));
       await TaskManager().init(_user!.id ?? 'default_user');
+      await CalendarManager().init(_user!.id ?? 'default_user');
       notifyListeners();
     }
     final cookies = await _cookieJar.loadForRequest(
@@ -68,6 +71,7 @@ class AuthProvider extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         prefs.setString('user', jsonEncode(_user!.toJson()));
         await TaskManager().init(_user!.id ?? 'default_user');
+        await CalendarManager().init(_user!.id ?? 'default_user');
         await _cookieJar.loadForRequest(Uri.parse(AppConstants.baseUrl));
         if (response.data["needsEmailVerification"] == true) {
           _errorMessage =
@@ -137,6 +141,7 @@ class AuthProvider extends ChangeNotifier {
         final response = await _authService.logout();
         _user = null;
         await _cookieJar.deleteAll();
+        await CalendarManager().logout();
         final prefs = await SharedPreferences.getInstance();
         prefs.remove('user');
         FirebaseAuth.instance.signOut();
@@ -188,6 +193,7 @@ class AuthProvider extends ChangeNotifier {
         final prefs = await SharedPreferences.getInstance();
         prefs.setString('user', jsonEncode(_user!.toJson()));
         await TaskManager().init(_user!.id ?? 'default_user');
+        await CalendarManager().init(_user!.id ?? 'default_user');
         notifyListeners();
         await _cookieJar.loadForRequest(Uri.parse(AppConstants.baseUrl));
         return true;
@@ -249,6 +255,72 @@ class AuthProvider extends ChangeNotifier {
         } else {
           _errorMessage = message;
         }
+      }
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<dynamic> signInWithApple() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oAuthCredential = OAuthProvider("apple.com").credential(
+        idToken: credential.identityToken,
+        accessToken: credential.authorizationCode,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(oAuthCredential);
+      final user = FirebaseAuth.instance.currentUser;
+      final idToken = await user!.getIdToken();
+
+      // Get FCM token and device info
+      final fcmData = await _getFcmTokenAndDeviceInfo();
+
+      final response = await _authService.signInWithApple(
+        idToken!,
+        credential.givenName,
+        credential.familyName,
+        fcmData,
+      );
+
+      if (response.statusCode == 200) {
+        final authResponse = await _authService.getMe();
+        _user = User.fromJson(authResponse.data["user"]);
+        _errorMessage = "nothing";
+        final prefs = await SharedPreferences.getInstance();
+        prefs.setString('user', jsonEncode(_user!.toJson()));
+        await TaskManager().init(_user!.id ?? 'default_user');
+        await CalendarManager().init(_user!.id ?? 'default_user');
+        notifyListeners();
+        await _cookieJar.loadForRequest(Uri.parse(AppConstants.baseUrl));
+        return true;
+      } else {
+        _errorMessage = response.data["message"] ?? "Apple Sign-In failed";
+        return false;
+      }
+    } catch (e) {
+      debugPrint("Apple Sign-In error: $e");
+      if (e is SignInWithAppleAuthorizationException) {
+         if (e.code == AuthorizationErrorCode.canceled) {
+            _errorMessage = "Sign in canceled";
+         } else {
+            _errorMessage = e.message;
+         }
+      } else if (e is FirebaseAuthException) {
+        _errorMessage = e.message;
+      } else {
+        _errorMessage = "An error occurred during Apple Sign-In";
       }
       return false;
     } finally {

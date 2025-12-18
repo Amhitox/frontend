@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/routes/app_router.dart';
+import 'package:frontend/ui/widgets/top_notification_overlay.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/services/mail_service.dart';
 import 'package:frontend/models/email_message.dart';
@@ -172,6 +173,52 @@ class NotificationService {
 
     final notification = message.notification;
     final data = message.data;
+
+    // Check for Priority Email Payload
+    final isPriority = data['priority'] == 'true' || data['priority'] == true;
+    final type = data['notificationType'] ?? data['type'];
+    
+    if (isPriority && (type == 'email_new' || type == 'email')) {
+       final context = AppRoutes.navigatorKey.currentContext;
+       if (context != null) {
+          final title = data['title'] ?? 'Priority Email';
+          final body = data['body'] ?? 'New important message';
+          final audioUrl = data['audioUrl'];
+          
+          showTopNotification(
+            context: context,
+            title: title,
+            body: body,
+            onPlay: audioUrl != null ? () {
+                    final emailId = data['emailId'] ?? data['id'];
+                    if (emailId != null) {
+                         // Create stub
+                         final stubEmail = EmailMessage(
+                            id: emailId, 
+                            threadId: '', 
+                            sender: title, 
+                            senderEmail: '', 
+                            subject: body.toString().split('\n').first, 
+                            snippet: '', 
+                            body: '', 
+                            date: DateTime.now(), 
+                            isUnread: true, 
+                            labelIds: [], 
+                            hasAttachments: false,
+                         );
+                         
+                         final extra = {
+                           'email': stubEmail,
+                           'audioUrl': audioUrl,
+                           'autoPlay': true,
+                         };
+                         context.push(AppRoutes.maildetail, extra: extra);
+                    }
+            } : null,
+          );
+          return; // Skip standard notification
+       }
+    }
 
     if (notification != null) {
       await showNotification(
