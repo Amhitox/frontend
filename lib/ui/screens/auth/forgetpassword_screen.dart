@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/utils/localization.dart';
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
   @override
@@ -296,7 +297,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _emailSent ? 'Check your email' : 'Forgot Password?',
+          _emailSent ? AppLocalizations.of(context)!.checkYourEmail : AppLocalizations.of(context)!.forgotPassword,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -307,8 +308,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         const SizedBox(height: 4),
         Text(
           _emailSent
-              ? 'We\'ve sent a recovery link to your email'
-              : 'Don\'t worry, we\'ll help you reset it',
+              ? AppLocalizations.of(context)!.recoveryLinkSent
+              : AppLocalizations.of(context)!.dontWorryReset,
           style: TextStyle(
             color: textColor.withValues(alpha: 0.9),
             fontSize: subtitleSize,
@@ -384,7 +385,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Enter your email address',
+            AppLocalizations.of(context)!.enterEmail,
             style: TextStyle(
               fontSize: titleSize,
               fontWeight: FontWeight.w600,
@@ -393,7 +394,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'We\'ll send you a link to reset your password',
+            AppLocalizations.of(context)!.sendLinkReset,
             style: TextStyle(
               fontSize: fontSize,
               color: colorScheme.onSurface.withValues(alpha: 0.7),
@@ -406,8 +407,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             textInputAction: TextInputAction.done,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-              labelText: 'Email',
-              hintText: 'Enter your email address',
+              labelText: AppLocalizations.of(context)!.email,
+              hintText: AppLocalizations.of(context)!.enterEmail,
               labelStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: fontSize,
@@ -417,7 +418,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 fontSize: fontSize,
               ),
               prefixIcon: Icon(
-                Icons.email_outlined,
+                Icons.email_outlined, // Icon remains same
                 color: colorScheme.onSurface.withValues(alpha: 0.6),
                 size: 20,
               ),
@@ -455,10 +456,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter your email address';
+                return AppLocalizations.of(context)!.emailRequired;
               }
               if (!value.contains('@')) {
-                return 'Please enter a valid email address';
+                return AppLocalizations.of(context)!.invalidEmail;
               }
               return null;
             },
@@ -488,7 +489,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                         ),
                       )
                       : Text(
-                        'Send Reset Link',
+                        AppLocalizations.of(context)!.sendResetLink,
                         style: TextStyle(
                           fontSize: fontSize + 1,
                           fontWeight: FontWeight.w600,
@@ -515,7 +516,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Back to Login',
+                    AppLocalizations.of(context)!.backToLogin,
                     style: TextStyle(
                       fontSize: fontSize,
                       fontWeight: FontWeight.w500,
@@ -558,7 +559,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     return Column(
       children: [
         Text(
-          'Email sent successfully!',
+          AppLocalizations.of(context)!.emailSentSuccess,
           style: TextStyle(
             fontSize: titleSize,
             fontWeight: FontWeight.w600,
@@ -567,7 +568,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         ),
         const SizedBox(height: 12),
         Text(
-          'We\'ve sent a password reset link to:',
+          AppLocalizations.of(context)!.sentLinkTo,
           style: TextStyle(
             fontSize: fontSize,
             color: colorScheme.onSurface.withValues(alpha: 0.7),
@@ -623,7 +624,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Check your email and click the reset link to create a new password. The link will expire in 1 hour.',
+                AppLocalizations.of(context)!.checkEmailInstruction,
                 style: TextStyle(
                   fontSize: fontSize - 1,
                   color: const Color(0xFF3B77D8),
@@ -638,8 +639,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           onPressed: _secondsLeft > 0 ? null : _handleResendEmail,
           child: Text(
             _secondsLeft > 0
-                ? "Resend in $_secondsLeft s"
-                : "Didn't receive the email? Resend",
+                ? "${AppLocalizations.of(context)!.resendIn} $_secondsLeft s"
+                : AppLocalizations.of(context)!.didntReceiveResend,
             style: TextStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.w500,
@@ -662,7 +663,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               ),
             ),
             child: Text(
-              'Back to Login',
+              'Back to Login', // Wait, I need to update this too if it was missed in previous chunk or this is a duplicate?
               style: TextStyle(
                 fontSize: fontSize + 1,
                 fontWeight: FontWeight.w600,
@@ -713,7 +714,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                'Need help?',
+                AppLocalizations.of(context)!.needHelp,
                 style: TextStyle(
                   fontSize: titleSize,
                   fontWeight: FontWeight.w600,
@@ -745,7 +746,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Contact Support',
+                  AppLocalizations.of(context)!.contactSupport,
                   style: TextStyle(
                     fontSize: fontSize,
                     color: const Color(0xFF3B77D8),

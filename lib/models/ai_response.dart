@@ -40,8 +40,18 @@ class AiAction {
   final Map<String, dynamic>? data;
   final String? message;
   final String? deletedId;
+  final bool? quotaExceeded;
+  final String? error;
 
-  AiAction({this.type, this.status, this.data, this.message, this.deletedId});
+  AiAction({
+    this.type,
+    this.status,
+    this.data,
+    this.message,
+    this.deletedId,
+    this.quotaExceeded,
+    this.error,
+  });
 
   factory AiAction.fromJson(Map<String, dynamic> json) {
     return AiAction(
@@ -50,6 +60,8 @@ class AiAction {
       data: json['data'] is Map<String, dynamic> ? json['data'] : null,
       message: json['message'],
       deletedId: json['deletedId'],
+      quotaExceeded: json['quotaExceeded'],
+      error: json['error'],
     );
   }
 }

@@ -4,6 +4,8 @@ import 'package:frontend/models/task.dart';
 import 'package:frontend/models/taskpriority.dart';
 import 'package:frontend/services/task_service.dart';
 import 'package:frontend/managers/task_manager.dart';
+import 'package:frontend/providers/sub_provider.dart';
+import 'package:provider/provider.dart' as provider;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 
@@ -192,9 +194,32 @@ class TaskProvider extends ChangeNotifier {
           );
 
           await _taskManager.addOrUpdateTask(newTask, isSynced: true);
+          
+          // Note: Quota refresh should be handled by the caller or a global observer
         } else {
           throw Exception('Server returned status: ${response.statusCode}');
         }
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 400 || e.response?.statusCode == 403) {
+          final data = e.response?.data;
+          if (data is Map && data['code'] == 'QUOTA_EXCEEDED') {
+            // We rethrow a specific exception or handle it later.
+            // For now, let's just log it and maybe we can use a callback?
+            // Actually, many providers use a "current error" state.
+            print("TaskProvider: Quota exceeded: ${data['error']}");
+            rethrow; // Let the UI handle the exception
+          }
+        }
+        print("TaskProvider: Failed to add task to server: $e");
+        taskId = await _createLocalTask(
+          title,
+          description,
+          priority,
+          date,
+          time,
+          isCompleted,
+          category,
+        );
       } catch (e) {
         print("TaskProvider: Failed to add task to server: $e");
         taskId = await _createLocalTask(

@@ -44,6 +44,8 @@ class EmailMessage {
   final String body;
   final DateTime date;
   final bool isUnread;
+  final bool isImportant;
+  final bool isSpam;
   final List<String> labelIds;
   final bool hasAttachments;
   final List<EmailAttachment>? attachments;
@@ -61,6 +63,8 @@ class EmailMessage {
     required this.body,
     required this.date,
     required this.isUnread,
+    this.isImportant = false,
+    this.isSpam = false,
     required this.labelIds,
     required this.hasAttachments,
     this.attachments,
@@ -79,8 +83,10 @@ class EmailMessage {
       snippet: json['snippet'] as String,
       body: json['body'] as String,
       date: DateTime.parse(json['date'] as String),
-      isUnread: json['isUnread'] as bool,
-      labelIds: List<String>.from(json['labelIds'] as List),
+      isUnread: json['isUnread'] as bool? ?? false,
+      isImportant: json['isImportant'] as bool? ?? false,
+      isSpam: json['isSpam'] as bool? ?? false,
+      labelIds: List<String>.from(json['labelIds'] as List? ?? []),
       hasAttachments: json['hasAttachments'] as bool,
       attachments:
           json['attachments'] != null
@@ -109,6 +115,8 @@ class EmailMessage {
       'body': body,
       'date': date.toIso8601String(),
       'isUnread': isUnread,
+      'isImportant': isImportant,
+      'isSpam': isSpam,
       'labelIds': labelIds,
       'hasAttachments': hasAttachments,
       'attachments': attachments?.map((a) => a.toJson()).toList(),
@@ -168,6 +176,8 @@ class EmailMessage {
       body: '', // Body not available in summary list
       date: date,
       isUnread: true, // Specific field might be needed in Firestore
+      isImportant: false,
+      isSpam: false,
       labelIds: [],
       hasAttachments: false,
       summary: data['summary'] as String?,
@@ -185,6 +195,8 @@ class EmailMessage {
     String? body,
     DateTime? date,
     bool? isUnread,
+    bool? isImportant,
+    bool? isSpam,
     List<String>? labelIds,
     bool? hasAttachments,
     List<EmailAttachment>? attachments,
@@ -202,6 +214,8 @@ class EmailMessage {
       body: body ?? this.body,
       date: date ?? this.date,
       isUnread: isUnread ?? this.isUnread,
+      isImportant: isImportant ?? this.isImportant,
+      isSpam: isSpam ?? this.isSpam,
       labelIds: labelIds ?? this.labelIds,
       hasAttachments: hasAttachments ?? this.hasAttachments,
       attachments: attachments ?? this.attachments,

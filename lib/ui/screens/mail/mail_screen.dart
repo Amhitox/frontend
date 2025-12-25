@@ -36,12 +36,13 @@ class _MailScreenState extends State<MailScreen>
   bool _isCheckingConnection = true;
   bool _hasInitiallyLoaded = false;
 
-  String _selectedFilter = 'Inbox';
+  String _selectedFilter = 'Primary';
   final List<String> _filters = [
-    'Inbox',
+    'Primary',
     'Sent',
     'Drafts',
     'Important',
+    'Spam',
     'Trash',
     'Other',
   ];
@@ -156,8 +157,8 @@ class _MailScreenState extends State<MailScreen>
 
   String _getBackendType(String filter) {
     switch (filter) {
-      case 'Inbox':
-        return 'inbox';
+      case 'Primary':
+        return 'primary';
       case 'Sent':
         return 'sent';
       case 'Drafts':
@@ -166,10 +167,12 @@ class _MailScreenState extends State<MailScreen>
         return 'important';
       case 'Trash':
         return 'trash';
+      case 'Spam':
+        return 'spam';
       case 'Other':
         return 'other';
       default:
-        return 'inbox';
+        return 'primary';
     }
   }
 
@@ -443,7 +446,7 @@ class _MailScreenState extends State<MailScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Inbox',
+                    _selectedFilter,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurface,
                       fontSize:
@@ -682,7 +685,7 @@ class _MailScreenState extends State<MailScreen>
                   const SizedBox(width: 16),
                   Expanded(
                     child: _buildStatChip(
-                      '${emails.where((e) => e.labelIds.contains('IMPORTANT')).length}',
+                      '${emails.where((e) => e.isImportant).length}',
                       'Important',
                       Colors.red,
                       isTablet,
@@ -709,7 +712,7 @@ class _MailScreenState extends State<MailScreen>
                   ),
                   SizedBox(width: isTablet ? 16 : 12),
                   _buildStatChip(
-                    '${emails.where((e) => e.labelIds.contains('IMPORTANT')).length}',
+                    '${emails.where((e) => e.isImportant).length}',
                     'Important',
                     Colors.red,
                     isTablet,
@@ -858,7 +861,7 @@ class _MailScreenState extends State<MailScreen>
                     Colors.red,
                     () async {
                       final provider = context.read<MailProvider>();
-                      provider.setProvider('gmail');
+                      await provider.setProvider('gmail');
                       final res = await provider.connectGmail();
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -879,7 +882,7 @@ class _MailScreenState extends State<MailScreen>
                     Colors.blue,
                     () async {
                       final provider = context.read<MailProvider>();
-                      provider.setProvider('outlook');
+                      await provider.setProvider('outlook');
                       final res = await provider.connectOutlook();
                       if (!mounted) return;
                      // Assuming connectOutlook also returns authUrl or similar map
@@ -1133,14 +1136,22 @@ class _MailScreenState extends State<MailScreen>
   Widget _buildMailList(bool isTablet, bool isLargeScreen) {
     return Consumer<MailProvider>(
       builder: (context, mailProvider, child) {
-        
-        final emails = mailProvider.getEmailsForFilter(_selectedFilter);
+        final allEmails = mailProvider.getEmailsForFilter(_selectedFilter);
         final isLoading = mailProvider.isLoading;
         final hasMore = mailProvider.hasMoreForFilter(_selectedFilter);
 
-        // If loading and no data, show skeleton
-        if (isLoading && emails.isEmpty) {
+        if (isLoading && allEmails.isEmpty) {
           return SkeletonMailList(isTablet: isTablet);
+        }
+
+        List<Widget> listItems = allEmails.map((e) => _buildDismissibleEmailItem(e, isTablet, isLargeScreen)).toList();
+
+        if (allEmails.isEmpty && !isLoading) {
+           return _buildEmptyState(isTablet, isLargeScreen);
+        }
+
+        if (hasMore || isLoading) {
+          listItems.add(_buildPaginationLoader());
         }
 
         return RefreshIndicator(
@@ -1152,23 +1163,34 @@ class _MailScreenState extends State<MailScreen>
           },
           color: Theme.of(context).colorScheme.primary,
           child: ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(), // Ensure pull-to-refresh works even if list is short
+            physics: const AlwaysScrollableScrollPhysics(),
             controller: _scrollController,
             padding: EdgeInsets.symmetric(
               horizontal: isLargeScreen ? 24 : isTablet ? 20 : 16,
+              vertical: 16,
             ),
-            itemCount: emails.length + (hasMore || isLoading ? 1 : 0),
+            itemCount: listItems.length,
             itemBuilder: (context, index) {
-              if (index == emails.length) {
-                return _buildPaginationLoader();
-              }
-              
-              final email = emails[index];
-              return _buildDismissibleEmailItem(email, isTablet, isLargeScreen);
+              return listItems[index];
             },
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSectionHeader(String title, bool isTablet, bool isLargeScreen) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0, top: 4.0),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+          fontSize: isTablet ? 14 : 12,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.2,
+        ),
+      ),
     );
   }
 
@@ -1226,7 +1248,7 @@ class _MailScreenState extends State<MailScreen>
               }
 
               // Check if it's a draft
-              if (email.labelIds.contains('DRAFT')) {
+              if (email.draftId != null) {
                  context.pushNamed('composemail', extra: email);
               } else {
                  // Navigate to mail details with EmailMessage
@@ -1309,14 +1331,13 @@ class _MailScreenState extends State<MailScreen>
                             ),
                           ),
                         ),
-                        if (email.labelIds.contains('IMPORTANT'))
-                          Container(
-                            margin: EdgeInsets.only(left: isTablet ? 12 : 8),
-                            width: isTablet ? 8 : 6,
-                            height: isTablet ? 8 : 6,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
+                         if (email.isSpam)
+                          Padding(
+                            padding: EdgeInsets.only(left: isTablet ? 12 : 8),
+                            child: Icon(
+                              Icons.report_gmailerrorred_rounded,
+                              color: Colors.orange,
+                              size: isTablet ? 18 : 16,
                             ),
                           ),
                       ],

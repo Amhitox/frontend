@@ -174,17 +174,27 @@ class NotificationService {
     final notification = message.notification;
     final data = message.data;
 
-    // Check for Priority Email Payload
+    // Check for Priority Email Payload or audio URL
     final isPriority = data['priority'] == 'true' || data['priority'] == true;
     final type = data['notificationType'] ?? data['type'];
+    final audioUrl = data['audioUrl'];
     
-    if (isPriority && (type == 'email_new' || type == 'email')) {
+    debugPrint('🔔 Foreground notification - type: $type, isPriority: $isPriority, audioUrl: $audioUrl');
+    debugPrint('🔔 Full data: $data');
+    
+    // Show popup for emails that are priority OR have an audio summary
+    final shouldShowPopup = (type == 'email_new' || type == 'email') && (isPriority || audioUrl != null);
+    
+    debugPrint('🔔 shouldShowPopup: $shouldShowPopup');
+    
+    if (shouldShowPopup) {
        final context = AppRoutes.navigatorKey.currentContext;
+       debugPrint('🔔 Context available: ${context != null}');
        if (context != null) {
-          final title = data['title'] ?? 'Priority Email';
-          final body = data['body'] ?? 'New important message';
-          final audioUrl = data['audioUrl'];
+          final title = data['title'] ?? 'New Email';
+          final body = data['body'] ?? 'You have a new message';
           
+          debugPrint('🔔 Showing popup with title: $title, body: $body');
           showTopNotification(
             context: context,
             title: title,

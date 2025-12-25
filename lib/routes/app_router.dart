@@ -166,7 +166,7 @@ class AppRoutes {
                       try {
                         final authProvider = context.read<AuthProvider>();
                         final updatedUser = User.fromJson(userMap);
-                        authProvider.updateUserInMemory(updatedUser);
+                        authProvider.updateUserInSession(updatedUser);
                       } catch (e) {
                         debugPrint('⚠️ Could not update AuthProvider: $e');
                       }

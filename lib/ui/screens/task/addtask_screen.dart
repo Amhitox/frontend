@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend/providers/task_provider.dart';
+import 'package:frontend/providers/sub_provider.dart';
 import 'package:frontend/utils/localization.dart';
+import 'package:frontend/utils/quota_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
 import '../../../models/task.dart';
 import '../../../models/taskpriority.dart';
 
@@ -183,42 +186,65 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       }
     }
     setState(() => _isSaving = true);
-    if (!isEditMode) {
-      await context.read<TaskProvider>().addTask(
-        _titleController.text.trim(),
-        _descriptionController.text.trim(),
-        _selectedPriority.toString().split('.').last,
-        _selectedDate,
-        _selectedTime,
-        false,
-        _showCustomCategoryField
-            ? _customCategoryController.text.trim().toLowerCase()
-            : _selectedCategoryKey,
+    try {
+      if (!isEditMode) {
+        await context.read<TaskProvider>().addTask(
+          _titleController.text.trim(),
+          _descriptionController.text.trim(),
+          _selectedPriority.toString().split('.').last,
+          _selectedDate,
+          _selectedTime,
+          false,
+          _showCustomCategoryField
+              ? _customCategoryController.text.trim().toLowerCase()
+              : _selectedCategoryKey,
+        );
+      } else {
+        await context.read<TaskProvider>().updateTask(
+          id: widget.editingTask!.id!,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          priority: _selectedPriority.toString().split('.').last,
+          date: _selectedDate,
+          time: _selectedTime,
+          isCompleted: widget.editingTask!.isCompleted,
+          category:
+              _showCustomCategoryField
+                  ? _customCategoryController.text.trim().toLowerCase()
+                  : _selectedCategoryKey,
+        );
+      }
+      
+      // Refresh quota status after successful addition
+      if (mounted) {
+        context.read<SubProvider>().fetchQuotaStatus();
+      }
+
+      HapticFeedback.mediumImpact();
+      await Future.delayed(const Duration(milliseconds: 1000));
+      _showFeedback(
+        widget.editingTask != null
+            ? AppLocalizations.of(context).taskUpdatedSuccessfully
+            : AppLocalizations.of(context).taskCreatedSuccessfully,
       );
-    } else {
-      await context.read<TaskProvider>().updateTask(
-        id: widget.editingTask!.id!,
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        priority: _selectedPriority.toString().split('.').last,
-        date: _selectedDate,
-        time: _selectedTime,
-        isCompleted: widget.editingTask!.isCompleted,
-        category:
-            _showCustomCategoryField
-                ? _customCategoryController.text.trim().toLowerCase()
-                : _selectedCategoryKey,
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (mounted) context.pop();
+    } catch (e) {
+      setState(() => _isSaving = false);
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data['code'] == 'QUOTA_EXCEEDED') {
+          if (mounted) {
+            QuotaDialog.show(context, message: data['error']);
+          }
+          return;
+        }
+      }
+      _showFeedback(
+        AppLocalizations.of(context).errorOccurred,
+        isError: true,
       );
     }
-    HapticFeedback.mediumImpact();
-    await Future.delayed(const Duration(milliseconds: 1000));
-    _showFeedback(
-      widget.editingTask != null
-          ? AppLocalizations.of(context).taskUpdatedSuccessfully
-          : AppLocalizations.of(context).taskCreatedSuccessfully,
-    );
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (mounted) context.pop();
   }
 
   void _showFeedback(String message, {bool isError = false}) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/utils/localization.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:provider/provider.dart';
@@ -233,7 +234,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Reset Password',
+          AppLocalizations.of(context)!.resetPasswordTitle,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -243,7 +244,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         ),
         const SizedBox(height: 4),
         Text(
-          'Create a new secure password for your account',
+          AppLocalizations.of(context)!.createSecurePassword,
           style: TextStyle(
             color: textColor.withValues(alpha: 0.9),
             fontSize: subtitleSize,
@@ -316,7 +317,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Create new password',
+            AppLocalizations.of(context)!.createNewPassword,
             style: TextStyle(
               fontSize: titleSize,
               fontWeight: FontWeight.w600,
@@ -325,7 +326,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'Your new password must be at least 8 characters long',
+            AppLocalizations.of(context)!.passwordRequirements,
             style: TextStyle(
               fontSize: fontSize,
               color: colorScheme.onSurface.withValues(alpha: 0.7),
@@ -338,8 +339,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             textInputAction: TextInputAction.next,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-              labelText: 'New Password',
-              hintText: 'Enter your new password',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.newPassword,
+              hintText: AppLocalizations.of(context)!.newPasswordHint,
               labelStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: fontSize,
@@ -399,10 +401,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter a new password';
+                return AppLocalizations.of(context)!.passwordRequired;
               }
               if (value.length < 8) {
-                return 'Password must be at least 8 characters';
+                return AppLocalizations.of(context)!.passwordLengthError;
               }
               return null;
             },
@@ -414,8 +416,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             textInputAction: TextInputAction.done,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-              labelText: 'Confirm Password',
-              hintText: 'Confirm your new password',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.confirmPassword,
+              hintText: AppLocalizations.of(context)!.confirmNewPasswordHint,
               labelStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: fontSize,
@@ -477,10 +480,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please confirm your password';
+                return AppLocalizations.of(context)!.passwordRequired;
               }
               if (value != _passwordController.text) {
-                return 'Passwords do not match';
+                return AppLocalizations.of(context)!.passwordMatchError;
               }
               return null;
             },
@@ -510,7 +513,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                         ),
                       )
                       : Text(
-                        'Reset Password',
+                        AppLocalizations.of(context)!.resetPasswordTitle,
                         style: TextStyle(
                           fontSize: fontSize + 1,
                           fontWeight: FontWeight.w600,
@@ -537,7 +540,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Back to Login',
+                    AppLocalizations.of(context)!.backToLogin,
                     style: TextStyle(
                       fontSize: fontSize,
                       fontWeight: FontWeight.w500,
@@ -557,7 +560,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       if (widget.token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Password reset failed"),
+            content: Text(AppLocalizations.of(context)!.passwordResetFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -571,7 +574,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       if (response && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Password reset successfully!'),
+            content: Text(AppLocalizations.of(context)!.passwordResetSuccess),
             backgroundColor: const Color(0xFF28A745),
             behavior: SnackBarBehavior.floating,
           ),
@@ -584,7 +587,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Password reset failed"),
+            content: Text(AppLocalizations.of(context)!.passwordResetFailed),
             backgroundColor: Colors.red,
           ),
         );

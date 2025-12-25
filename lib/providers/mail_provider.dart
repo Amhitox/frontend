@@ -43,7 +43,11 @@ class MailProvider extends ChangeNotifier {
 
   Future<void> _initProvider() async {
     final box = await Hive.openBox('mail_settings');
+    
+    // Read the user's saved provider choice - this is set when they click Gmail or Outlook
     _currentProvider = box.get('selected_provider', defaultValue: 'gmail');
+    debugPrint('🔄 [MailProvider] Loaded saved provider: $_currentProvider');
+    
     notifyListeners();
   }
 
@@ -137,10 +141,21 @@ class MailProvider extends ChangeNotifier {
         response = await _outlookService.listMails(type: apiType, maxResults: 20);
       }
       
+      debugPrint('📧 [MailProvider] Raw response: $response');
+      
       if (response != null && response['messages'] != null) {
         final messagesList = response['messages'] as List;
-        final newEmails = messagesList.map((data) => _parseApiMessage(data as Map<String, dynamic>)).toList();
+        debugPrint('📧 [MailProvider] Messages count: ${messagesList.length}');
+        if (messagesList.isNotEmpty) {
+          debugPrint('📧 [MailProvider] First message: ${messagesList.first}');
+        }
+        var newEmails = messagesList.map((data) => _parseApiMessage(data as Map<String, dynamic>)).toList();
         
+        // Applying requested primary filtering: only for Gmail (Outlook doesn't use labels)
+        if (filterKey == 'primary' && _currentProvider == 'gmail') {
+          newEmails = newEmails.where((e) => e.labelIds.contains('INBOX')).toList();
+        }
+
         // Update caches
         _cachedEmails[filterKey] = newEmails;
         _activeEmails[filterKey] = List.from(newEmails); // Reset active list to new first page
@@ -336,13 +351,14 @@ class MailProvider extends ChangeNotifier {
 
   String _getBackendType(String filter) {
     switch (filter.toLowerCase()) {
-      case 'inbox': return 'inbox';
+      case 'primary': return 'primary';
       case 'sent': return 'sent';
       case 'drafts': return 'drafts';
       case 'important': return 'important';
       case 'trash': return 'trash';
+      case 'spam': return 'spam';
       case 'other': return 'other';
-      default: return 'inbox';
+      default: return 'primary';
     }
   }
 
@@ -380,7 +396,9 @@ class MailProvider extends ChangeNotifier {
     }
 
     final labelIds = data['labelIds'] as List<dynamic>? ?? [];
-    final isUnread = labelIds.contains('UNREAD');
+    final isUnread = data['isUnread'] as bool? ?? labelIds.contains('UNREAD');
+    final isImportant = data['isImportant'] as bool? ?? labelIds.contains('IMPORTANT');
+    final isSpam = data['isSpam'] as bool? ?? labelIds.contains('SPAM');
     final hasAttachments = data['hasAttachments'] == true;
     
     final summary = data['summary'] as String?;
@@ -404,6 +422,8 @@ class MailProvider extends ChangeNotifier {
       body: body,
       date: date,
       isUnread: isUnread,
+      isImportant: isImportant,
+      isSpam: isSpam,
       labelIds: labelIds.map((e) => e.toString()).toList(),
       hasAttachments: hasAttachments,
       attachments: null,

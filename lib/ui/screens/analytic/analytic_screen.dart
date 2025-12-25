@@ -80,7 +80,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final double contentMaxWidth = _getContentMaxWidth(screenWidth);
 
     return Scaffold(
-      drawer: const SideMenu(), 
+      drawer: const SideMenu(),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -111,7 +111,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                "Error loading analytics",
+                                AppLocalizations.of(context)!.errorLoadingAnalytics,
                                 style: TextStyle(color: theme.colorScheme.error),
                               ),
                               SizedBox(height: 8),
@@ -120,7 +120,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                                 onPressed: () {
                                   provider.fetchAnalytics(_selectedPeriod, forceRefresh: true);
                                 },
-                                child: Text("Retry"),
+                                child: Text(AppLocalizations.of(context)!.retry),
                               )
                             ],
                           ),
@@ -129,7 +129,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
                       final data = provider.getData(_selectedPeriod);
                       if (data == null) {
-                        return Center(child: Text("No data available"));
+                        return Center(child: Text(AppLocalizations.of(context)!.noData));
                       }
                       
                       return RefreshIndicator(
@@ -392,7 +392,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Analytics Dashboard',
+                      theme.localizedString(context, 'analyticsDashboard'),
                       style: TextStyle(
                         color: theme.colorScheme.onSurface,
                         fontSize: titleSize,
@@ -402,7 +402,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     ),
                     SizedBox(height: _isTablet(screenWidth) ? 6 : 4),
                     Text(
-                      'Track your productivity & performance',
+                      theme.localizedString(context, 'analyticsSubtitle'),
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.7,
@@ -462,29 +462,30 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                               }
                            }
                            
-                           scaffoldMessenger.showSnackBar(
-                             SnackBar(
-                               content: Text('Saved to: $newPath'),
-                               action: SnackBarAction(
-                                 label: 'OPEN',
-                                 onPressed: () {
-                                   OpenFilex.open(newPath);
-                                 },
-                               ),
-                               duration: const Duration(seconds: 5),
-                             ),
-                           );
+                            
+                            scaffoldMessenger.showSnackBar(
+                              SnackBar(
+                                content: Text('${AppLocalizations.of(context)!.savedTo}: $newPath'),
+                                action: SnackBarAction(
+                                  label: AppLocalizations.of(context)!.open,
+                                  onPressed: () {
+                                    OpenFilex.open(newPath);
+                                  },
+                                ),
+                                duration: const Duration(seconds: 5),
+                              ),
+                            );
 
-                        } catch (e) {
-                          scaffoldMessenger.showSnackBar(
-                             SnackBar(content: Text('Saved to app folder: $path')),
-                          );
-                        }
-                      } else {
-                        scaffoldMessenger.showSnackBar(
-                          SnackBar(content: Text('Failed to generate report')),
-                        );
-                      }
+                         } catch (e) {
+                           scaffoldMessenger.showSnackBar(
+                              SnackBar(content: Text('${AppLocalizations.of(context)!.savedTo}: $path')),
+                           );
+                         }
+                       } else {
+                         scaffoldMessenger.showSnackBar(
+                           SnackBar(content: Text(AppLocalizations.of(context)!.failedToGenerate)),
+                         );
+                       }
                     },
                     screenWidth,
                   ),
@@ -497,10 +498,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       final path = await provider.generateAndDownloadReport(_selectedPeriod);
                        
                       if (path != null) {
-                        await Share.shareXFiles([XFile(path)], text: 'Here is my analytics report from Aixy.');
+                        await Share.shareXFiles([XFile(path)], text: AppLocalizations.of(context)!.shareAnalyticsMessage);
                       } else {
                         scaffoldMessenger.showSnackBar(
-                          SnackBar(content: Text('Failed to generate report for sharing')),
+                          SnackBar(content: Text(AppLocalizations.of(context)!.failedToGenerateShare)),
                         );
                       }
                   }, screenWidth),
@@ -529,7 +530,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildQuickMetric(
-                      'Score',
+                      AppLocalizations.of(context)!.score,
                       '${data.productivityScore}%',
                       _getProductivityColor(data.productivityScore),
                       screenWidth,
@@ -540,7 +541,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       color: theme.colorScheme.outline.withValues(alpha: 0.3),
                     ),
                     _buildQuickMetric(
-                      'Emails',
+                      AppLocalizations.of(context)!.emails,
                       '${data.emailsSent + data.emailsReceived}',
                       Colors.blue,
                       screenWidth,
@@ -551,7 +552,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       color: theme.colorScheme.outline.withValues(alpha: 0.3),
                     ),
                     _buildQuickMetric(
-                      'Tasks',
+                      AppLocalizations.of(context)!.tasks,
                       '${data.tasksCompleted}',
                       Colors.orange,
                       screenWidth,
@@ -701,7 +702,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     ),
                     child: Center(
                       child: Text(
-                        _getShortPeriodName(period),
+                        _getShortPeriodName(context, period),
                         style: TextStyle(
                           color:
                               isSelected
@@ -735,14 +736,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return 16.0;
   }
 
-  String _getShortPeriodName(String period) {
+  String _getShortPeriodName(BuildContext context, String period) {
     switch (period) {
       case 'This Week':
-        return 'Week';
+        return AppLocalizations.of(context)!.week;
       case 'This Month':
-        return 'Month';
+        return AppLocalizations.of(context)!.month;
       case 'This Year':
-        return 'Year';
+        return AppLocalizations.of(context)!.year;
+      case 'Today':
+         return AppLocalizations.of(context)!.today;
       default:
         return period;
     }
@@ -784,25 +787,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           mainAxisSpacing: mainSpacing,
           children: [
             _buildStatCard(
-              'Emails Sent',
+              AppLocalizations.of(context)!.emailsSent,
               data.emailsSent.toString(),
               Icons.send,
               Colors.blue,
             ),
             _buildStatCard(
-              'Emails Received',
+              AppLocalizations.of(context)!.emailsReceived,
               data.emailsReceived.toString(),
               Icons.inbox,
               Colors.green,
             ),
             _buildStatCard(
-              'Tasks Completed',
+              AppLocalizations.of(context)!.tasksCompleted,
               data.tasksCompleted.toString(),
               Icons.check_circle,
               Colors.orange,
             ),
             _buildStatCard(
-              'Meetings',
+              AppLocalizations.of(context)!.meetings,
               data.meetingsAttended.toString(),
               Icons.event,
               Colors.purple,
@@ -968,7 +971,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Productivity Score',
+                  AppLocalizations.of(context)!.productivityScore,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface,
                     fontSize: titleSize,
@@ -1019,7 +1022,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Avg Response Time: ${data.responseTime}',
+                  '${AppLocalizations.of(context)!.avgResponseTime}: ${data.responseTime}',
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: subtitleSize,
@@ -1077,7 +1080,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Activity Trend',
+              AppLocalizations.of(context)!.activityTrends,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: titleSize,
@@ -1116,7 +1119,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             final value = entry.value;
             final height = maxValue == 0 ? 0.0 : (value / maxValue) * _getChartMaxHeight(screenWidth);
             final label = index < 7 
-                ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index] 
+                ? [
+                    AppLocalizations.of(context)!.monday.substring(0, 3), 
+                    AppLocalizations.of(context)!.tuesday.substring(0, 3), 
+                    AppLocalizations.of(context)!.wednesday.substring(0, 3), 
+                    AppLocalizations.of(context)!.thursday.substring(0, 3), 
+                    AppLocalizations.of(context)!.friday.substring(0, 3), 
+                    AppLocalizations.of(context)!.saturday.substring(0, 3), 
+                    AppLocalizations.of(context)!.sunday.substring(0, 3)
+                  ][index] 
                 : '';
                 
             return TweenAnimationBuilder<double>(
@@ -1216,7 +1227,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Insights',
+                  AppLocalizations.of(context)!.keyInsights,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface,
                     fontSize: titleSize,
@@ -1227,24 +1238,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
             SizedBox(height: _isTablet(screenWidth) ? 20 : 16),
             _buildInsightItem(
-              'Peak Activity',
-              _getPeakActivityInsight(data),
+              AppLocalizations.of(context)!.peakActivity,
+              _getPeakActivityInsight(context, data),
               Icons.trending_up,
               Colors.green,
               screenWidth,
             ),
             SizedBox(height: _isTablet(screenWidth) ? 16 : 12),
             _buildInsightItem(
-              'Response Pattern',
-              _getResponsePatternInsight(data),
+              AppLocalizations.of(context)!.responsePattern,
+              _getResponsePatternInsight(context, data),
               Icons.schedule,
               Colors.blue,
               screenWidth,
             ),
             SizedBox(height: _isTablet(screenWidth) ? 16 : 12),
             _buildInsightItem(
-              'Suggestion',
-              _getSuggestion(data),
+              AppLocalizations.of(context)!.suggestion,
+              _getSuggestion(context, data),
               Icons.recommend,
               Colors.orange,
               screenWidth,
@@ -1327,9 +1338,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     return 11.0;
   }
 
-  String _getPeakActivityInsight(AnalyticData data) {
+  String _getPeakActivityInsight(BuildContext context, AnalyticData data) {
     final weeklyData = data.weeklyData;
-    if (weeklyData.isEmpty) return "No activity data";
+    if (weeklyData.isEmpty) return AppLocalizations.of(context)!.noActivityData;
     
     int maxIndex = 0;
     num maxValue = -1;
@@ -1341,35 +1352,35 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     }
     
     final days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
+      AppLocalizations.of(context)!.monday,
+      AppLocalizations.of(context)!.tuesday,
+      AppLocalizations.of(context)!.wednesday,
+      AppLocalizations.of(context)!.thursday,
+      AppLocalizations.of(context)!.friday,
+      AppLocalizations.of(context)!.saturday,
+      AppLocalizations.of(context)!.sunday,
     ];
     if (maxIndex < days.length) {
-      return 'Your most productive day was ${days[maxIndex]}';
+      return '${AppLocalizations.of(context)!.mostProductiveDay} ${days[maxIndex]}';
     }
-    return 'Consistent activity throughout the week';
+    return AppLocalizations.of(context)!.consistentActivity;
   }
 
-  String _getResponsePatternInsight(AnalyticData data) {
+  String _getResponsePatternInsight(BuildContext context, AnalyticData data) {
     if (data.productivityScore > 80) {
-      return 'You maintain excellent response times consistently';
+      return AppLocalizations.of(context)!.excellentResponse;
     } else if (data.productivityScore > 60) {
-      return 'Your response time could be improved during peak hours';
+      return AppLocalizations.of(context)!.improvedResponse;
     } else {
-      return 'Consider setting up automated responses for better efficiency';
+      return AppLocalizations.of(context)!.automateResponses;
     }
   }
 
-  String _getSuggestion(AnalyticData data) {
+  String _getSuggestion(BuildContext context, AnalyticData data) {
     if (data.productivityScore > 80) {
-      return 'Great work! Consider sharing your productivity tips with your team';
+      return AppLocalizations.of(context)!.shareTips;
     } else {
-      return 'Try time-blocking your calendar to improve focus and productivity';
+      return AppLocalizations.of(context)!.timeBlocking;
     }
   }
 }

@@ -225,6 +225,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       if (mounted) {
         if (result != null && result['error'] == null) {
           _showFeedback('Message sent successfully');
+          setState(() => _allowPop = true);
           context.pop();
         } else {
            final errorMsg = result?['error'] ?? 'Unknown error';
@@ -310,6 +311,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
         if (result != null && (result['success'] == true || result['draftId'] != null)) {
           HapticFeedback.lightImpact();
           _showFeedback('Draft saved successfully');
+          setState(() => _allowPop = true);
           context.pop();
         } else {
            final errorMsg = result?['error'] ?? 'Failed to save draft';
@@ -417,31 +419,68 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
+  bool _allowPop = false;
+
+  bool get _hasContent {
+    // Check text fields
+    if (_toController.text.trim().isNotEmpty) return true;
+    if (_subjectController.text.trim().isNotEmpty) return true;
+    if (_bodyController.document.toPlainText().trim().isNotEmpty) return true;
+    
+    // Check lists
+    if (_toRecipients.isNotEmpty) return true;
+    if (_ccRecipients.isNotEmpty) return true;
+    if (_bccRecipients.isNotEmpty) return true;
+    if (_attachments.isNotEmpty) return true;
+    
+    return false;
+  }
+
+  Future<void> _handleBackNavigation() async {
+    if (!_hasContent) {
+      if (mounted) {
+        setState(() => _allowPop = true);
+      }
+      context.pop();
+      return;
+    }
+    
+    await _saveDraft();
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
-    return Scaffold(
-      drawer: const SideMenu(),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).scaffoldBackgroundColor,
-              Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
-              Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
-            ],
+    
+    return PopScope(
+      canPop: _allowPop,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (didPop) return;
+        _handleBackNavigation();
+      },
+      child: Scaffold(
+        drawer: const SideMenu(),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).scaffoldBackgroundColor,
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
+                Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(isTablet, isLargeScreen),
-              Expanded(child: _buildContent(isTablet, isLargeScreen)),
-            ],
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(isTablet, isLargeScreen),
+                Expanded(child: _buildContent(isTablet, isLargeScreen)),
+              ],
+            ),
           ),
         ),
       ),
@@ -459,11 +498,8 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           _buildHeaderButton(
             Icons.arrow_back_ios_new,
             () {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.push('/mail');
-              }
+               // This will trigger PopScope
+               context.pop();
             },
             Theme.of(context),
             isTablet,

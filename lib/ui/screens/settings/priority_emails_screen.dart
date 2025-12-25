@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:frontend/providers/user_provider.dart';
+import 'package:frontend/providers/sub_provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/utils/quota_dialog.dart';
+import 'package:dio/dio.dart';
 
 class PriorityEmailsScreen extends StatefulWidget {
   const PriorityEmailsScreen({super.key});
@@ -28,9 +30,8 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
     final user = context.read<AuthProvider>().user;
     if (user != null && (user.uid != null || user.id != null)) {
       setState(() => _isLoading = true);
-      await context
-          .read<UserProvider>()
-          .fetchPriorityEmails(user.uid ?? user.id!);
+      await context.read<SubProvider>().fetchPriorityEmails(user.uid ?? user.id!);
+      await context.read<SubProvider>().fetchQuotaStatus();
       setState(() => _isLoading = false);
     }
   }
@@ -45,31 +46,42 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await context
-          .read<UserProvider>()
-          .addPriorityEmail(user.uid ?? user.id!, email);
-      _emailController.clear();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Added $email to VIP list'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      final result = await context.read<SubProvider>().addPriorityEmail(user.uid ?? user.id!, email);
+      
+      if (result['success'] == true) {
+        _emailController.clear();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Added $email to VIP list'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else if (result['quotaExceeded'] == true) {
+        if (mounted) {
+          QuotaDialog.show(context, message: result['error']);
+        }
+      } else {
+         _showError(result['error'] ?? 'Failed to add email');
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to add email: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+      _showError('An unexpected error occurred');
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -80,7 +92,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
     setState(() => _isLoading = true);
     try {
       await context
-          .read<UserProvider>()
+          .read<SubProvider>()
           .removePriorityEmail(user.uid ?? user.id!, email);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -114,7 +126,9 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final priorityEmails = context.watch<UserProvider>().priorityEmails;
+    final subProvider = context.watch<SubProvider>();
+    final priorityEmails = subProvider.priorityEmails;
+    final quota = subProvider.quotaStatus;
     final isTablet = MediaQuery.of(context).size.width > 600;
 
     return Scaffold(
@@ -169,6 +183,22 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  if (quota != null) ...[
+                    LinearProgressIndicator(
+                      value: quota.usage.priorityEmails / quota.limits.priorityEmailsTotal,
+                      backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Quota: ${quota.usage.priorityEmails} / ${quota.limits.priorityEmailsTotal} used',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   Text(
                     'Emails from these senders will trigger voice summaries.',
                     style: TextStyle(

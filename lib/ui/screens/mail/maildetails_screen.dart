@@ -17,6 +17,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:frontend/ui/screens/mail/composemail_screen.dart';
 import 'package:audioplayers/audioplayers.dart'; // Keep for types if needed, or remove if provider manages completely. Provider exposes simple states.
 import 'package:frontend/providers/audio_provider.dart';
+import 'package:frontend/ui/widgets/side_menu.dart';
 
 class MailDetailScreen extends StatefulWidget {
   final EmailMessage email;
@@ -561,10 +562,14 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     String bcc = '';
 
     final dateStr = email.date.toString();
+    // Start with empty lines so user can type their message at the top
+    String userWriteSpace = '\n\n\n\n'; // Space for user to write their message
+    
     if (type == 'forward') {
       subject = 'Fwd: $subject';
       to = '';
-      bodyPrefix = '\n\n---------- Forwarded message ---------\n'
+      // Add user write space at the top, then the forwarded message header
+      bodyPrefix = '$userWriteSpace---------- Forwarded message ---------\n'
           'From: ${email.sender} <${email.senderEmail}>\n'
           'Date: $dateStr\n'
           'Subject: ${email.subject}\n'
@@ -595,7 +600,8 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
         cc = email.headers?.cc ?? '';
       }
 
-      bodyPrefix = '\n\n\nOn $dateStr, ${email.sender} wrote:\n';
+      // Add user write space at the top, then the quoted message header
+      bodyPrefix = '${userWriteSpace}On $dateStr, ${email.sender} wrote:\n';
     }
 
     // Append original body (stripping HTML tags and decoding entities)
@@ -943,7 +949,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
 
     // Check if unread
     final labelIds = data['labelIds'] as List<dynamic>? ?? [];
-    final isUnread = labelIds.contains('UNREAD');
+    final isUnread = data['isUnread'] as bool? ?? labelIds.contains('UNREAD');
 
     // Check for attachments
     final hasAttachments = data['hasAttachments'] == true;
@@ -1040,6 +1046,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
           ],
         ),
       ),
+      drawer: const SideMenu(),
       // Switched to CustomScrollView for unified scrolling with conditional gesture handling
       body: CustomScrollView(
         slivers: [
@@ -1348,7 +1355,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
           ),
           const SizedBox(width: 8),
 
-          if (widget.email.labelIds.contains('IMPORTANT'))
+          if (widget.email.isImportant)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(

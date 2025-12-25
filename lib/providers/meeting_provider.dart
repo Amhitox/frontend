@@ -6,6 +6,8 @@ import 'package:frontend/managers/calendar_manager.dart';
 import 'package:frontend/models/meeting.dart';
 import 'package:frontend/models/meeting_location.dart';
 import 'package:frontend/services/meeting_service.dart';
+import 'package:frontend/providers/sub_provider.dart';
+import 'package:provider/provider.dart' as provider;
 
 class MeetingProvider extends ChangeNotifier {
   final MeetingService meeting;
@@ -214,6 +216,23 @@ class MeetingProvider extends ChangeNotifier {
             'Server returned ${response.statusCode}: ${response.data}',
           );
         }
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 400 || e.response?.statusCode == 403) {
+          final data = e.response?.data;
+          if (data is Map && data['code'] == 'QUOTA_EXCEEDED') {
+            print("MeetingProvider: Quota exceeded: ${data['error']}");
+            rethrow;
+          }
+        }
+        meetingId = await _createLocalMeeting(
+          title,
+          description,
+          date,
+          startTime,
+          endTime,
+          attendees,
+          location,
+        );
       } catch (e) {
         meetingId = await _createLocalMeeting(
           title,

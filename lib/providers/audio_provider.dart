@@ -37,6 +37,8 @@ class AudioProvider extends ChangeNotifier {
     _audioPlayer.onPlayerComplete.listen((event) {
       _isPlaying = false;
       _position = Duration.zero;
+      // Clear current URL so next play() will restart from beginning
+      _currentUrl = null;
       notifyListeners();
     });
   }

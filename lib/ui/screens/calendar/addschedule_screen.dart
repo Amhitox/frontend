@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/providers/meeting_provider.dart';
+import 'package:frontend/providers/sub_provider.dart';
+import 'package:frontend/utils/quota_dialog.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
 import '../../../models/meeting.dart';
 import '../../../models/meeting_location.dart';
 
@@ -135,6 +138,12 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           _selectedType,
         );
       }
+      
+      // Refresh quota status after successful addition
+      if (mounted) {
+        context.read<SubProvider>().fetchQuotaStatus();
+      }
+
       _showFeedback(
         _isEditMode
             ? 'Meeting updated successfully'
@@ -145,6 +154,15 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
         context.push('/calendar');
       }
     } catch (e) {
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data['code'] == 'QUOTA_EXCEEDED') {
+          if (mounted) {
+            QuotaDialog.show(context, message: data['error']);
+          }
+          return;
+        }
+      }
       _showFeedback('Failed to save meeting: $e', isError: true);
     } finally {
       if (mounted) {

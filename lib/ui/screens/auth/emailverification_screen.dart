@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:frontend/utils/localization.dart';
+
 class EmailVerificationScreen extends StatefulWidget {
   final String? token;
   const EmailVerificationScreen({super.key, this.token});
@@ -11,16 +13,21 @@ class EmailVerificationScreen extends StatefulWidget {
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   bool _isVerifying = true;
   bool _isVerified = false;
-  String _message = 'Verifying your email...';
+  bool _isVerified = false;
+  String _message = '';
   @override
   void initState() {
     super.initState();
     if (widget.token != null) {
       _verifyEmail();
     } else {
-      setState(() {
-        _isVerifying = false;
-        _message = 'Invalid verification link';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isVerifying = false;
+            _message = AppLocalizations.of(context)!.invalidLink;
+          });
+        }
       });
     }
   }
@@ -30,7 +37,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       setState(() {
         _isVerifying = false;
         _isVerified = true;
-        _message = 'Email verified successfully!';
+        _message = AppLocalizations.of(context)!.emailVerified;
       });
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
@@ -41,15 +48,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       setState(() {
         _isVerifying = false;
         _isVerified = false;
-        _message =
-            'Email verification failed: This can be caused by an invalid verification link or the email has already been verified.';
+        _message = AppLocalizations.of(context)!.verificationFailedMessage;
       });
     }
   }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Email Verification')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.emailVerification)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -66,7 +72,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 ),
               const SizedBox(height: 20),
               Text(
-                _message,
+                _message.isEmpty && _isVerifying ? AppLocalizations.of(context)!.verifyingEmail : _message,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
@@ -74,7 +80,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 const SizedBox(height: 30),
                 ElevatedButton(
                   onPressed: () => context.push('/login'),
-                  child: const Text('Go to Login'),
+                  child: Text(AppLocalizations.of(context)!.goToLogin),
                 ),
               ],
             ],

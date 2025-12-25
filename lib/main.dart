@@ -128,6 +128,9 @@ class _MainAppState extends State<MainApp> {
              context.read<UserProvider>().fetchPriorityEmails(userId);
            }
         }
+        
+        // Pre-fetch notifications so count is available on app start
+        context.read<NotificationProvider>().fetchNotifications();
       }
 
       // Configure interaction handling
@@ -193,7 +196,7 @@ class _MainAppState extends State<MainApp> {
     debugPrint('🔔 Handling notification interaction: ${message.data}');
     
     final data = message.data;
-    final type = data['type'] ?? data['notificationType']; // Check both keys
+    final type = data['notificationType'] ?? data['type'] ?? data['category']; // Check all possible keys
     final context = AppRoutes.navigatorKey.currentContext;
 
     if (context == null) {
@@ -201,6 +204,7 @@ class _MainAppState extends State<MainApp> {
       return;
     }
 
+    // Handle email notifications
     if (type == 'email' || type == 'email_new') {
       final audioUrl = data['audioUrl']; // "https://..." or null
       // Check both 'id' and 'emailId' keys
@@ -230,13 +234,30 @@ class _MainAppState extends State<MainApp> {
          
          context.push(AppRoutes.maildetail, extra: extra);
          print('🔔 Navigating to mail detail: emailId=$emailId');
+      } else {
+        // No specific email, go to mail list
+        context.push(AppRoutes.mail);
+        print('🔔 Navigating to mail list');
       }
-    } else if (type == 'task') {
+    } 
+    // Handle task notifications
+    else if (type == 'task' || type == 'task_reminder') {
+      final taskId = data['taskId'];
+      // TODO: If taskId is provided, could navigate to specific task detail
       context.push(AppRoutes.task);
-      print('🔔 Navigating to tasks');
-    } else if (type == 'event') {
+      print('🔔 Navigating to tasks (taskId: $taskId)');
+    } 
+    // Handle calendar/event notifications
+    else if (type == 'event' || type == 'calendar_reminder' || type == 'calendar') {
+      final eventId = data['eventId'];
+      // TODO: If eventId is provided, could navigate to specific event detail
       context.push(AppRoutes.calendar);
-      print('🔔 Navigating to calendar');
+      print('🔔 Navigating to calendar (eventId: $eventId)');
+    }
+    // Default: go to notifications screen
+    else {
+      context.push(AppRoutes.notifications);
+      print('🔔 Unknown notification type: $type, navigating to notifications');
     }
   }
 

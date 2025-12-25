@@ -137,6 +137,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     if (_selectedTheme != themeProvider.themeMode) {
        _selectedTheme = themeProvider.themeMode;
     }
+    
+    // Initialize work email and name from user object
+    if (_workEmail == 'amhita.maroua@gmail.com' || _workEmail.isEmpty) {
+      _workEmail = user.workEmail ?? user.email ?? '';
+    }
+    if (_userName == 'Amhita Marouane' || _userName.isEmpty) {
+      _userName = '${user.firstName ?? ''} ${user.lastName ?? ''}'.trim();
+      if (_userName.isEmpty) _userName = 'User';
+    }
     return Scaffold(
       drawer: const SideMenu(),
       body: Container(
@@ -319,6 +328,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         children: [
           Row(
             children: [
+              
               GestureDetector(
                 onTap: () => _changeProfileImage(theme, isTablet),
                 child: Container(
@@ -1317,12 +1327,17 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
               ),
               ElevatedButton(
-                onPressed: () {
-                  setState(() => _userName = nameController.text);
-                  user.firstName = _userName.split(' ')[0];
-                  user.lastName = _userName.split(' ')[1];
-                  context.read<UserProvider>().updateUser(user.id, user);
-                  Navigator.of(context).pop();
+                onPressed: () async {
+                  final newName = nameController.text.trim();
+                  if (newName.isNotEmpty) {
+                    final parts = newName.split(' ');
+                    user.firstName = parts[0];
+                    user.lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+                    
+                    await context.read<UserProvider>().updateUser(user.id, user);
+                    await context.read<AuthProvider>().updateUserInSession(user);
+                  }
+                  if (mounted) Navigator.of(context).pop();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
@@ -1395,22 +1410,35 @@ class _SettingsScreenState extends State<SettingsScreen>
               ),
               ElevatedButton(
                 onPressed: () async {
-                  final newEmail = emailController.text;
-                  if (newEmail != user.workEmail) {
-                    setState(() => _workEmail = newEmail);
-                    user.workEmail = newEmail;
-                    // Update user in DB
-                    context.read<UserProvider>().updateUser(user.id, user);
-                    
-                    // Disconnect Gmail session and clear local data
+                  final newEmail = emailController.text.trim();
+                  if (newEmail.isNotEmpty && newEmail != user.workEmail) {
+                    // Capture providers BEFORE async gap
+                    final userProvider = context.read<UserProvider>();
+                    final authProvider = context.read<AuthProvider>();
                     final mailProvider = context.read<MailProvider>();
+                    final navigator = Navigator.of(context);
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
+                    
+                    // Update the user object with new work email
+                    user.workEmail = newEmail;
+                    
+                    // Update in backend and local storage
+                    await userProvider.updateUser(user.id, user);
+                    await authProvider.updateUserInSession(user);
+                    
+                    // Update local state
+                    setState(() {
+                      _workEmail = newEmail;
+                    });
+                    
+                    // Disconnect mail session since work email changed
                     await mailProvider.disconnect();
                     
                     if (mounted) {
-                       Navigator.of(context).pop();
-                       ScaffoldMessenger.of(context).showSnackBar(
+                       navigator.pop();
+                       scaffoldMessenger.showSnackBar(
                          SnackBar(
-                           content: Text('Email updated. Please reconnect your Gmail account.'),
+                           content: Text('Work email updated. Please reconnect your email account.'),
                            duration: Duration(seconds: 4),
                          ),
                        );

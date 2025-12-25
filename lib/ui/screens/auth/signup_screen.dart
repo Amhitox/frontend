@@ -7,6 +7,7 @@ import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/utils/localization.dart';
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
   @override
@@ -231,7 +232,7 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         const SizedBox(width: 8),
         Text(
-          'Aixy',
+          AppLocalizations.of(context)!.appTitle,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -264,7 +265,7 @@ class _SignupScreenState extends State<SignupScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Create Account',
+          AppLocalizations.of(context)!.createAccount,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -274,7 +275,7 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Join us and start your productivity journey',
+          AppLocalizations.of(context)!.joinUs,
           style: TextStyle(
             color: textColor.withValues(alpha: 0.9),
             fontSize: subtitleSize,
@@ -323,22 +324,22 @@ class _SignupScreenState extends State<SignupScreen> {
               Expanded(
                 child: _buildTextField(
                   name: 'first_name',
-                  labelText: 'First Name',
-                  hintText: 'Enter first name',
+                  labelText: AppLocalizations.of(context)!.firstName,
+                  hintText: AppLocalizations.of(context)!.enterFirstName,
                   isDark: isDark,
                   fontSize: fontSize,
-                  validators: [FormBuilderValidators.required()],
+                  validators: [FormBuilderValidators.required(errorText: AppLocalizations.of(context)!.firstNameRequired)],
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildTextField(
                   name: 'last_name',
-                  labelText: 'Last Name',
-                  hintText: 'Enter last name',
+                  labelText: AppLocalizations.of(context)!.lastName,
+                  hintText: AppLocalizations.of(context)!.enterLastName,
                   isDark: isDark,
                   fontSize: fontSize,
-                  validators: [FormBuilderValidators.required()],
+                  validators: [FormBuilderValidators.required(errorText: AppLocalizations.of(context)!.lastNameRequired)],
                 ),
               ),
             ],
@@ -346,14 +347,14 @@ class _SignupScreenState extends State<SignupScreen> {
           const SizedBox(height: 16),
           _buildTextField(
             name: 'email',
-            labelText: 'Email',
-            hintText: 'Enter your email',
+            labelText: AppLocalizations.of(context)!.email,
+            hintText: AppLocalizations.of(context)!.enterEmail,
             keyboardType: TextInputType.emailAddress,
             isDark: isDark,
             fontSize: fontSize,
             validators: [
-              FormBuilderValidators.required(),
-              FormBuilderValidators.email(),
+              FormBuilderValidators.required(errorText: AppLocalizations.of(context)!.emailRequired),
+              FormBuilderValidators.email(errorText: AppLocalizations.of(context)!.invalidEmail),
             ],
           ),
           const SizedBox(height: 16),
@@ -363,8 +364,8 @@ class _SignupScreenState extends State<SignupScreen> {
           const SizedBox(height: 16),
           _buildTextField(
             name: 'password',
-            labelText: 'Password',
-            hintText: 'Enter your password',
+            labelText: AppLocalizations.of(context)!.password,
+            hintText: AppLocalizations.of(context)!.enterPassword,
             isPassword: true,
             obscureText: _obscurePassword,
             onToggleVisibility:
@@ -372,21 +373,21 @@ class _SignupScreenState extends State<SignupScreen> {
             isDark: isDark,
             fontSize: fontSize,
             validators: [
-              FormBuilderValidators.required(errorText: 'Password is required'),
+              FormBuilderValidators.required(errorText: AppLocalizations.of(context)!.passwordRequired),
               FormBuilderValidators.match(
                 RegExp(
                   r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#\$&*~]).{8,}$',
                 ),
                 errorText:
-                    'Password must be at least 8 characters and include uppercase, lowercase, number, and special character',
+                    AppLocalizations.of(context)!.passwordLengthError,
               ),
             ],
           ),
           const SizedBox(height: 16),
           _buildTextField(
             name: 'confirm_password',
-            labelText: 'Confirm Password',
-            hintText: 'Confirm your password',
+            labelText: AppLocalizations.of(context)!.confirmPassword,
+            hintText: AppLocalizations.of(context)!.confirmPasswordHint,
             isPassword: true,
             obscureText: _obscureConfirmPassword,
             onToggleVisibility:
@@ -396,12 +397,12 @@ class _SignupScreenState extends State<SignupScreen> {
             isDark: isDark,
             fontSize: fontSize,
             validators: [
-              FormBuilderValidators.required(),
+              FormBuilderValidators.required(errorText: AppLocalizations.of(context)!.passwordRequired),
               (value) {
                 final password =
                     _formKey.currentState?.fields['password']?.value;
                 if (value != password) {
-                  return 'Passwords do not match';
+                  return AppLocalizations.of(context)!.passwordMatchError;
                 }
                 return null;
               },
@@ -435,7 +436,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                       )
                       : Text(
-                        'Create Account',
+                        AppLocalizations.of(context)!.createAccount,
                         style: TextStyle(
                           fontSize: fontSize + 1,
                           fontWeight: FontWeight.w600,
@@ -538,8 +539,8 @@ class _SignupScreenState extends State<SignupScreen> {
       },
       style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
       decoration: InputDecoration(
-        labelText: 'Date of Birth',
-        hintText: 'Select your date of birth',
+        labelText: AppLocalizations.of(context)!.dateOfBirth,
+        hintText: AppLocalizations.of(context)!.selectDate,
         labelStyle: TextStyle(
           color: colorScheme.onSurface.withValues(alpha: 0.7),
           fontSize: fontSize,
@@ -642,9 +643,12 @@ class _SignupScreenState extends State<SignupScreen> {
             name: 'phone',
             keyboardType: TextInputType.phone,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
+            name: 'phone',
+            keyboardType: TextInputType.phone,
+            style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-              labelText: 'Phone Number',
-              hintText: 'Enter phone number',
+              labelText: AppLocalizations.of(context)!.phone,
+              hintText: AppLocalizations.of(context)!.enterPhone,
               labelStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: fontSize,
@@ -725,12 +729,12 @@ class _SignupScreenState extends State<SignupScreen> {
                 height: 1.4,
               ),
               children: [
-                const TextSpan(text: 'I agree to the '),
+                TextSpan(text: AppLocalizations.of(context)!.agreeToTerms),
                 WidgetSpan(
                   child: GestureDetector(
                     onTap: () => context.push('/terms'),
                     child: Text(
-                      'Terms of Service',
+                      AppLocalizations.of(context)!.termsOfService,
                       style: TextStyle(
                         color: const Color(0xFF3B77D8),
                         fontWeight: FontWeight.w600,
@@ -741,12 +745,12 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                 ),
-                const TextSpan(text: ' and '),
+                TextSpan(text: ' ${AppLocalizations.of(context)!.and} '),
                 WidgetSpan(
                   child: GestureDetector(
                     onTap: () => context.push('/privacy'),
                     child: Text(
-                      'Privacy Policy',
+                      AppLocalizations.of(context)!.privacyPolicy,
                       style: TextStyle(
                         color: const Color(0xFF3B77D8),
                         fontWeight: FontWeight.w600,
@@ -776,7 +780,7 @@ class _SignupScreenState extends State<SignupScreen> {
         ),
         const SizedBox(width: 12),
         Text(
-          'Or',
+          AppLocalizations.of(context)!.or,
           style: TextStyle(
             color: colorScheme.onSurface.withValues(alpha: 0.6),
             fontSize: 14,

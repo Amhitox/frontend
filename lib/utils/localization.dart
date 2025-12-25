@@ -34,6 +34,7 @@ class AppLocalizations {
   String get changed => _localizedValues[locale.languageCode]!['changed']!;
   String get loading => _localizedValues[locale.languageCode]!['loading']!;
   String get error => _localizedValues[locale.languageCode]!['error']!;
+  String get errorOccurred => _localizedValues[locale.languageCode]!['errorOccurred']!;
   String get success => _localizedValues[locale.languageCode]!['success']!;
   String get all => _localizedValues[locale.languageCode]!['all']!;
   String get completed => _localizedValues[locale.languageCode]!['completed']!;
@@ -46,6 +47,7 @@ class AppLocalizations {
   String get thisWeek => _localizedValues[locale.languageCode]!['thisWeek']!;
   String get nextWeek => _localizedValues[locale.languageCode]!['nextWeek']!;
   String get thisMonth => _localizedValues[locale.languageCode]!['thisMonth']!;
+  String get thisYear => _localizedValues[locale.languageCode]!['thisYear']!;
   String get nextMonth => _localizedValues[locale.languageCode]!['nextMonth']!;
   String get priority => _localizedValues[locale.languageCode]!['priority']!;
   String get high => _localizedValues[locale.languageCode]!['high']!;
@@ -269,6 +271,8 @@ class AppLocalizations {
   String get caughtUp => _localizedValues[locale.languageCode]!['caughtUp']!;
   String get playSummary => _localizedValues[locale.languageCode]!['playSummary']!;
   String get confirmMarkAllRead => _localizedValues[locale.languageCode]!['confirmMarkAllRead']!;
+  String get confirmClearAll => _localizedValues[locale.languageCode]!['confirmClearAll']!;
+  String get clearAllNotifications => _localizedValues[locale.languageCode]!['clearAllNotifications']!;
   
   // Analytics
   String get analyticsDashboard => _localizedValues[locale.languageCode]!['analyticsDashboard']!;
@@ -284,6 +288,82 @@ class AppLocalizations {
   String get score => _localizedValues[locale.languageCode]!['score']!;
   String get savedTo => _localizedValues[locale.languageCode]!['savedTo']!;
   String get failedToGenerate => _localizedValues[locale.languageCode]!['failedToGenerate']!;
+  String get thisYear => _localizedValues[locale.languageCode]!['thisYear']!;
+  String get open => _localizedValues[locale.languageCode]!['open']!;
+  String get shareAnalyticsMessage => _localizedValues[locale.languageCode]!['shareAnalyticsMessage']!;
+  String get failedToGenerateShare => _localizedValues[locale.languageCode]!['failedToGenerateShare']!;
+  String get avgResponseTime => _localizedValues[locale.languageCode]!['avgResponseTime']!;
+  String get peakActivity => _localizedValues[locale.languageCode]!['peakActivity']!;
+  String get noActivityData => _localizedValues[locale.languageCode]!['noActivityData']!;
+  String get mostProductiveDay => _localizedValues[locale.languageCode]!['mostProductiveDay']!;
+  String get consistentActivity => _localizedValues[locale.languageCode]!['consistentActivity']!;
+  String get responsePattern => _localizedValues[locale.languageCode]!['responsePattern']!;
+  String get excellentResponse => _localizedValues[locale.languageCode]!['excellentResponse']!;
+  String get improvedResponse => _localizedValues[locale.languageCode]!['improvedResponse']!;
+  String get automateResponses => _localizedValues[locale.languageCode]!['automateResponses']!;
+  String get suggestion => _localizedValues[locale.languageCode]!['suggestion']!;
+  String get shareTips => _localizedValues[locale.languageCode]!['shareTips']!;
+  String get timeBlocking => _localizedValues[locale.languageCode]!['timeBlocking']!;
+
+  // Auth
+  String get password => _localizedValues[locale.languageCode]!['password']!;
+  String get login => _localizedValues[locale.languageCode]!['login']!;
+  String get signup => _localizedValues[locale.languageCode]!['signup']!;
+  String get or => _localizedValues[locale.languageCode]!['or']!;
+  String get backToLogin => _localizedValues[locale.languageCode]!['backToLogin']!;
+  String get submit => _localizedValues[locale.languageCode]!['submit']!;
+  String get welcomeBack => _localizedValues[locale.languageCode]!['welcomeBack']!;
+  String get rememberMe => _localizedValues[locale.languageCode]!['rememberMe']!;
+  String get forgotPassword => _localizedValues[locale.languageCode]!['forgotPassword']!;
+  String get continueWithGoogle => _localizedValues[locale.languageCode]!['continueWithGoogle']!;
+  String get continueWithApple => _localizedValues[locale.languageCode]!['continueWithApple']!;
+  String get createAccount => _localizedValues[locale.languageCode]!['createAccount']!;
+  String get joinUs => _localizedValues[locale.languageCode]!['joinUs']!;
+  String get dateOfBirth => _localizedValues[locale.languageCode]!['dateOfBirth']!;
+  String get confirmPassword => _localizedValues[locale.languageCode]!['confirmPassword']!;
+  String get agreeToTerms => _localizedValues[locale.languageCode]!['agreeToTerms']!;
+  String get enterEmail => _localizedValues[locale.languageCode]!['enterEmail']!;
+  String get sendResetLink => _localizedValues[locale.languageCode]!['sendResetLink']!;
+  String get emailSentSuccess => _localizedValues[locale.languageCode]!['emailSentSuccess']!;
+  String get resendEmail => _localizedValues[locale.languageCode]!['resendEmail']!;
+  String get needHelp => _localizedValues[locale.languageCode]!['needHelp']!;
+  String get contactSupport => _localizedValues[locale.languageCode]!['contactSupport']!;
+  String get createNewPassword => _localizedValues[locale.languageCode]!['createNewPassword']!;
+  String get resetPasswordTitle => _localizedValues[locale.languageCode]!['resetPasswordTitle']!;
+  String get passwordResetSuccess => _localizedValues[locale.languageCode]!['passwordResetSuccess']!;
+  String get passwordResetFailed => _localizedValues[locale.languageCode]!['passwordResetFailed']!;
+  String get verifyingEmail => _localizedValues[locale.languageCode]!['verifyingEmail']!;
+  String get emailVerified => _localizedValues[locale.languageCode]!['emailVerified']!;
+  String get verificationFailed => _localizedValues[locale.languageCode]!['verificationFailed']!;
+  String get invalidLink => _localizedValues[locale.languageCode]!['invalidLink']!;
+  String get goToLogin => _localizedValues[locale.languageCode]!['goToLogin']!;
+  String get passwordMatchError => _localizedValues[locale.languageCode]!['passwordMatchError']!;
+  String get passwordLengthError => _localizedValues[locale.languageCode]!['passwordLengthError']!;
+  String get passwordRequired => _localizedValues[locale.languageCode]!['passwordRequired']!;
+  String get enterPassword => _localizedValues[locale.languageCode]!['enterPassword']!;
+  String get getStartedNow => _localizedValues[locale.languageCode]!['getStartedNow']!;
+  String get loginSubtitle => _localizedValues[locale.languageCode]!['loginSubtitle']!;
+  String get dataProcessingAgreement => _localizedValues[locale.languageCode]!['dataProcessingAgreement']!;
+  String get and => _localizedValues[locale.languageCode]!['and']!;
+  String get bySigningUpAgreeTo => _localizedValues[locale.languageCode]!['bySigningUpAgreeTo']!;
+  String get enterFirstName => _localizedValues[locale.languageCode]!['enterFirstName']!;
+  String get enterLastName => _localizedValues[locale.languageCode]!['enterLastName']!;
+  String get enterPhone => _localizedValues[locale.languageCode]!['enterPhone']!;
+  String get confirmPasswordHint => _localizedValues[locale.languageCode]!['confirmPasswordHint']!;
+  String get checkYourEmail => _localizedValues[locale.languageCode]!['checkYourEmail']!;
+  String get recoveryLinkSent => _localizedValues[locale.languageCode]!['recoveryLinkSent']!;
+  String get dontWorryReset => _localizedValues[locale.languageCode]!['dontWorryReset']!;
+  String get sendLinkReset => _localizedValues[locale.languageCode]!['sendLinkReset']!;
+  String get sentLinkTo => _localizedValues[locale.languageCode]!['sentLinkTo']!;
+  String get checkEmailInstruction => _localizedValues[locale.languageCode]!['checkEmailInstruction']!;
+  String get resendIn => _localizedValues[locale.languageCode]!['resendIn']!;
+  String get didntReceiveResend => _localizedValues[locale.languageCode]!['didntReceiveResend']!;
+  String get newPasswordHint => _localizedValues[locale.languageCode]!['newPasswordHint']!;
+  String get confirmNewPasswordHint => _localizedValues[locale.languageCode]!['confirmNewPasswordHint']!;
+  String get verificationFailedMessage => _localizedValues[locale.languageCode]!['verificationFailedMessage']!;
+  String get createSecurePassword => _localizedValues[locale.languageCode]!['createSecurePassword']!;
+  String get passwordRequirements => _localizedValues[locale.languageCode]!['passwordRequirements']!;
+  String get emailVerification => _localizedValues[locale.languageCode]!['emailVerification']!;
 
   // Email
   String get inbox => _localizedValues[locale.languageCode]!['inbox']!;
@@ -343,6 +423,32 @@ class AppLocalizations {
   String get emailRefined => _localizedValues[locale.languageCode]!['emailRefined']!;
   String get pleaseAddRecipient => _localizedValues[locale.languageCode]!['pleaseAddRecipient']!;
   String get pleaseAddSubject => _localizedValues[locale.languageCode]!['pleaseAddSubject']!;
+  
+  // Profile Screen
+  String get personalInformation => _localizedValues[locale.languageCode]!['personalInformation']!;
+  String get firstName => _localizedValues[locale.languageCode]!['firstName']!;
+  String get lastName => _localizedValues[locale.languageCode]!['lastName']!;
+  String get changePassword => _localizedValues[locale.languageCode]!['changePassword']!;
+  String get enter => _localizedValues[locale.languageCode]!['enter']!;
+  String get takePhoto => _localizedValues[locale.languageCode]!['takePhoto']!;
+  String get chooseFromGallery => _localizedValues[locale.languageCode]!['chooseFromGallery']!;
+  String get removePhoto => _localizedValues[locale.languageCode]!['removePhoto']!;
+  String get cameraOpened => _localizedValues[locale.languageCode]!['cameraOpened']!;
+  String get galleryOpened => _localizedValues[locale.languageCode]!['galleryOpened']!;
+  String get photoRemoved => _localizedValues[locale.languageCode]!['photoRemoved']!;
+  String get firstNameRequired => _localizedValues[locale.languageCode]!['firstNameRequired']!;
+  String get lastNameRequired => _localizedValues[locale.languageCode]!['lastNameRequired']!;
+  String get emailRequired => _localizedValues[locale.languageCode]!['emailRequired']!;
+  String get invalidEmail => _localizedValues[locale.languageCode]!['invalidEmail']!;
+  String get invalidWorkEmail => _localizedValues[locale.languageCode]!['invalidWorkEmail']!;
+  String get workEmailUpdatedGmailDisconnected => _localizedValues[locale.languageCode]!['workEmailUpdatedGmailDisconnected']!;
+  String get profileSaved => _localizedValues[locale.languageCode]!['profileSaved']!;
+  String get errorSavingProfile => _localizedValues[locale.languageCode]!['errorSavingProfile']!;
+  String get failedToUpdateProfile => _localizedValues[locale.languageCode]!['failedToUpdateProfile']!;
+  String get currentPassword => _localizedValues[locale.languageCode]!['currentPassword']!;
+  String get newPassword => _localizedValues[locale.languageCode]!['newPassword']!;
+  String get passwordUpdated => _localizedValues[locale.languageCode]!['passwordUpdated']!;
+  String get update => _localizedValues[locale.languageCode]!['update']!;
 
 
 
@@ -367,6 +473,7 @@ class AppLocalizations {
       'changed': 'changed to',
       'loading': 'Loading...',
       'error': 'Error',
+      'errorOccurred': 'An error occurred',
       'success': 'Success',
       'all': 'All',
       'completed': 'Completed',
@@ -378,6 +485,7 @@ class AppLocalizations {
       'thisWeek': 'This Week',
       'nextWeek': 'Next Week',
       'thisMonth': 'This Month',
+      'thisYear': 'This Year',
       'nextMonth': 'Next Month',
       'priority': 'Priority',
       'high': 'High',
@@ -539,15 +647,77 @@ class AppLocalizations {
       // Notifications
       'markAllAsRead': 'Mark All as Read',
       'clearAll': 'Clear All',
+      'clearAllNotifications': 'Clear All Notifications',
       'unread': 'Unread',
       'noNotifications': 'No Notifications',
       'caughtUp': 'You\'re all caught up!',
       'playSummary': 'Play Summary',
       'confirmMarkAllRead': 'Are you sure you want to mark all notifications as read?',
+      'confirmClearAll': 'Are you sure you want to clear all notifications? This action cannot be undone.',
 
       // Analytics
       'analyticsDashboard': 'Analytics Dashboard',
       'analyticsSubtitle': 'Track your productivity & performance',
+
+      // Auth
+      'password': 'Password',
+      'login': 'Login',
+      'signup': 'Sign Up',
+      'or': 'Or',
+      'backToLogin': 'Back to Login',
+      'submit': 'Submit',
+      'welcomeBack': 'Welcome Back',
+      'rememberMe': 'Remember me',
+      'forgotPassword': 'Forgot Password?',
+      'continueWithGoogle': 'Continue with Google',
+      'continueWithApple': 'Continue with Apple',
+      'createAccount': 'Create Account',
+      'joinUs': 'Join us and start your productivity journey',
+      'dateOfBirth': 'Date of Birth',
+      'confirmPassword': 'Confirm Password',
+      'agreeToTerms': 'I agree to the ',
+      'enterEmail': 'Enter your email address',
+      'sendResetLink': 'Send Reset Link',
+      'emailSentSuccess': 'Email sent successfully!',
+      'resendEmail': 'Resend Email',
+      'needHelp': 'Need help?',
+      'contactSupport': 'Contact Support',
+      'createNewPassword': 'Create new password',
+      'resetPasswordTitle': 'Reset Password',
+      'passwordResetSuccess': 'Password reset successfully!',
+      'passwordResetFailed': 'Password reset failed',
+      'verifyingEmail': 'Verifying your email...',
+      'emailVerified': 'Email verified successfully!',
+      'verificationFailed': 'Email verification failed',
+      'invalidLink': 'Invalid verification link',
+      'goToLogin': 'Go to Login',
+      'passwordMatchError': 'Passwords do not match',
+      'passwordLengthError': 'Password must be at least 8 characters',
+      'passwordRequired': 'Password is required',
+      'enterPassword': 'Enter your password',
+      'getStartedNow': 'Get Started now',
+      'loginSubtitle': 'Create an account or log in to explore about our app',
+      'dataProcessingAgreement': 'Data Processing Agreement',
+      'and': 'and',
+      'bySigningUpAgreeTo': 'By signing up, you agree to the ',
+      'enterFirstName': 'Enter first name',
+      'enterLastName': 'Enter last name',
+      'enterPhone': 'Enter phone number',
+      'confirmPasswordHint': 'Confirm your password',
+      'checkYourEmail': 'Check your email',
+      'recoveryLinkSent': 'We\'ve sent a recovery link to your email',
+      'dontWorryReset': 'Don\'t worry, we\'ll help you reset it',
+      'sendLinkReset': 'We\'ll send you a link to reset your password',
+      'sentLinkTo': 'We\'ve sent a password reset link to:',
+      'checkEmailInstruction': 'Check your email and click the reset link to create a new password. The link will expire in 1 hour.',
+      'resendIn': 'Resend in',
+      'didntReceiveResend': 'Didn\'t receive the email? Resend',
+      'newPasswordHint': 'Enter your new password',
+      'confirmNewPasswordHint': 'Confirm your new password',
+      'verificationFailedMessage': 'Email verification failed: This can be caused by an invalid verification link or the email has already been verified.',
+      'createSecurePassword': 'Create a new secure password for your account',
+      'passwordRequirements': 'Your new password must be at least 8 characters long',
+      'emailVerification': 'Email Verification',
       'productivityScore': 'Productivity Score',
       'emailsSent': 'Emails Sent',
       'emailsReceived': 'Emails Received',
@@ -559,6 +729,21 @@ class AppLocalizations {
       'score': 'Score',
       'savedTo': 'Saved to',
       'failedToGenerate': 'Failed to generate report',
+      'open': 'OPEN',
+      'shareAnalyticsMessage': 'Here is my analytics report from Aixy.',
+      'failedToGenerateShare': 'Failed to generate report for sharing',
+      'avgResponseTime': 'Avg Response Time',
+      'peakActivity': 'Peak Activity',
+      'noActivityData': 'No activity data',
+      'mostProductiveDay': 'Your most productive day was',
+      'consistentActivity': 'Consistent activity throughout the week',
+      'responsePattern': 'Response Pattern',
+      'excellentResponse': 'You maintain excellent response times consistently',
+      'improvedResponse': 'Your response time could be improved during peak hours',
+      'automateResponses': 'Consider setting up automated responses for better efficiency',
+      'suggestion': 'Suggestion',
+      'shareTips': 'Great work! Consider sharing your productivity tips with your team',
+      'timeBlocking': 'Try time-blocking your calendar to improve focus and productivity',
 
       // Email
       'inbox': 'Inbox',
@@ -616,8 +801,33 @@ class AppLocalizations {
       'emailRefined': 'Email refined by AI',
       'pleaseAddRecipient': 'Please add at least one recipient',
       'pleaseAddSubject': 'Please add a subject',
-
-
+      
+      // Profile Screen
+      'personalInformation': 'Personal Information',
+      'firstName': 'First Name',
+      'lastName': 'Last Name',
+      'changePassword': 'Change Password',
+      'enter': 'Enter',
+      'takePhoto': 'Take Photo',
+      'chooseFromGallery': 'Choose from Gallery',
+      'removePhoto': 'Remove Photo',
+      'cameraOpened': 'Camera opened for photo capture',
+      'galleryOpened': 'Gallery opened for photo selection',
+      'photoRemoved': 'Profile photo removed',
+      'firstNameRequired': 'First name is required',
+      'lastNameRequired': 'Last name is required',
+      'emailRequired': 'Email is required',
+      'invalidEmail': 'Please enter a valid email address',
+      'invalidWorkEmail': 'Please enter a valid work email address',
+      'workEmailUpdatedGmailDisconnected': 'Work email updated. Gmail disconnected.',
+      'profileSaved': 'Profile saved successfully!',
+      'errorSavingProfile': 'Error saving profile',
+      'failedToUpdateProfile': 'Failed to update profile',
+      'currentPassword': 'Current Password',
+      'newPassword': 'New Password',
+      'passwordUpdated': 'Password updated successfully!',
+      'update': 'Update',
+      // MARKER
 
     },
     'fr': {
@@ -641,6 +851,7 @@ class AppLocalizations {
       'changed': 'changé en',
       'loading': 'Chargement...',
       'error': 'Erreur',
+      'errorOccurred': 'Une erreur s\'est produite',
       'success': 'Succès',
       'all': 'Tout',
       'completed': 'Terminé',
@@ -652,7 +863,20 @@ class AppLocalizations {
       'thisWeek': 'Cette semaine',
       'nextWeek': 'Semaine prochaine',
       'thisMonth': 'Ce mois',
+      'thisYear': 'Cette année',
       'nextMonth': 'Mois prochain',
+      'avgResponseTime': 'Temps de réponse moyen',
+      'peakActivity': 'Pic d\'activité',
+      'noActivityData': 'Aucune donnée d\'activité',
+      'mostProductiveDay': 'Votre journée la plus productive était',
+      'consistentActivity': 'Activité constante tout au long de la semaine',
+      'responsePattern': 'Modèle de réponse',
+      'excellentResponse': 'Vous maintenez d\'excellents temps de réponse',
+      'improvedResponse': 'Votre temps de réponse pourrait être amélioré aux heures de pointe',
+      'automateResponses': 'Pensez à configurer des réponses automatiques pour plus d\'efficacité',
+      'suggestion': 'Suggestion',
+      'shareTips': 'Excellent travail ! Pensez à partager vos conseils de productivité',
+      'timeBlocking': 'Essayez le blocage de temps pour améliorer la concentration',
       'priority': 'Priorité',
       'high': 'Élevée',
       'medium': 'Moyenne',
@@ -795,7 +1019,34 @@ class AppLocalizations {
           'Ajouter des détails sur cette tâche (optionnel)',
       'customCategory': 'Catégorie personnalisée',
       'enterYourCustomCategoryName':
-          'Saisissez votre nom de catégorie personnalisée',
+          'Veuillez saisir un nom de catégorie personnalisée',
+      
+      // Profile Screen
+      'personalInformation': 'Informations personnelles',
+      'firstName': 'Prénom',
+      'lastName': 'Nom',
+      'changePassword': 'Changer le mot de passe',
+      'enter': 'Entrer',
+      'takePhoto': 'Prendre une photo',
+      'chooseFromGallery': 'Choisir dans la galerie',
+      'removePhoto': 'Supprimer la photo',
+      'cameraOpened': 'Appareil photo ouvert pour la capture',
+      'galleryOpened': 'Galerie ouverte pour la sélection',
+      'photoRemoved': 'Photo de profil supprimée',
+      'firstNameRequired': 'Le prénom est requis',
+      'lastNameRequired': 'Le nom est requis',
+      'emailRequired': 'L\'email est requis',
+      'invalidEmail': 'Veuillez entrer une adresse email valide',
+      'invalidWorkEmail': 'Veuillez entrer une adresse email professionnelle valide',
+      'workEmailUpdatedGmailDisconnected': 'Email professionnel mis à jour. Gmail déconnecté.',
+      'profileSaved': 'Profil enregistré avec succès !',
+      'errorSavingProfile': 'Erreur lors de l\'enregistrement du profil',
+      'failedToUpdateProfile': 'Échec de la mise à jour du profil',
+      'currentPassword': 'Mot de passe actuel',
+      'newPassword': 'Nouveau mot de passe',
+      'passwordUpdated': 'Mot de passe mis à jour avec succès !',
+      'update': 'Mettre à jour',
+
       'dueDateTime': 'DATE ET HEURE D\'ÉCHÉANCE',
       'category': 'CATÉGORIE',
       'work': 'Travail',
@@ -815,15 +1066,77 @@ class AppLocalizations {
       // Notifications
       'markAllAsRead': 'Tout marquer comme lu',
       'clearAll': 'Tout effacer',
+      'clearAllNotifications': 'Effacer toutes les notifications',
       'unread': 'Non lu',
       'noNotifications': 'Aucune notification',
       'caughtUp': 'Vous êtes à jour !',
       'playSummary': 'Écouter le résumé',
       'confirmMarkAllRead': 'Êtes-vous sûr de vouloir marquer toutes les notifications comme lues ?',
+      'confirmClearAll': 'Êtes-vous sûr de vouloir effacer toutes les notifications ? Cette action est irréversible.',
 
       // Analytics
       'analyticsDashboard': 'Tableau de bord',
       'analyticsSubtitle': 'Suivez votre productivité et performance',
+
+      // Auth
+      'password': 'Mot de passe',
+      'login': 'Se connecter',
+      'signup': 'S\'inscrire',
+      'or': 'Ou',
+      'backToLogin': 'Retour à la connexion',
+      'submit': 'Soumettre',
+      'welcomeBack': 'Bon retour',
+      'rememberMe': 'Se souvenir de moi',
+      'forgotPassword': 'Mot de passe oublié ?',
+      'continueWithGoogle': 'Continuer avec Google',
+      'continueWithApple': 'Continuer avec Apple',
+      'createAccount': 'Créer un compte',
+      'joinUs': 'Rejoignez-nous et commencez votre voyage de productivité',
+      'dateOfBirth': 'Date de naissance',
+      'confirmPassword': 'Confirmer le mot de passe',
+      'agreeToTerms': 'J\'accepte les ',
+      'enterEmail': 'Entrez votre adresse email',
+      'sendResetLink': 'Envoyer le lien de réinitialisation',
+      'emailSentSuccess': 'Email envoyé avec succès !',
+      'resendEmail': 'Renvoyer l\'email',
+      'needHelp': 'Besoin d\'aide ?',
+      'contactSupport': 'Contacter le support',
+      'createNewPassword': 'Créer un nouveau mot de passe',
+      'resetPasswordTitle': 'Réinitialiser le mot de passe',
+      'passwordResetSuccess': 'Mot de passe réinitialisé avec succès !',
+      'passwordResetFailed': 'La réinitialisation du mot de passe a échoué',
+      'verifyingEmail': 'Vérification de votre email...',
+      'emailVerified': 'Email vérifié avec succès !',
+      'verificationFailed': 'Échec de la vérification de l\'email',
+      'invalidLink': 'Lien de vérification invalide',
+      'goToLogin': 'Aller à la connexion',
+      'passwordMatchError': 'Les mots de passe ne correspondent pas',
+      'passwordLengthError': 'Le mot de passe doit contenir au moins 8 caractères',
+      'passwordRequired': 'Le mot de passe est requis',
+      'enterPassword': 'Entrez votre mot de passe',
+      'getStartedNow': 'Commencer maintenant',
+      'loginSubtitle': 'Créez un compte ou connectez-vous pour explorer notre application',
+      'dataProcessingAgreement': 'Accord de traitement des données',
+      'and': 'et',
+      'bySigningUpAgreeTo': 'En vous inscrivant, vous acceptez les ',
+      'enterFirstName': 'Entrez le prénom',
+      'enterLastName': 'Entrez le nom',
+      'enterPhone': 'Entrez le numéro de téléphone',
+      'confirmPasswordHint': 'Confirmez votre mot de passe',
+      'checkYourEmail': 'Vérifiez votre email',
+      'recoveryLinkSent': 'Nous avons envoyé un lien de récupération à votre email',
+      'dontWorryReset': 'Ne vous inquiétez pas, nous vous aiderons à le réinitialiser',
+      'sendLinkReset': 'Nous vous enverrons un lien pour réinitialiser votre mot de passe',
+      'sentLinkTo': 'Nous avons envoyé un lien de réinitialisation de mot de passe à :',
+      'checkEmailInstruction': 'Vérifiez votre email et cliquez sur le lien de réinitialisation pour créer un nouveau mot de passe. Le lien expirera dans 1 heure.',
+      'resendIn': 'Renvoyer dans',
+      'didntReceiveResend': 'Vous n\'avez pas reçu l\'email ? Renvoyer',
+      'newPasswordHint': 'Entrez votre nouveau mot de passe',
+      'confirmNewPasswordHint': 'Confirmez votre nouveau mot de passe',
+      'verificationFailedMessage': 'La vérification de l\'email a échoué : Cela peut être causé par un lien de vérification invalide ou l\'email a déjà été vérifié.',
+      'createSecurePassword': 'Créez un nouveau mot de passe sécurisé pour votre compte',
+      'passwordRequirements': 'Votre nouveau mot de passe doit contenir au moins 8 caractères',
+      'emailVerification': 'Vérification de l\'email',
       'productivityScore': 'Score de productivité',
       'emailsSent': 'Emails envoyés',
       'emailsReceived': 'Emails reçus',

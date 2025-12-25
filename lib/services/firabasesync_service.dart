@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/providers/task_provider.dart';
+import 'package:frontend/providers/meeting_provider.dart';
 import 'package:provider/provider.dart';
 
 class FirebaseSyncService {
@@ -7,15 +8,14 @@ class FirebaseSyncService {
 
   FirebaseSyncService({required this.userId});
 
-  Future<void> syncTasks(BuildContext context) async {
-    final taskProvider = context.read<TaskProvider>();
+  Future<void> syncTasks(TaskProvider taskProvider) async {
     await taskProvider.syncUnsyncedTasks();
   }
 
-  Future<void> syncMeetings(BuildContext context) async {}
+  Future<void> syncMeetings(MeetingProvider meetingProvider) async {}
 
-  Future<void> fullSync(BuildContext context) async {
-    final taskProvider = context.read<TaskProvider>();
+  Future<void> fullSync(TaskProvider taskProvider, MeetingProvider meetingProvider) async {
     await taskProvider.onConnectivityChanged();
+    await meetingProvider.onConnectivityChanged();
   }
 }

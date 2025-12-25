@@ -17,6 +17,9 @@ import 'package:frontend/services/transcription_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:io';
 import 'package:frontend/routes/app_router.dart';
+import 'package:frontend/utils/quota_dialog.dart';
+import 'package:frontend/providers/sub_provider.dart';
+import 'package:frontend/ui/widgets/side_menu_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -286,11 +289,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               message += 'Opening calendar... ';
               if (mounted) context.pushNamed('calendar');
            }
+
+           // Quota Check
+           if (action.quotaExceeded == true) {
+             if (mounted) {
+               QuotaDialog.show(context, message: action.error ?? 'Quota exceeded');
+             }
+             return; // Stop processing further actions
+           }
         }
         
         // Sync if needed
         if (taskUpdated && mounted) context.read<TaskProvider>().forceSync();
         if (eventUpdated && mounted) context.read<MeetingProvider>().forceSync();
+
+        // Refresh quota status
+        if (mounted) context.read<SubProvider>().fetchQuotaStatus();
       }
       
       if (message.isEmpty && response.summary != null) {
@@ -375,11 +389,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           syncService: firebaseSyncService,
           onConnectivityRestored: () {
             if (mounted) {
-              firebaseSyncService.fullSync(context);
+              firebaseSyncService.fullSync(
+                context.read<TaskProvider>(),
+                context.read<MeetingProvider>(),
+              );
             }
           },
         );
-        connectivityService.setContext(context);
       }
     } catch (e) {}
   }
@@ -573,28 +589,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+
   Widget _buildMenu(bool isTablet) {
-    return GestureDetector(
-      onTap: () => _scaffoldKey.currentState?.openDrawer(),
-      child: Container(
-        padding: EdgeInsets.all(isTablet ? 12 : 8),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.1),
-            width: 1,
-          ),
-        ),
-        child: Icon(
-          Icons.menu_rounded,
-          color: Theme.of(context).colorScheme.onSurface,
-          size: isTablet ? 28 : 24,
-        ),
-      ),
-    );
+    return SideMenuButton(isTablet: isTablet);
   }
 
   Widget _buildPremiumBadge(bool isTablet, bool isLargeScreen) {

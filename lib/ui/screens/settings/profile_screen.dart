@@ -6,6 +6,8 @@ import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/mail_provider.dart';
 import 'package:frontend/models/user.dart';
 import 'package:frontend/services/mail_service.dart';
+import 'package:frontend/utils/localization.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
   @override
@@ -75,6 +77,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    
     if (_isLoading) {
       return Scaffold(
         body: Center(
@@ -100,7 +104,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             position: _slideAnimation,
             child: Column(
               children: [
-                _buildHeader(isTablet, isLargeScreen, theme),
+                _buildHeader(isTablet, isLargeScreen, theme, l10n),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(
@@ -119,6 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                           isTablet,
                           isLargeScreen,
                           theme,
+                          l10n,
                         ),
                         SizedBox(height: isTablet ? 48 : 40),
                       ],
@@ -132,7 +137,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-  Widget _buildHeader(bool isTablet, bool isLargeScreen, ThemeData theme) {
+  Widget _buildHeader(bool isTablet, bool isLargeScreen, ThemeData theme, AppLocalizations l10n) {
     return Padding(
       padding: EdgeInsets.all(
         isLargeScreen
@@ -166,7 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           SizedBox(width: isTablet ? 20 : 16),
           Expanded(
             child: Text(
-              'Profile',
+              l10n.profile,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize:
@@ -181,7 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
           GestureDetector(
-            onTap: _isSaving ? null : () => _saveProfile(),
+            onTap: _isSaving ? null : () => _saveProfile(l10n),
             child: Container(
               padding: EdgeInsets.symmetric(
                 horizontal: isTablet ? 18 : 16,
@@ -214,7 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       )
                       : Text(
-                        'Save',
+                        l10n.save,
                         style: TextStyle(
                           color: theme.colorScheme.primary,
                           fontSize: isTablet ? 15 : 14,
@@ -228,6 +233,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
   Widget _buildProfileCard(bool isTablet, bool isLargeScreen, ThemeData theme) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isTablet ? 24 : 20),
@@ -249,7 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Column(
         children: [
           GestureDetector(
-            onTap: () => _changeProfileImage(theme, isTablet),
+            onTap: () => _changeProfileImage(theme, isTablet, l10n),
             child: Container(
               width: isTablet ? 120 : 100,
               height: isTablet ? 120 : 100,
@@ -307,43 +313,47 @@ class _ProfileScreenState extends State<ProfileScreen>
     bool isTablet,
     bool isLargeScreen,
     ThemeData theme,
+    AppLocalizations l10n,
   ) {
     return Column(
       children: [
         _buildSection(
-          'Personal Information',
+          l10n.personalInformation,
           Icons.person_outline,
           [
             _buildFormField(
-              'First Name',
+              l10n.firstName,
               _firstNameController,
               isTablet: isTablet,
               theme: theme,
+              l10n: l10n,
             ),
             _buildFormField(
-              'Last Name',
+              l10n.lastName,
               _lastNameController,
               isTablet: isTablet,
               theme: theme,
+              l10n: l10n,
             ),
+            // _buildFormField(
+            //   'Email',
+            //   _emailController,
+            //   isTablet: isTablet,
+            //   theme: theme,
+            // ),
             _buildFormField(
-              'Email',
-              _emailController,
-              isTablet: isTablet,
-              theme: theme,
-            ),
-            _buildFormField(
-              'Work Email',
+              l10n.workEmail,
               _workEmailController,
               isTablet: isTablet,
               theme: theme,
+              l10n: l10n,
             ),
-            _buildFormField(
-              'Language',
-              _langController,
-              isTablet: isTablet,
-              theme: theme,
-            ),
+            // _buildFormField(
+            //   'Language',
+            //   _langController,
+            //   isTablet: isTablet,
+            //   theme: theme,
+            // ),
           ],
           isTablet: isTablet,
           isLargeScreen: isLargeScreen,
@@ -351,11 +361,11 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         SizedBox(height: isTablet ? 20 : 16),
         _buildSection(
-          'Security',
+          l10n.security,
           Icons.lock_outline,
           [
             GestureDetector(
-              onTap: () => _changePassword(theme, isTablet),
+              onTap: () => _changePassword(theme, isTablet, l10n),
               behavior: HitTestBehavior.opaque,
               child: Container(
                 padding: EdgeInsets.symmetric(
@@ -365,7 +375,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: Row(
                   children: [
                     Text(
-                      'Change Password',
+                      l10n.changePassword,
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                         fontSize: isTablet ? 15 : 14,
@@ -454,6 +464,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     int maxLines = 1,
     required bool isTablet,
     required ThemeData theme,
+    required AppLocalizations l10n,
   }) {
     return Container(
       padding: EdgeInsets.symmetric(
@@ -491,7 +502,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 fontSize: isTablet ? 15 : 14,
               ),
               decoration: InputDecoration(
-                hintText: 'Enter $label',
+                hintText: '${l10n.enter} $label',
                 hintStyle: TextStyle(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
@@ -516,7 +527,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-  void _changeProfileImage(ThemeData theme, bool isTablet) {
+  void _changeProfileImage(ThemeData theme, bool isTablet, AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -546,31 +557,31 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
                 SizedBox(height: isTablet ? 24 : 20),
                 _buildPhotoOption(
-                  'Take Photo',
+                  l10n.takePhoto,
                   Icons.camera_alt,
                   () {
                     Navigator.pop(context);
-                    _takePhoto();
+                    _takePhoto(l10n);
                   },
                   theme,
                   isTablet,
                 ),
                 _buildPhotoOption(
-                  'Choose from Gallery',
+                  l10n.chooseFromGallery,
                   Icons.photo_library,
                   () {
                     Navigator.pop(context);
-                    _chooseFromGallery();
+                    _chooseFromGallery(l10n);
                   },
                   theme,
                   isTablet,
                 ),
                 _buildPhotoOption(
-                  'Remove Photo',
+                  l10n.removePhoto,
                   Icons.delete,
                   () {
                     Navigator.pop(context);
-                    _removePhoto();
+                    _removePhoto(l10n);
                   },
                   theme,
                   isTablet,
@@ -617,41 +628,41 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-  void _takePhoto() {
+  void _takePhoto(AppLocalizations l10n) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Camera opened for photo capture'),
+        content: Text(l10n.cameraOpened),
         backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
-  void _chooseFromGallery() {
+  void _chooseFromGallery(AppLocalizations l10n) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Gallery opened for photo selection'),
+        content: Text(l10n.galleryOpened),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
-  void _removePhoto() {
+  void _removePhoto(AppLocalizations l10n) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Profile photo removed'),
+        content: Text(l10n.photoRemoved),
         backgroundColor: Colors.orange,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
-  bool _validateForm() {
+  bool _validateForm(AppLocalizations l10n) {
     if (_firstNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('First name is required'),
+          content: Text(l10n.firstNameRequired),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -661,7 +672,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (_lastNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Last name is required'),
+          content: Text(l10n.lastNameRequired),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -671,7 +682,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (_emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Email is required'),
+          content: Text(l10n.emailRequired),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -682,7 +693,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (!emailRegex.hasMatch(_emailController.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please enter a valid email address'),
+          content: Text(l10n.invalidEmail),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -693,7 +704,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         !emailRegex.hasMatch(_workEmailController.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please enter a valid work email address'),
+          content: Text(l10n.invalidWorkEmail),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -702,8 +713,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
     return true;
   }
-  Future<void> _saveProfile() async {
-    if (!_validateForm()) {
+  Future<void> _saveProfile(AppLocalizations l10n) async {
+    if (!_validateForm(l10n)) {
       return;
     }
     setState(() {
@@ -753,7 +764,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('Work email updated. Gmail disconnected.'),
+                  content: Text(l10n.workEmailUpdatedGmailDisconnected),
                   backgroundColor: Colors.orange,
                   behavior: SnackBarBehavior.floating,
                 ),
@@ -765,28 +776,28 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (responseData['user'] != null) {
           final serverUser = User.fromJson(responseData['user']);
           await _userProvider.updateUserData(serverUser);
-          _authProvider.updateUserInMemory(serverUser);
+          _authProvider.updateUserInSession(serverUser);
         } else {
            // Fallback if user object is not in response (though it should be)
            await _userProvider.updateUserData(updatedUser);
-           _authProvider.updateUserInMemory(updatedUser);
+           _authProvider.updateUserInSession(updatedUser);
         }
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Profile saved successfully!'),
+            content: Text(l10n.profileSaved),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
         );
         context.pushNamed('settings');
       } else {
-        throw Exception('Failed to update profile');
+        throw Exception(l10n.failedToUpdateProfile);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving profile: ${e.toString()}'),
+          content: Text('${l10n.errorSavingProfile}: ${e.toString()}'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -798,7 +809,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  void _changePassword(ThemeData theme, bool isTablet) {
+  void _changePassword(ThemeData theme, bool isTablet, AppLocalizations l10n) {
     showDialog(
       context: context,
       builder:
@@ -808,7 +819,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              'Change Password',
+              l10n.changePassword,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -825,7 +836,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     fontSize: isTablet ? 16 : 14,
                   ),
                   decoration: InputDecoration(
-                    labelText: 'Current Password',
+                    labelText: l10n.currentPassword,
                     labelStyle: TextStyle(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -849,7 +860,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                     fontSize: isTablet ? 16 : 14,
                   ),
                   decoration: InputDecoration(
-                    labelText: 'New Password',
+                    labelText: l10n.newPassword,
                     labelStyle: TextStyle(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -871,7 +882,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'Cancel',
+                  l10n.cancel,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -883,7 +894,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Password updated successfully!'),
+                      content: Text(l10n.passwordUpdated),
                       backgroundColor: Colors.green,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
@@ -899,7 +910,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ),
                 child: Text(
-                  'Update',
+                  l10n.update,
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
                     fontSize: isTablet ? 16 : 14,

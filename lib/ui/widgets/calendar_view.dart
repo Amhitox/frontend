@@ -15,19 +15,13 @@ class CalendarView extends StatefulWidget {
   _CalendarViewState createState() => _CalendarViewState();
 }
 class _CalendarViewState extends State<CalendarView> {
-  bool _showingCalendarView = false;
   late DateTime _selectedDate;
   @override
   void initState() {
     super.initState();
     _selectedDate = widget.selectedDate;
   }
-  void _toggleCalendarView() {
-    setState(() {
-      _showingCalendarView = !_showingCalendarView;
-    });
-    HapticFeedback.lightImpact();
-  }
+  
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -64,7 +58,7 @@ class _CalendarViewState extends State<CalendarView> {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(24),
-              onTap: _toggleCalendarView,
+              onTap: widget.onBack,
               child: Container(
                 width: isTablet ? 48 : 40,
                 height: isTablet ? 48 : 40,
@@ -76,15 +70,10 @@ class _CalendarViewState extends State<CalendarView> {
                     width: 1,
                   ),
                 ),
-                child: GestureDetector(
-                  onTap: () {
-                    widget.onBack();
-                  },
-                  child: Icon(
-                    Icons.arrow_back_ios_rounded,
-                    color: theme.colorScheme.onSurface,
-                    size: isTablet ? 20 : 16,
-                  ),
+                child: Icon(
+                  Icons.arrow_back_ios_rounded,
+                  color: theme.colorScheme.onSurface,
+                  size: isTablet ? 20 : 16,
                 ),
               ),
             ),
@@ -337,7 +326,6 @@ class _CalendarViewState extends State<CalendarView> {
   void _selectDateFromCalendar(DateTime date) {
     setState(() {
       _selectedDate = date;
-      _showingCalendarView = false;
     });
     widget.onDateSelected(date);
     HapticFeedback.mediumImpact();

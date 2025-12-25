@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class TranscriptionService {
   final AudioRecorder _audioRecorder = AudioRecorder();
@@ -101,26 +102,44 @@ class TranscriptionService {
         return null;
       }
 
+      final apiKey = dotenv.env['OPENAI_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty || apiKey == 'your_openai_api_key_here') {
+        print('❌ OpenAI API Key not configured correctly in .env');
+        return null;
+      }
+
       final dio = Dio();
+      
+      // OpenAI Transcriptions endpoint
+      const String url = 'https://api.openai.com/v1/audio/transcriptions';
+      
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(filePath),
+        'file': await MultipartFile.fromFile(filePath, filename: 'audio.m4a'),
+        'model': 'whisper-1',
+        'response_format': 'json',
       });
 
-      print('📤 Sending audio to transcription service...');
+      print('📤 Sending audio to OpenAI transcription service...');
       final response = await dio.post(
-        'http://15.237.196.33:8001/transcribe',
+        url,
         data: formData,
         options: Options(
+          headers: {
+            'Authorization': 'Bearer $apiKey',
+            'Content-Type': 'multipart/form-data',
+          },
           validateStatus: (status) => status! < 500,
         ),
       );
 
-      print('✅ Transcription response: ${response.data}');
-      // Assuming response is JSON { "text": "..." } or similar
-      if (response.data is Map<String, dynamic> && response.data['text'] != null) {
-        return response.data['text'];
-      } else if (response.data is String) {
-        return response.data; // Raw text
+      print('✅ OpenAI Response: ${response.data}');
+
+      if (response.statusCode == 200) {
+        if (response.data is Map<String, dynamic> && response.data['text'] != null) {
+          return response.data['text'];
+        }
+      } else {
+        print('❌ OpenAI Error: ${response.statusCode} - ${response.data}');
       }
       return null;
     } catch (e) {

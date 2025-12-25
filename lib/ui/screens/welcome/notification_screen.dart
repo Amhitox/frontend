@@ -7,6 +7,7 @@ import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/providers/notification_provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/models/notification_model.dart';
+import 'package:frontend/utils/localization.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -87,6 +88,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     final isTablet = screenSize.width > 600;
     final theme = Theme.of(context);
     final provider = context.watch<NotificationProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       drawer: const SideMenu(),
@@ -110,12 +112,12 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 child: Column(
                   children: [
                     _buildHeader(isTablet, theme, provider),
-                    _buildFilterTabs(isTablet, theme),
+                    // _buildFilterTabs(isTablet, theme),
                     _buildQuickStats(isTablet, theme, provider),
                     Expanded(
                       child: provider.isLoading && provider.notifications.isEmpty
                           ? const Center(child: CircularProgressIndicator())
-                          : _buildNotificationsList(isTablet, theme),
+                          : _buildNotificationsList(isTablet, theme, l10n),
                     ),
                   ],
                 ),
@@ -129,9 +131,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Widget _buildHeader(bool isTablet, ThemeData theme, NotificationProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: EdgeInsets.all(isTablet ? 20 : 16),
       padding: EdgeInsets.all(isTablet ? 24 : 20),
+      // ... existing decoration ...
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -175,7 +179,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Notifications',
+                  l10n.notifications,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface,
                     fontSize: isTablet ? 24 : 22,
@@ -185,7 +189,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 ),
                 SizedBox(height: isTablet ? 4 : 2),
                 Text(
-                  '${_filteredNotifications.length} notifications',
+                  '${_filteredNotifications.length} ${l10n.messages.toLowerCase()}',
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 14 : 13,
@@ -217,6 +221,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
+  // ... _buildHeaderButton stays same ...
   Widget _buildHeaderButton(
     IconData icon,
     VoidCallback onTap,
@@ -246,6 +251,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Widget _buildFilterTabs(bool isTablet, ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: isTablet ? 20 : 16,
@@ -281,7 +287,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                     ),
                     child: Center(
                       child: Text(
-                        filter,
+                        _getLocalizedFilter(filter, l10n),
                         style: TextStyle(
                           color:
                               isSelected
@@ -302,8 +308,24 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       ),
     );
   }
+  
+  String _getLocalizedFilter(String filter, AppLocalizations l10n) {
+    switch (filter) {
+      case 'All':
+        return l10n.all;
+      case 'Unread':
+        return l10n.unread;
+      case 'Today':
+        return l10n.today;
+      case 'This Week':
+        return l10n.thisWeek;
+      default:
+        return filter;
+    }
+  }
 
   Widget _buildQuickStats(bool isTablet, ThemeData theme, NotificationProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     final notifications = provider.notifications;
     final unreadCount = notifications.where((n) => !n.isRead).length;
     final highPriorityCount =
@@ -329,7 +351,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         children: [
           _buildStatChip(
             '$unreadCount',
-            'Unread',
+            l10n.unread,
             Colors.blue,
             theme,
             isTablet,
@@ -337,17 +359,29 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           SizedBox(width: isTablet ? 16 : 12),
           _buildStatChip(
             '$highPriorityCount',
-            'Priority',
+            l10n.priority,
             Colors.red,
             theme,
             isTablet,
           ),
           SizedBox(width: isTablet ? 16 : 12),
-          _buildStatChip('$todayCount', 'Today', Colors.green, theme, isTablet),
+          _buildStatChip('$todayCount', l10n.today, Colors.green, theme, isTablet),
         ],
       ),
     );
   }
+  
+  // ... _buildStatChip stays same ...
+
+  // ... _buildNotificationsList stays almost same but passes l10n to _buildEmptyState and _buildNotificationItem which is already done in context ...
+  
+  // Need to update _buildPriorityBadge too, checking lower down...
+  // Wait, replace_file_content needs strict range. I am replacing from 133 to ...
+  
+  // Let's stick to smaller chunks or I have to be very careful.
+  
+  // I will replace _buildHeader first.
+
 
   Widget _buildStatChip(
     String count,
@@ -398,7 +432,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  Widget _buildNotificationsList(bool isTablet, ThemeData theme) {
+  Widget _buildNotificationsList(bool isTablet, ThemeData theme, AppLocalizations l10n) {
     if (_filteredNotifications.isEmpty) {
       return RefreshIndicator(
         onRefresh: () {
@@ -408,7 +442,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           physics: const AlwaysScrollableScrollPhysics(),
           child: SizedBox(
             height: MediaQuery.of(context).size.height * 0.5,
-            child: _buildEmptyState(isTablet, theme),
+            child: _buildEmptyState(isTablet, theme, l10n),
           ),
         ),
       );
@@ -434,6 +468,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                     _filteredNotifications[index],
                     isTablet,
                     theme,
+                    l10n,
                   ),
                 ),
               );
@@ -448,6 +483,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     AppNotification notification,
     bool isTablet,
     ThemeData theme,
+    AppLocalizations l10n,
   ) {
     return Dismissible(
       key: Key(notification.id),
@@ -534,7 +570,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (notification.metadata?['audioUrl'] != null) ...[
+                    if (notification.metadata?['audioUrl'] != null && !notification.isRead) ...[
                       const SizedBox(height: 8),
                       InkWell(
                         onTap: () {
@@ -581,7 +617,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                               Icon(Icons.play_circle_fill, size: 16, color: Colors.blue),
                               const SizedBox(width: 4),
                               Text(
-                                'Play Summary',
+                                l10n.playSummary,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -679,16 +715,17 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   Widget _buildPriorityBadge(NotificationPriority priority, bool isTablet) {
     if (priority == NotificationPriority.normal) return const SizedBox();
+    final l10n = AppLocalizations.of(context)!;
     Color color;
     String text;
     switch (priority) {
       case NotificationPriority.high:
         color = Colors.red;
-        text = 'High';
+        text = l10n.high;
         break;
       case NotificationPriority.low:
         color = Colors.grey;
-        text = 'Low';
+        text = l10n.low;
         break;
       default:
         return const SizedBox();
@@ -713,7 +750,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  Widget _buildEmptyState(bool isTablet, ThemeData theme) {
+  Widget _buildEmptyState(bool isTablet, ThemeData theme, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -733,7 +770,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
           SizedBox(height: isTablet ? 20 : 16),
           Text(
-            'No Notifications',
+            l10n.noNotifications,
             style: TextStyle(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
               fontSize: isTablet ? 20 : 18,
@@ -742,7 +779,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            "You're all caught up!",
+            l10n.caughtUp,
             style: TextStyle(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               fontSize: isTablet ? 15 : 14,
@@ -754,6 +791,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   void _markAllAsRead(ThemeData theme, bool isTablet) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder:
@@ -763,7 +801,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              'Mark All as Read',
+              l10n.markAllAsRead,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
@@ -771,7 +809,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               ),
             ),
             content: Text(
-              'Are you sure you want to mark all notifications as read?',
+              l10n.confirmMarkAllRead,
               style: TextStyle(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: isTablet ? 16 : 14,
@@ -781,7 +819,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'Cancel',
+                  l10n.cancel,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -795,11 +833,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: Text(
-                  'Mark All as Read',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: isTablet ? 16 : 14,
-                  ),
+                   l10n.confirm,
+                   style: const TextStyle(color: Colors.white),
                 ),
               ),
             ],
@@ -808,6 +843,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   void _clearAllNotifications(ThemeData theme, bool isTablet) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder:
@@ -817,7 +853,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              'Clear All Notifications',
+              l10n.clearAllNotifications,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
@@ -825,7 +861,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               ),
             ),
             content: Text(
-              'Are you sure you want to clear all notifications? This action cannot be undone.',
+              l10n.confirmClearAll,
               style: TextStyle(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: isTablet ? 16 : 14,
@@ -835,7 +871,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'Cancel',
+                  l10n.cancel,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -849,7 +885,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 child: Text(
-                  'Clear All',
+                  l10n.clearAll,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: isTablet ? 16 : 14,

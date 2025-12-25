@@ -8,7 +8,7 @@ import 'package:frontend/providers/meeting_provider.dart';
 class ConnectivityService {
   final FirebaseSyncService syncService;
   final VoidCallback? onConnectivityRestored;
-  BuildContext? _context;
+  
   ConnectivityService({
     required this.syncService,
     this.onConnectivityRestored,
@@ -21,46 +21,12 @@ class ConnectivityService {
       );
       print('ConnectivityService: Connectivity changed - Online: $isOnline');
       if (isOnline) {
-        print('ConnectivityService: Triggering sync');
+        print('ConnectivityService: Triggering custom restore callback');
         onConnectivityRestored?.call();
-        _syncTasksIfContextAvailable();
       }
     });
   }
-  void setContext(BuildContext context) {
-    _context = context;
-  }
 
-  void _syncTasksIfContextAvailable() {
-    if (_context != null) {
-      print('ConnectivityService: Syncing providers');
-      try {
-        final taskProvider = Provider.of<TaskProvider>(
-          _context!,
-          listen: false,
-        );
-        print(
-          'ConnectivityService: Calling TaskProvider.onConnectivityChanged()',
-        );
-        taskProvider.onConnectivityChanged();
-      } catch (e) {
-        print('ConnectivityService: Error accessing TaskProvider: $e');
-        syncService.fullSync(_context!);
-      }
-      try {
-        final meetingProvider = Provider.of<MeetingProvider>(
-          _context!,
-          listen: false,
-        );
-        print(
-          'ConnectivityService: Calling MeetingProvider.onConnectivityChanged()',
-        );
-        meetingProvider.onConnectivityChanged();
-      } catch (e) {
-        print('ConnectivityService: Error accessing MeetingProvider: $e');
-      }
-    } else {
-      print('ConnectivityService: No context available for sync');
-    }
-  }
+  // Deprecated context usage that caused crashes
+  void setContext(BuildContext context) {}
 }

@@ -9,6 +9,7 @@ import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:frontend/utils/localization.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.token});
@@ -224,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(width: 8),
         Text(
-          'Aixy',
+          AppLocalizations.of(context)!.appTitle,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -258,7 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Get Started now',
+          AppLocalizations.of(context)!.getStartedNow,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -268,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Create an account or log in to explore about our app',
+          AppLocalizations.of(context)!.loginSubtitle,
           style: TextStyle(
             color: textColor.withValues(alpha: 0.9),
             fontSize: subtitleSize,
@@ -320,8 +321,8 @@ class _LoginScreenState extends State<LoginScreen> {
             textInputAction: TextInputAction.next,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-              labelText: 'Email',
-              hintText: 'Enter your email',
+              labelText: AppLocalizations.of(context)!.email,
+              hintText: AppLocalizations.of(context)!.enterEmail,
               labelStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: fontSize,
@@ -363,8 +364,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             validator: FormBuilderValidators.compose([
-              FormBuilderValidators.required(),
-              FormBuilderValidators.email(),
+              FormBuilderValidators.required(errorText: AppLocalizations.of(context)!.emailRequired),
+              FormBuilderValidators.email(errorText: AppLocalizations.of(context)!.invalidEmail),
             ]),
           ),
           const SizedBox(height: 16),
@@ -374,8 +375,8 @@ class _LoginScreenState extends State<LoginScreen> {
             textInputAction: TextInputAction.done,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-              labelText: 'Password',
-              hintText: 'Enter your password',
+              labelText: AppLocalizations.of(context)!.password,
+              hintText: AppLocalizations.of(context)!.enterPassword,
               labelStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: fontSize,
@@ -429,8 +430,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             validator: FormBuilderValidators.compose([
-              FormBuilderValidators.required(),
-              FormBuilderValidators.minLength(6),
+              FormBuilderValidators.required(errorText: AppLocalizations.of(context)!.passwordRequired),
+              FormBuilderValidators.minLength(8, errorText: AppLocalizations.of(context)!.passwordLengthError),
             ]),
           ),
           const SizedBox(height: 16),
@@ -456,7 +457,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Remember me',
+                    AppLocalizations.of(context)!.rememberMe,
                     style: TextStyle(
                       fontSize: fontSize,
                       color: colorScheme.onSurface.withValues(alpha: 0.7),
@@ -474,7 +475,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  'Forgot Password?',
+                  AppLocalizations.of(context)!.forgotPassword,
                   style: TextStyle(
                     fontSize: fontSize,
                     color: const Color(0xFF3B77D8),
@@ -522,7 +523,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       )
                       : Text(
-                        'Login',
+                        AppLocalizations.of(context)!.login,
                         style: TextStyle(
                           fontSize: fontSize + 1,
                           fontWeight: FontWeight.w600,
@@ -547,7 +548,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(width: 12),
         Text(
-          'Or',
+          AppLocalizations.of(context)!.or,
           style: TextStyle(
             color: colorScheme.onSurface.withValues(alpha: 0.6),
             fontSize: 14,
@@ -644,7 +645,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Continue with Google',
+                  AppLocalizations.of(context)!.continueWithGoogle,
                   style: TextStyle(fontSize: fontSize),
                 ),
               ],
@@ -697,7 +698,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Continue with Apple',
+                  AppLocalizations.of(context)!.continueWithApple,
                   style: TextStyle(fontSize: fontSize),
                 ),
               ],
@@ -737,7 +738,7 @@ class _LoginScreenState extends State<LoginScreen> {
             height: 1.4,
           ),
           children: [
-            const TextSpan(text: 'By signing up, you agree to the '),
+            TextSpan(text: AppLocalizations.of(context)!.bySigningUpAgreeTo),
             WidgetSpan(
               child: GestureDetector(
                 onTap: () {
@@ -750,7 +751,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 },
                 child: Text(
-                  'Terms of Service',
+                  AppLocalizations.of(context)!.termsOfService,
                   style: TextStyle(
                     color: const Color(0xFF3B77D8),
                     fontWeight: FontWeight.w600,
@@ -761,7 +762,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            const TextSpan(text: ' and '),
+            TextSpan(text: ' ${AppLocalizations.of(context)!.and} '),
             WidgetSpan(
               child: GestureDetector(
                 onTap: () {
@@ -774,7 +775,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 },
                 child: Text(
-                  'Data Processing Agreement',
+                  AppLocalizations.of(context)!.dataProcessingAgreement,
                   style: TextStyle(
                     color: const Color(0xFF3B77D8),
                     fontWeight: FontWeight.w600,
