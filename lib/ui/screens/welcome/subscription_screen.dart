@@ -5,6 +5,7 @@ import 'package:frontend/providers/sub_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:frontend/utils/localization.dart';
 class SubscriptionPlansScreen extends StatefulWidget {
   const SubscriptionPlansScreen({super.key});
   @override
@@ -74,13 +75,13 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
         );
       } else if (subscriptionStatus == 'active' ||
           subscriptionStatus == 'trialing') {
-        _showSuccess('Subscription is active!');
+        _showSuccess(AppLocalizations.of(context)!.subscriptionActive);
         if (mounted) context.pushNamed('home');
       } else {
-        _showError('Could not initialize payment. Please try again.');
+        _showError(AppLocalizations.of(context)!.paymentInitError);
       }
     } catch (e) {
-      _showError('Subscription failed: $e');
+      _showError('${AppLocalizations.of(context)!.subscriptionFailed}: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -110,18 +111,18 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
           customerId,
         );
       }
-      _showSuccess('Success! Your subscription is active.');
+      _showSuccess(AppLocalizations.of(context)!.subscriptionSuccess);
       if (mounted) {
         context.pushNamed('home');
       }
     } on StripeException catch (e) {
       if (e.error.code == FailureCode.Canceled) {
-        _showError('Payment process was canceled.');
+        _showError(AppLocalizations.of(context)!.paymentCanceled);
       } else {
-        _showError('Payment failed: ${e.error.message}');
+        _showError('${AppLocalizations.of(context)!.paymentFailed}: ${e.error.message}');
       }
     } catch (e) {
-      _showError('An unexpected error occurred: $e');
+      _showError('${AppLocalizations.of(context)!.unexpectedPaymentError}: $e');
     }
   }
   Future<void> _initPaymentSheet(
@@ -193,7 +194,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
                 child: Column(
                   children: [
                     Text(
-                      'Choose Your Plan',
+                      AppLocalizations.of(context)!.chooseYourPlan,
                       style: TextStyle(
                         fontSize: isSmallScreen ? 24 : 28, 
                         fontWeight: FontWeight.bold,
@@ -203,7 +204,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
                     ),
                     SizedBox(height: isSmallScreen ? 2 : 4), 
                     Text(
-                      'Upgrade your voice productivity experience',
+                      AppLocalizations.of(context)!.upgradeExperience,
                       style: TextStyle(
                         fontSize: isSmallScreen ? 13 : 15, 
                         color: Colors.grey[400],
@@ -293,7 +294,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
                 ),
                 child: Center(
                   child: Text(
-                    'Monthly',
+                    AppLocalizations.of(context)!.monthly,
                     style: TextStyle(
                       color: !isAnnual ? Colors.black : Colors.grey[400],
                       fontWeight: FontWeight.w600,
@@ -318,7 +319,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Annual',
+                        AppLocalizations.of(context)!.annual,
                         style: TextStyle(
                           color: isAnnual ? Colors.black : Colors.grey[400],
                           fontWeight: FontWeight.w600,
@@ -338,7 +339,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            'Save 20%',
+                            AppLocalizations.of(context)!.save20,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize:
@@ -389,7 +390,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      isEssential ? 'Essential' : 'Premium',
+                      isEssential ? AppLocalizations.of(context)!.essential : AppLocalizations.of(context)!.premium,
                       style: TextStyle(
                         fontSize: isSmallScreen ? 16 : 18, 
                         fontWeight: FontWeight.bold,
@@ -444,7 +445,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
                 if (isAnnual) ...[
                   const SizedBox(height: 2), 
                   Text(
-                    'Billed annually',
+                    AppLocalizations.of(context)!.billedAnnually,
                     style: TextStyle(
                       fontSize: isSmallScreen ? 10 : 11, 
                       color: Colors.grey[500],
@@ -469,7 +470,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'What\'s included:',
+                  AppLocalizations.of(context)!.whatsIncluded,
                   style: TextStyle(
                     fontSize: isSmallScreen ? 15 : 16, 
                     fontWeight: FontWeight.bold,
@@ -515,36 +516,39 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen>
     );
   }
   List<String> _getFeatures(bool isEssential) {
-    return isEssential
-        ? [
-          'Send/Reply to Emails by Voice',
-          'Voice Task Creation',
-          'Voice Calendar Events',
-          'Text Notifications',
-          'Centralized Dashboard',
-          'Secure Storage (2 GB)',
-          'Up to 10 Priority Emails',
-          'Basic voice recognition',
-          'Standard customer support',
-        ]
-        : [
-          'Voice Email Reading + Smart Search',
-          'Smart Reminders',
-          'Complete Voice Task Management',
-          'Interactive Voice Notifications',
-          'Advanced Voice Commands + Natural AI',
-          'Extended Secure Storage (1 TB)',
-          'Hybrid Concierge Service',
-          'Up to 20 Priority Emails',
-          'Advanced voice recognition with context',
-          'Priority customer support',
-          'Custom voice command training',
-          'Integration with productivity tools',
-        ];
+    final loc = AppLocalizations.of(context)!;
+    if (isEssential) {
+      return [
+        loc.sendReplyEmails,
+        loc.voiceTaskCreation,
+        loc.voiceCalendarEvents,
+        loc.textNotifications,
+        loc.centralizedDashboard,
+        loc.secureStorage2GB,
+        loc.priorityEmails10,
+        loc.basicVoiceRecognition,
+        loc.standardSupport,
+      ];
+    } else {
+      return [
+        loc.voiceEmailReading,
+        loc.smartReminders,
+        loc.completeVoiceTask,
+        loc.interactiveVoiceNotif,
+        loc.advancedVoiceCommands,
+        loc.secureStorage1TB,
+        loc.hybridConcierge,
+        loc.priorityEmails20,
+        loc.advancedVoiceContext,
+        loc.prioritySupport,
+        loc.customVoiceTraining,
+        loc.productivityIntegration,
+      ];
+    }
   }
   Widget _buildSubscribeButton(bool isSmallScreen) {
-    final planName = selectedPlan == 0 ? 'Essential' : 'Premium';
-    final billingType = isAnnual ? 'Annual' : 'Monthly';
+    final planName = selectedPlan == 0 ? AppLocalizations.of(context)!.essential : AppLocalizations.of(context)!.premium;
+    final billingType = isAnnual ? AppLocalizations.of(context)!.annual : AppLocalizations.of(context)!.monthly;
     return Column(
       children: [
         SizedBox(

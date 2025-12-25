@@ -47,7 +47,6 @@ class AppLocalizations {
   String get thisWeek => _localizedValues[locale.languageCode]!['thisWeek']!;
   String get nextWeek => _localizedValues[locale.languageCode]!['nextWeek']!;
   String get thisMonth => _localizedValues[locale.languageCode]!['thisMonth']!;
-  String get thisYear => _localizedValues[locale.languageCode]!['thisYear']!;
   String get nextMonth => _localizedValues[locale.languageCode]!['nextMonth']!;
   String get priority => _localizedValues[locale.languageCode]!['priority']!;
   String get high => _localizedValues[locale.languageCode]!['high']!;
@@ -379,6 +378,10 @@ class AppLocalizations {
   String get emptyDrafts => _localizedValues[locale.languageCode]!['emptyDrafts']!;
   String get emptySent => _localizedValues[locale.languageCode]!['emptySent']!;
   String get emptyTrash => _localizedValues[locale.languageCode]!['emptyTrash']!;
+  String get emptySpam => _localizedValues[locale.languageCode]!['emptySpam']!;
+  String get emptyImportant => _localizedValues[locale.languageCode]!['emptyImportant']!;
+  String get emptyOther => _localizedValues[locale.languageCode]!['emptyOther']!;
+  String get emptyPrimary => _localizedValues[locale.languageCode]!['emptyPrimary']!;
   String get connectGmail => _localizedValues[locale.languageCode]!['connectGmail']!;
   String get connectDescription => _localizedValues[locale.languageCode]!['connectDescription']!;
   String get deleteEmail => _localizedValues[locale.languageCode]!['deleteEmail']!;
@@ -398,6 +401,12 @@ class AppLocalizations {
   String get failedToLoadEmail => _localizedValues[locale.languageCode]!['failedToLoadEmail']!;
   String get noContentAvailable => _localizedValues[locale.languageCode]!['noContentAvailable']!;
   String get priorityAudioSummary => _localizedValues[locale.languageCode]!['priorityAudioSummary']!;
+  String get primary => _localizedValues[locale.languageCode]!['primary']!;
+  String get spam => _localizedValues[locale.languageCode]!['spam']!;
+  String get total => _localizedValues[locale.languageCode]!['total']!;
+  String get emailDeletedSuccess => _localizedValues[locale.languageCode]!['emailDeletedSuccess']!;
+  String get emailDeleteFailed => _localizedValues[locale.languageCode]!['emailDeleteFailed']!;
+  String get emailDeleteError => _localizedValues[locale.languageCode]!['emailDeleteError']!;
   String get tapToPlay => _localizedValues[locale.languageCode]!['tapToPlay']!;
 
   String get compose => _localizedValues[locale.languageCode]!['compose']!;
@@ -409,7 +418,6 @@ class AppLocalizations {
   String get send => _localizedValues[locale.languageCode]!['send']!;
   String get sending => _localizedValues[locale.languageCode]!['sending']!;
   String get attachments => _localizedValues[locale.languageCode]!['attachments']!;
-  String get total => _localizedValues[locale.languageCode]!['total']!;
   String get messageSent => _localizedValues[locale.languageCode]!['messageSent']!;
   String get draftSaved => _localizedValues[locale.languageCode]!['draftSaved']!;
   String get draftEmpty => _localizedValues[locale.languageCode]!['draftEmpty']!;
@@ -423,7 +431,157 @@ class AppLocalizations {
   String get emailRefined => _localizedValues[locale.languageCode]!['emailRefined']!;
   String get pleaseAddRecipient => _localizedValues[locale.languageCode]!['pleaseAddRecipient']!;
   String get pleaseAddSubject => _localizedValues[locale.languageCode]!['pleaseAddSubject']!;
+  String get unknownError => _localizedValues[locale.languageCode]!['unknownError']!;
+  String get draftSaveFailed => _localizedValues[locale.languageCode]!['draftSaveFailed']!;
+  String get filesAdded => _localizedValues[locale.languageCode]!['filesAdded']!;
+  String get imagesAdded => _localizedValues[locale.languageCode]!['imagesAdded']!;
+  String get errorPickingFiles => _localizedValues[locale.languageCode]!['errorPickingFiles']!;
+  String get errorPickingImages => _localizedValues[locale.languageCode]!['errorPickingImages']!;
+
+  String get errorSendingEmail => _localizedValues[locale.languageCode]!['errorSendingEmail']!;
+  String get errorSavingDraft => _localizedValues[locale.languageCode]!['errorSavingDraft']!;
+  String get errorSummarizing => _localizedValues[locale.languageCode]!['errorSummarizing']!;
+  String get confirmDeleteEmailPermanent => _localizedValues[locale.languageCode]!['confirmDeleteEmailPermanent']!;
+  String get unknownSender => _localizedValues[locale.languageCode]!['unknownSender']!;
+  String get unknown => _localizedValues[locale.languageCode]!['unknown']!;
+  String get wrote => _localizedValues[locale.languageCode]!['wrote']!;
+  String get forwardedMessage => _localizedValues[locale.languageCode]!['forwardedMessage']!;
+  String get from => _localizedValues[locale.languageCode]!['from']!;
   
+  // Calendar
+  String get meetingAddedSuccess => _localizedValues[locale.languageCode]!['meetingAddedSuccess']!;
+  String get meetingAddFailed => _localizedValues[locale.languageCode]!['meetingAddFailed']!;
+  String get meetingUpdatedSuccess => _localizedValues[locale.languageCode]!['meetingUpdatedSuccess']!;
+  String get meetingUpdateFailed => _localizedValues[locale.languageCode]!['meetingUpdateFailed']!;
+  String get meetingDeletedSuccess => _localizedValues[locale.languageCode]!['meetingDeletedSuccess']!;
+  String get meetingDeleteFailed => _localizedValues[locale.languageCode]!['meetingDeleteFailed']!;
+  String get confirmDeleteMeeting => _localizedValues[locale.languageCode]!['confirmDeleteMeeting']!;
+  String get online => _localizedValues[locale.languageCode]!['online']!;
+  String get onsite => _localizedValues[locale.languageCode]!['onsite']!;
+  String get newSchedule => _localizedValues[locale.languageCode]!['newSchedule']!;
+  String get meetingTitle => _localizedValues[locale.languageCode]!['meetingTitle']!;
+  String get meetingTitleHint => _localizedValues[locale.languageCode]!['meetingTitleHint']!;
+  String get meetingDescriptionHint => _localizedValues[locale.languageCode]!['meetingDescriptionHint']!;
+  String get attendeesHint => _localizedValues[locale.languageCode]!['attendeesHint']!;
+  String get dateTime => _localizedValues[locale.languageCode]!['dateTime']!;
+  String get startTime => _localizedValues[locale.languageCode]!['startTime']!;
+  String get endTime => _localizedValues[locale.languageCode]!['endTime']!;
+  String get meetingType => _localizedValues[locale.languageCode]!['meetingType']!;
+  String get addSchedule => _localizedValues[locale.languageCode]!['addSchedule']!;
+  String get updateMeeting => _localizedValues[locale.languageCode]!['updateMeeting']!;
+  String get pleaseEnterTitle => _localizedValues[locale.languageCode]!['pleaseEnterTitle']!;
+  
+  // Priority Emails
+  String get priorityEmails => _localizedValues[locale.languageCode]!['priorityEmails']!;
+  String get addVipEmail => _localizedValues[locale.languageCode]!['addVipEmail']!;
+  String get vipEmailDescription => _localizedValues[locale.languageCode]!['vipEmailDescription']!;
+  String get emailPlaceholder => _localizedValues[locale.languageCode]!['emailPlaceholder']!;
+  String get pleaseEnterEmail => _localizedValues[locale.languageCode]!['pleaseEnterEmail']!;
+  String get invalidEmailAddress => _localizedValues[locale.languageCode]!['invalidEmailAddress']!;
+  String get failedToAddEmail => _localizedValues[locale.languageCode]!['failedToAddEmail']!;
+  String get unexpectedError => _localizedValues[locale.languageCode]!['unexpectedError']!;
+  String get failedToRemoveEmail => _localizedValues[locale.languageCode]!['failedToRemoveEmail']!;
+  String get noVipEmails => _localizedValues[locale.languageCode]!['noVipEmails']!;
+  String get quota => _localizedValues[locale.languageCode]!['quota']!;
+  String get used => _localizedValues[locale.languageCode]!['used']!;
+  
+  // Security
+  String get secure => _localizedValues[locale.languageCode]!['secure']!;
+  String get accountSecure => _localizedValues[locale.languageCode]!['accountSecure']!;
+  String get lastSecurityCheck => _localizedValues[locale.languageCode]!['lastSecurityCheck']!;
+  String get authentication => _localizedValues[locale.languageCode]!['authentication']!;
+  String get privacyLock => _localizedValues[locale.languageCode]!['privacyLock']!;
+  String get securityActivity => _localizedValues[locale.languageCode]!['securityActivity']!;
+  String get updateAccountPassword => _localizedValues[locale.languageCode]!['updateAccountPassword']!;
+  String get viewLoginActivity => _localizedValues[locale.languageCode]!['viewLoginActivity']!;
+  String get loginHistory => _localizedValues[locale.languageCode]!['loginHistory']!;
+  String get activeSessions => _localizedValues[locale.languageCode]!['activeSessions']!;
+  String get manageActiveSessions => _localizedValues[locale.languageCode]!['manageActiveSessions']!;
+  String get securityAlerts => _localizedValues[locale.languageCode]!['securityAlerts']!;
+  String get configureSecurityNotifications => _localizedValues[locale.languageCode]!['configureSecurityNotifications']!;
+  String get dataExport => _localizedValues[locale.languageCode]!['dataExport']!;
+  String get downloadAccountData => _localizedValues[locale.languageCode]!['downloadAccountData']!;
+  String get passwordUpdatedSuccess => _localizedValues[locale.languageCode]!['passwordUpdatedSuccess']!;
+  String get autoLockTimer => _localizedValues[locale.languageCode]!['autoLockTimer']!;
+  String get minute => _localizedValues[locale.languageCode]!['minute']!;
+  String get minutes => _localizedValues[locale.languageCode]!['minutes']!;
+  String get never => _localizedValues[locale.languageCode]!['never']!;
+  String get currentDevice => _localizedValues[locale.languageCode]!['currentDevice']!;
+  String get lastActive => _localizedValues[locale.languageCode]!['lastActive']!;
+  String get close => _localizedValues[locale.languageCode]!['close']!;
+  String get signOutOthers => _localizedValues[locale.languageCode]!['signOutOthers']!;
+  String get allSessionsSignedOut => _localizedValues[locale.languageCode]!['allSessionsSignedOut']!;
+  String get configureSecurityDescription => _localizedValues[locale.languageCode]!['configureSecurityDescription']!;
+  String get downloadDataDescription => _localizedValues[locale.languageCode]!['downloadDataDescription']!;
+  String get dataExportStarted => _localizedValues[locale.languageCode]!['dataExportStarted']!;
+  String get export => _localizedValues[locale.languageCode]!['export']!;
+  String get configure => _localizedValues[locale.languageCode]!['configure']!;
+  
+  // Onboarding
+  String get skip => _localizedValues[locale.languageCode]!['skip']!;
+  String get voiceControl => _localizedValues[locale.languageCode]!['voiceControl']!;
+  String get speakNaturally => _localizedValues[locale.languageCode]!['speakNaturally']!;
+  String get voiceControlDesc => _localizedValues[locale.languageCode]!['voiceControlDesc']!;
+  String get smartInsights => _localizedValues[locale.languageCode]!['smartInsights']!;
+  String get trackProgress => _localizedValues[locale.languageCode]!['trackProgress']!;
+  String get smartInsightsDesc => _localizedValues[locale.languageCode]!['smartInsightsDesc']!;
+  String get privacyFirst => _localizedValues[locale.languageCode]!['privacyFirst']!;
+  String get stayProtected => _localizedValues[locale.languageCode]!['stayProtected']!;
+  String get privacyFirstDesc => _localizedValues[locale.languageCode]!['privacyFirstDesc']!;
+  String get continueBtn => _localizedValues[locale.languageCode]!['continueBtn']!;
+  String get getStarted => _localizedValues[locale.languageCode]!['getStarted']!;
+  
+  // Splash
+  String get appTagline => _localizedValues[locale.languageCode]!['appTagline']!;
+  
+  // Subscription
+  String get chooseYourPlan => _localizedValues[locale.languageCode]!['chooseYourPlan']!;
+  String get upgradeExperience => _localizedValues[locale.languageCode]!['upgradeExperience']!;
+  String get monthly => _localizedValues[locale.languageCode]!['monthly']!;
+  String get annual => _localizedValues[locale.languageCode]!['annual']!;
+  String get save20 => _localizedValues[locale.languageCode]!['save20']!;
+  String get essential => _localizedValues[locale.languageCode]!['essential']!;
+  String get premium => _localizedValues[locale.languageCode]!['premium']!;
+  String get billedAnnually => _localizedValues[locale.languageCode]!['billedAnnually']!;
+  String get whatsIncluded => _localizedValues[locale.languageCode]!['whatsIncluded']!;
+  String get subscriptionActive => _localizedValues[locale.languageCode]!['subscriptionActive']!;
+  String get paymentInitError => _localizedValues[locale.languageCode]!['paymentInitError']!;
+  String get subscriptionFailed => _localizedValues[locale.languageCode]!['subscriptionFailed']!;
+  String get subscriptionSuccess => _localizedValues[locale.languageCode]!['subscriptionSuccess']!;
+  String get paymentCanceled => _localizedValues[locale.languageCode]!['paymentCanceled']!;
+  String get paymentFailed => _localizedValues[locale.languageCode]!['paymentFailed']!;
+  String get unexpectedPaymentError => _localizedValues[locale.languageCode]!['unexpectedPaymentError']!;
+  
+  // Plan Features
+  String get sendReplyEmails => _localizedValues[locale.languageCode]!['sendReplyEmails']!;
+  String get voiceTaskCreation => _localizedValues[locale.languageCode]!['voiceTaskCreation']!;
+  String get voiceCalendarEvents => _localizedValues[locale.languageCode]!['voiceCalendarEvents']!;
+  String get textNotifications => _localizedValues[locale.languageCode]!['textNotifications']!;
+  String get centralizedDashboard => _localizedValues[locale.languageCode]!['centralizedDashboard']!;
+  String get secureStorage2GB => _localizedValues[locale.languageCode]!['secureStorage2GB']!;
+  String get priorityEmails10 => _localizedValues[locale.languageCode]!['priorityEmails10']!;
+  String get basicVoiceRecognition => _localizedValues[locale.languageCode]!['basicVoiceRecognition']!;
+  String get standardSupport => _localizedValues[locale.languageCode]!['standardSupport']!;
+  String get voiceEmailReading => _localizedValues[locale.languageCode]!['voiceEmailReading']!;
+  String get smartReminders => _localizedValues[locale.languageCode]!['smartReminders']!;
+  String get completeVoiceTask => _localizedValues[locale.languageCode]!['completeVoiceTask']!;
+  String get interactiveVoiceNotif => _localizedValues[locale.languageCode]!['interactiveVoiceNotif']!;
+  String get advancedVoiceCommands => _localizedValues[locale.languageCode]!['advancedVoiceCommands']!;
+  String get secureStorage1TB => _localizedValues[locale.languageCode]!['secureStorage1TB']!;
+  String get hybridConcierge => _localizedValues[locale.languageCode]!['hybridConcierge']!;
+  String get priorityEmails20 => _localizedValues[locale.languageCode]!['priorityEmails20']!;
+  String get advancedVoiceContext => _localizedValues[locale.languageCode]!['advancedVoiceContext']!;
+  String get prioritySupport => _localizedValues[locale.languageCode]!['prioritySupport']!;
+  String get customVoiceTraining => _localizedValues[locale.languageCode]!['customVoiceTraining']!;
+  String get productivityIntegration => _localizedValues[locale.languageCode]!['productivityIntegration']!;
+  
+  // Current Plan
+  String get currentPlan => _localizedValues[locale.languageCode]!['currentPlan']!;
+  String get essentialPlan => _localizedValues[locale.languageCode]!['essentialPlan']!;
+  String get premiumPlan => _localizedValues[locale.languageCode]!['premiumPlan']!;
+  String get essentialPlanDesc => _localizedValues[locale.languageCode]!['essentialPlanDesc']!;
+  String get premiumPlanDesc => _localizedValues[locale.languageCode]!['premiumPlanDesc']!;
+  String get backToHome => _localizedValues[locale.languageCode]!['backToHome']!;
   // Profile Screen
   String get personalInformation => _localizedValues[locale.languageCode]!['personalInformation']!;
   String get firstName => _localizedValues[locale.languageCode]!['firstName']!;
@@ -759,6 +917,10 @@ class AppLocalizations {
       'emptyDrafts': 'No drafts saved',
       'emptySent': 'No sent messages',
       'emptyTrash': 'Trash is empty',
+      'emptySpam': 'No spam messages',
+      'emptyImportant': 'No important messages',
+      'emptyOther': 'No other messages',
+      'emptyPrimary': 'Your primary inbox is empty',
       'connectGmail': 'Connect Gmail',
       'connectDescription': 'Connect your Gmail account to manage emails and get AI summaries.',
       'deleteEmail': 'Delete Email',
@@ -777,6 +939,13 @@ class AppLocalizations {
       'failedToLoadEmail': 'Failed to load email content',
       'noContentAvailable': 'No content available',
       'priorityAudioSummary': 'Priority Audio Summary',
+      'primary': 'Primary',
+      'spam': 'Spam',
+      'other': 'Other',
+      'total': 'Total',
+      'emailDeletedSuccess': 'Email deleted successfully',
+      'emailDeleteFailed': 'Failed to delete email',
+      'emailDeleteError': 'Error deleting email',
       'tapToPlay': 'Tap to play',
       'compose': 'Compose',
       'editMessage': 'Edit Message',
@@ -801,6 +970,167 @@ class AppLocalizations {
       'emailRefined': 'Email refined by AI',
       'pleaseAddRecipient': 'Please add at least one recipient',
       'pleaseAddSubject': 'Please add a subject',
+      'unknownError': 'Unknown error',
+      'draftSaveFailed': 'Failed to save draft',
+      'filesAdded': 'File(s) added',
+      'imagesAdded': 'Image(s) added',
+      'errorPickingFiles': 'Error picking files',
+      'errorPickingImages': 'Error picking images',
+      'errorSendingEmail': 'Error sending email',
+      'errorSavingDraft': 'Error saving draft',
+      'important': 'Important',
+      'errorSummarizing': 'Error summarizing',
+      'confirmDeleteEmailPermanent': 'Are you sure you want to delete this email? This action cannot be undone.',
+      'unknownSender': 'Unknown Sender',
+      'unknown': 'Unknown',
+      'wrote': 'wrote',
+      'forwardedMessage': 'Forwarded message',
+      'from': 'From',
+      'date': 'Date',
+      'reply': 'Reply',
+      'replyAll': 'Reply All',
+      'forward': 'Forward',
+
+      // Calendar
+      'calendar': 'Calendar',
+      'meetingAddedSuccess': 'Meeting added successfully!',
+      'meetingAddFailed': 'Failed to add meeting',
+      'meetingUpdatedSuccess': 'Meeting updated successfully!',
+      'meetingUpdateFailed': 'Failed to update meeting',
+      'meetingDeletedSuccess': 'Meeting deleted successfully!',
+      'meetingDeleteFailed': 'Failed to delete meeting',
+      'confirmDeleteMeeting': 'Are you sure you want to delete this meeting?',
+      'online': 'Online',
+      'onsite': 'On-site',
+      'newSchedule': 'New Schedule',
+      'editMeeting': 'Edit Meeting',
+      'meetingTitle': 'MEETING TITLE',
+      'meetingTitleHint': 'What is this meeting about?',
+      'meetingDescriptionHint': 'Meeting agenda or details (optional)',
+      'attendees': 'ATTENDEES',
+      'attendeesHint': 'Enter email addresses separated by commas',
+      'dateTime': 'DATE & TIME',
+      'startTime': 'Start',
+      'endTime': 'End',
+      'meetingType': 'MEETING TYPE',
+      'addSchedule': 'Add Schedule',
+      'updateMeeting': 'Update Meeting',
+      'pleaseEnterTitle': 'Please enter a title',
+      
+      // Priority Emails
+      'priorityEmails': 'Priority Emails',
+      'addVipEmail': 'Add VIP Email',
+      'vipEmailDescription': 'Emails from these senders will trigger voice summaries.',
+      'emailPlaceholder': 'partner@example.com',
+      'pleaseEnterEmail': 'Please enter an email',
+      'invalidEmailAddress': 'Invalid email address',
+      'failedToAddEmail': 'Failed to add email',
+      'unexpectedError': 'An unexpected error occurred',
+      'failedToRemoveEmail': 'Failed to remove email',
+      'noVipEmails': 'No VIP emails yet',
+      'addedToVIP': 'Added',
+      'removedFromVIP': 'Removed',
+      'quota': 'Quota',
+      'used': 'used',
+      
+      // Security
+      'security': 'Security',
+      'secure': 'Secure',
+      'accountSecure': 'Your Account is Secure',
+      'lastSecurityCheck': 'Last security check: Today at 3:24 PM',
+      'authentication': 'Authentication',
+      'privacyLock': 'Privacy & Lock',
+      'securityActivity': 'Security Activity',
+      'updateAccountPassword': 'Update your account password',
+      'viewLoginActivity': 'View recent login activity',
+      'loginHistory': 'Login History',
+      'activeSessions': 'Active Sessions',
+      'manageActiveSessions': 'Manage your active sessions',
+      'securityAlerts': 'Security Alerts',
+      'configureSecurityNotifications': 'Configure security notifications',
+      'dataExport': 'Data Export',
+      'downloadAccountData': 'Download your account data',
+      'passwordUpdatedSuccess': 'Password updated successfully!',
+      'autoLockTimer': 'Auto Lock Timer',
+      'minute': 'minute',
+      'minutes': 'minutes',
+      'never': 'Never',
+      'currentDevice': 'Current device',
+      'lastActive': 'Last active:',
+      'close': 'Close',
+      'signOutOthers': 'Sign Out Others',
+      'allSessionsSignedOut': 'All other sessions signed out',
+      'configureSecurityDescription': 'Configure when you want to receive security notifications.',
+      'downloadDataDescription': 'Download a copy of your account data. This may take a few minutes.',
+      'dataExportStarted': 'Data export started. You will receive an email when ready.',
+      'export': 'Export',
+      'configure': 'Configure',
+      
+      // Onboarding
+      'skip': 'Skip',
+      'voiceControl': 'Voice Control',
+      'speakNaturally': 'Speak Naturally',
+      'voiceControlDesc': 'Transform your productivity with intuitive voice commands. Just speak and watch your tasks come to life.',
+      'smartInsights': 'Smart Insights',
+      'trackProgress': 'Track Progress',
+      'smartInsightsDesc': 'Gain powerful insights into your productivity patterns with beautiful analytics and detailed reports.',
+      'privacyFirst': 'Privacy First',
+      'stayProtected': 'Stay Protected',
+      'privacyFirstDesc': 'Your data is encrypted and secure. Experience powerful features while maintaining complete privacy.',
+      'continueBtn': 'Continue',
+      'getStarted': 'Get Started',
+      
+      // Splash
+      'appTagline': 'Where your ideas become reality',
+      
+      // Subscription
+      'chooseYourPlan': 'Choose Your Plan',
+      'upgradeExperience': 'Upgrade your voice productivity experience',
+      'monthly': 'Monthly',
+      'annual': 'Annual',
+      'save20': 'Save 20%',
+      'essential': 'Essential',
+      'premium': 'Premium',
+      'billedAnnually': 'Billed annually',
+      'whatsIncluded': 'What\'s included:',
+      'subscriptionActive': 'Subscription is active!',
+      'paymentInitError': 'Could not initialize payment. Please try again.',
+      'subscriptionFailed': 'Subscription failed',
+      'subscriptionSuccess': 'Success! Your subscription is active.',
+      'paymentCanceled': 'Payment process was canceled.',
+      'paymentFailed': 'Payment failed',
+      'unexpectedPaymentError': 'An unexpected error occurred',
+      
+      // Plan Features  
+      'sendReplyEmails': 'Send/Reply to Emails by Voice',
+      'voiceTaskCreation': 'Voice Task Creation',
+      'voiceCalendarEvents': 'Voice Calendar Events',
+      'textNotifications': 'Text Notifications',
+      'centralizedDashboard': 'Centralized Dashboard',
+      'secureStorage2GB': 'Secure Storage (2 GB)',
+      'priorityEmails10': 'Up to 10 Priority Emails',
+      'basicVoiceRecognition': 'Basic voice recognition',
+      'standardSupport': 'Standard customer support',
+      'voiceEmailReading': 'Voice Email Reading + Smart Search',
+      'smartReminders': 'Smart Reminders',
+      'completeVoiceTask': 'Complete Voice Task Management',
+      'interactiveVoiceNotif': 'Interactive Voice Notifications',
+      'advancedVoiceCommands': 'Advanced Voice Commands + Natural AI',
+      'secureStorage1TB': 'Extended Secure Storage (1 TB)',
+      'hybridConcierge': 'Hybrid Concierge Service',
+      'priorityEmails20': 'Up to 20 Priority Emails',
+      'advancedVoiceContext': 'Advanced voice recognition with context',
+      'prioritySupport': 'Priority customer support',
+      'customVoiceTraining': 'Custom voice command training',
+      'productivityIntegration': 'Integration with productivity tools',
+      
+      // Current Plan
+      'currentPlan': 'Current Plan',
+      'essentialPlan': 'Essential Plan',
+      'premiumPlan': 'Premium Plan',
+      'essentialPlanDesc': 'You have access to essential voice features and basic productivity tools.',
+      'premiumPlanDesc': 'You have access to all premium features including advanced AI capabilities and unlimited storage.',
+      'backToHome': 'Back to Home',
       
       // Profile Screen
       'personalInformation': 'Personal Information',
@@ -1181,6 +1511,154 @@ class AppLocalizations {
       'failedToLoadEmail': 'Échec du chargement du contenu de l\'email',
       'noContentAvailable': 'Aucun contenu disponible',
       'priorityAudioSummary': 'Résumé audio prioritaire',
+      'primary': 'Principal',
+      'spam': 'Spam',
+      'other': 'Autre',
+      'total': 'Total',
+      'emailDeletedSuccess': 'Email supprimé avec succès',
+
+      // Calendar
+      'calendar': 'Calendrier',
+      'meetingAddedSuccess': 'Réunion ajoutée avec succès !',
+      'meetingAddFailed': 'Échec de l\'ajout de la réunion',
+      'meetingUpdatedSuccess': 'Réunion mise à jour avec succès !',
+      'meetingUpdateFailed': 'Échec de la mise à jour de la réunion',
+      'meetingDeletedSuccess': 'Réunion supprimée avec succès !',
+      'meetingDeleteFailed': 'Échec de la suppression de la réunion',
+      'confirmDeleteMeeting': 'Êtes-vous sûr de vouloir supprimer cette réunion ?',
+      'online': 'En ligne',
+      'onsite': 'Sur place',
+      'newSchedule': 'Nouvelle planification',
+      'editMeeting': 'Modifier la réunion',
+      'meetingTitle': 'TITRE DE LA RÉUNION',
+      'meetingTitleHint': 'De quoi parle cette réunion ?',
+      'meetingDescriptionHint': 'Ordre du jour ou détails (facultatif)',
+      'attendees': 'PARTICIPANTS',
+      'attendeesHint': 'Entrez les adresses emails séparées par des virgules',
+      'dateTime': 'DATE ET HEURE',
+      'startTime': 'Début',
+      'endTime': 'Fin',
+      'meetingType': 'TYPE DE RÉUNION',
+      'addSchedule': 'Ajouter planification',
+      'updateMeeting': 'Mettre à jour la réunion',
+      'pleaseEnterTitle': 'Veuillez entrer un titre',
+      
+      // Priority Emails
+      'priorityEmails': 'Emails prioritaires',
+      'addVipEmail': 'Ajouter email VIP',
+      'vipEmailDescription': 'Les emails de ces expéditeurs déclencheront des résumés vocaux.',
+      'emailPlaceholder': 'partenaire@exemple.com',
+      'pleaseEnterEmail': 'Veuillez entrer un email',
+      'invalidEmailAddress': 'Adresse email invalide',
+      'failedToAddEmail': 'Échec de l\'ajout de l\'email',
+      'unexpectedError': 'Une erreur inattendue s\'est produite',
+      'failedToRemoveEmail': 'Échec de la suppression de l\'email',
+      'noVipEmails': 'Aucun email VIP pour l\'instant',
+      'addedToVIP': 'Ajouté',
+      'removedFromVIP': 'Retiré',
+      'quota': 'Quota',
+      'used': 'utilisé',
+      
+      // Security
+      'security': 'Sécurité',
+      'secure': 'Sécurisé',
+      'accountSecure': 'Votre compte est sécurisé',
+      'lastSecurityCheck': 'Dernière vérification : Aujourd\'hui à 15h24',
+      'authentication': 'Authentification',
+      'privacyLock': 'Confidentialité et verrouillage',
+      'securityActivity': 'Activité de sécurité',
+      'updateAccountPassword': 'Mettre à jour votre mot de passe',
+      'viewLoginActivity': 'Voir l\'activité de connexion récente',
+      'loginHistory': 'Historique de connexion',
+      'activeSessions': 'Sessions actives',
+      'manageActiveSessions': 'Gérer vos sessions actives',
+      'securityAlerts': 'Alertes de sécurité',
+      'configureSecurityNotifications': 'Configurer les notifications de sécurité',
+      'dataExport': 'Export de données',
+      'downloadAccountData': 'Télécharger vos données',
+      'passwordUpdatedSuccess': 'Mot de passe mis à jour !',
+      'autoLockTimer': 'Minuteur de verrouillage auto',
+      'minute': 'minute',
+      'minutes': 'minutes',
+      'never': 'Jamais',
+      'currentDevice': 'Appareil actuel',
+      'lastActive': 'Dernière activité :',
+      'close': 'Fermer',
+      'signOutOthers': 'Déconnecter les autres',
+      'allSessionsSignedOut': 'Toutes les autres sessions déconnectées',
+      'configureSecurityDescription': 'Configurez quand vous souhaitez recevoir des notifications de sécurité.',
+      'downloadDataDescription': 'Téléchargez une copie de vos données de compte. Cela peut prendre quelques minutes.',
+      'dataExportStarted': 'Export de données démarré. Vous recevrez un email quand ce sera prêt.',
+      'export': 'Exporter',
+      'configure': 'Configurer',
+      
+      // Onboarding
+      'skip': 'Passer',
+      'voiceControl': 'Contrôle vocal',
+      'speakNaturally': 'Parlez naturellement',
+      'voiceControlDesc': 'Transformez votre productivité avec des commandes vocales intuitives. Parlez simplement et regardez vos tâches prendre vie.',
+      'smartInsights': 'Informations intelligentes',
+      'trackProgress': 'Suivre les progrès',
+      'smartInsightsDesc': 'Obtenez des informations puissantes sur vos modèles de productivité avec de belles analyses et des rapports détaillés.',
+      'privacyFirst': 'Confidentialité d\'abord',
+      'stayProtected': 'Restez protégé',
+      'privacyFirstDesc': 'Vos données sont cryptées et sécurisées. Profitez de fonctionnalités puissantes tout en maintenant une confidentialité complète.',
+      'continueBtn': 'Continuer',
+      'getStarted': 'Commencer',
+      
+      // Splash
+      'appTagline': 'Où vos idées deviennent réalité',
+      
+      // Subscription
+      'chooseYourPlan': 'Choisissez votre forfait',
+      'upgradeExperience': 'Améliorez votre expérience de productivité vocale',
+      'monthly': 'Mensuel',
+      'annual': 'Annuel',
+      'save20': 'Économisez 20%',
+      'essential': 'Essentiel',
+      'premium': 'Premium',
+      'billedAnnually': 'Facturé annuellement',
+      'whatsIncluded': 'Ce qui est inclus :',
+      'subscriptionActive': 'L\'abonnement est actif !',
+      'paymentInitError': 'Impossible d\'initialiser le paiement. Veuillez réessayer.',
+      'subscriptionFailed': 'L\'abonnement a échoué',
+      'subscriptionSuccess': 'Succès ! Votre abonnement est actif.',
+      'paymentCanceled': 'Le processus de paiement a été annulé.',
+      'paymentFailed': 'Le paiement a échoué',
+      'unexpectedPaymentError': 'Une erreur inattendue s\'est produite',
+      
+      // Plan Features
+      'sendReplyEmails': 'Envoyer/Répondre aux emails par voix',
+      'voiceTaskCreation': 'Création de tâches vocales',
+      'voiceCalendarEvents': 'Événements de calendrier vocaux',
+      'textNotifications': 'Notifications texte',
+      'centralizedDashboard': 'Tableau de bord centralisé',
+      'secureStorage2GB': 'Stockage sécurisé (2 Go)',
+      'priorityEmails10': 'Jusqu\'à 10 emails prioritaires',
+      'basicVoiceRecognition': 'Reconnaissance vocale basique',
+      'standardSupport': 'Support client standard',
+      'voiceEmailReading': 'Lecture d\'emails vocale + Recherche intelligente',
+      'smartReminders': 'Rappels intelligents',
+      'completeVoiceTask': 'Gestion complète des tâches vocales',
+      'interactiveVoiceNotif': 'Notifications vocales interactives',
+      'advancedVoiceCommands': 'Commandes vocales avancées + IA naturelle',
+      'secureStorage1TB': 'Stockage sécurisé étendu (1 To)',
+      'hybridConcierge': 'Service de conciergerie hybride',
+      'priorityEmails20': 'Jusqu\'à 20 emails prioritaires',
+      'advancedVoiceContext': 'Reconnaissance vocale avancée avec contexte',
+      'prioritySupport': 'Support client prioritaire',
+      'customVoiceTraining': 'Formation personnalisée aux commandes vocales',
+      'productivityIntegration': 'Intégration avec outils de productivité',
+      
+      // Current Plan
+      'currentPlan': 'Forfait actuel',
+      'essentialPlan': 'Forfait essentiel',
+      'premiumPlan': 'Forfait premium',
+      'essentialPlanDesc': 'Vous avez accès aux fonctionnalités vocales essentielles et aux outils de productivité de base.',
+      'premiumPlanDesc': 'Vous avez accès à toutes les fonctionnalités premium, y compris les capacités d\'IA avancées et le stockage illimité.',
+      'backToHome': 'Retour à l\'accueil',
+      'emailDeleteFailed': 'Échec de la suppression de l\'email',
+      'emailDeleteError': 'Erreur lors de la suppression de l\'email',
       'tapToPlay': 'Appuyez pour lire',
       'compose': 'Nouveau message',
       'editMessage': 'Modifier le message',
@@ -1205,6 +1683,26 @@ class AppLocalizations {
       'emailRefined': 'Email affiné par l\'IA',
       'pleaseAddRecipient': 'Veuillez ajouter au moins un destinataire',
       'pleaseAddSubject': 'Veuillez ajouter un objet',
+      'unknownError': 'Erreur inconnue',
+      'draftSaveFailed': 'Échec de l\'enregistrement du brouillon',
+      'filesAdded': 'Fichier(s) ajouté(s)',
+      'imagesAdded': 'Image(s) ajoutée(s)',
+      'errorPickingFiles': 'Erreur lors de la sélection des fichiers',
+      'errorPickingImages': 'Erreur lors de la sélection des images',
+      'errorSendingEmail': 'Erreur lors de l\'envoi de l\'email',
+      'errorSavingDraft': 'Erreur lors de l\'enregistrement du brouillon',
+      'important': 'Important',
+      'errorSummarizing': 'Erreur lors du résumé',
+      'confirmDeleteEmailPermanent': 'Êtes-vous sûr de vouloir supprimer cet email ? Cette action est irréversible.',
+      'unknownSender': 'Expéditeur inconnu',
+      'unknown': 'Inconnu',
+      'wrote': 'a écrit',
+      'forwardedMessage': 'Message transféré',
+      'from': 'De',
+      'date': 'Date',
+      'reply': 'Répondre',
+      'replyAll': 'Répondre à tous',
+      'forward': 'Transférer',
 
 
 

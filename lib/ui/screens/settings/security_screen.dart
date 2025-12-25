@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:frontend/utils/localization.dart';
 class SecurityScreen extends StatefulWidget {
   const SecurityScreen({super.key});
   @override
@@ -124,7 +125,7 @@ class _SecurityScreenState extends State<SecurityScreen>
           SizedBox(width: isTablet ? 20 : 16),
           Expanded(
             child: Text(
-              'Security',
+              AppLocalizations.of(context)!.security,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize:
@@ -160,7 +161,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                 ),
                 SizedBox(width: isTablet ? 8 : 6),
                 Text(
-                  'Secure',
+                  AppLocalizations.of(context)!.secure,
                   style: TextStyle(
                     color: Colors.green,
                     fontSize: isTablet ? 12 : 11,
@@ -214,7 +215,7 @@ class _SecurityScreenState extends State<SecurityScreen>
           ),
           SizedBox(height: isTablet ? 20 : 16),
           Text(
-            'Your Account is Secure',
+            AppLocalizations.of(context)!.accountSecure,
             style: TextStyle(
               color: theme.colorScheme.onSurface,
               fontSize:
@@ -229,7 +230,7 @@ class _SecurityScreenState extends State<SecurityScreen>
           ),
           SizedBox(height: isTablet ? 10 : 8),
           Text(
-            'Last security check: Today at 3:24 PM',
+            AppLocalizations.of(context)!.lastSecurityCheck,
             style: TextStyle(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: isTablet ? 14 : 13,
@@ -245,12 +246,12 @@ class _SecurityScreenState extends State<SecurityScreen>
     ThemeData theme,
   ) {
     return _buildSection(
-      'Authentication',
+      AppLocalizations.of(context)!.authentication,
       Icons.lock_outline,
       [
         _buildSecurityItem(
-          'Change Password',
-          'Update your account password',
+          AppLocalizations.of(context)!.changePassword,
+          AppLocalizations.of(context)!.updateAccountPassword,
           Icons.key,
           onTap: () => _changePassword(theme, isTablet),
           isTablet: isTablet,
@@ -268,12 +269,12 @@ class _SecurityScreenState extends State<SecurityScreen>
     ThemeData theme,
   ) {
     return _buildSection(
-      'Privacy & Lock',
+      AppLocalizations.of(context)!.privacyLock,
       Icons.privacy_tip_outlined,
       [
         _buildSecurityItem(
-          'Login History',
-          'View recent login activity',
+          AppLocalizations.of(context)!.loginHistory,
+          AppLocalizations.of(context)!.viewLoginActivity,
           Icons.history,
           onTap: () => _showLoginHistory(),
           isTablet: isTablet,
@@ -291,28 +292,28 @@ class _SecurityScreenState extends State<SecurityScreen>
     ThemeData theme,
   ) {
     return _buildSection(
-      'Security Activity',
+      AppLocalizations.of(context)!.securityActivity,
       Icons.security,
       [
         _buildSecurityItem(
-          'Active Sessions',
-          'Manage your active sessions',
+          AppLocalizations.of(context)!.activeSessions,
+          AppLocalizations.of(context)!.manageActiveSessions,
           Icons.devices,
           onTap: () => _showActiveSessions(theme, isTablet),
           isTablet: isTablet,
           theme: theme,
         ),
         _buildSecurityItem(
-          'Security Alerts',
-          'Configure security notifications',
+          AppLocalizations.of(context)!.securityAlerts,
+          AppLocalizations.of(context)!.configureSecurityNotifications,
           Icons.notification_important,
           onTap: () => _configureSecurityAlerts(theme, isTablet),
           isTablet: isTablet,
           theme: theme,
         ),
         _buildSecurityItem(
-          'Data Export',
-          'Download your account data',
+          AppLocalizations.of(context)!.dataExport,
+          AppLocalizations.of(context)!.downloadAccountData,
           Icons.download,
           onTap: () => _exportData(theme, isTablet),
           isTablet: isTablet,
@@ -530,7 +531,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              'Change Password',
+              AppLocalizations.of(context)!.changePassword,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -547,7 +548,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                     fontSize: isTablet ? 16 : 14,
                   ),
                   decoration: InputDecoration(
-                    labelText: 'Current Password',
+                    labelText: AppLocalizations.of(context)!.currentPassword,
                     labelStyle: TextStyle(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -571,7 +572,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                     fontSize: isTablet ? 16 : 14,
                   ),
                   decoration: InputDecoration(
-                    labelText: 'New Password',
+                    labelText: AppLocalizations.of(context)!.newPassword,
                     labelStyle: TextStyle(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -593,7 +594,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'Cancel',
+                  AppLocalizations.of(context)!.cancel,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -605,7 +606,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Password updated successfully!'),
+                      content: Text(AppLocalizations.of(context)!.passwordUpdatedSuccess),
                       backgroundColor: Colors.green,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
@@ -621,7 +622,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   ),
                 ),
                 child: Text(
-                  'Update',
+                  AppLocalizations.of(context)!.update,
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
                     fontSize: isTablet ? 16 : 14,
@@ -642,7 +643,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              'Auto Lock Timer',
+              AppLocalizations.of(context)!.autoLockTimer,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -652,7 +653,7 @@ class _SecurityScreenState extends State<SecurityScreen>
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children:
-                  ['1 minute', '5 minutes', '15 minutes', '30 minutes', 'Never']
+                  ['1 ${AppLocalizations.of(context)!.minute}', '5 ${AppLocalizations.of(context)!.minutes}', '15 ${AppLocalizations.of(context)!.minutes}', '30 ${AppLocalizations.of(context)!.minutes}', AppLocalizations.of(context)!.never]
                       .map(
                         (time) => RadioListTile<String>(
                           title: Text(
@@ -689,7 +690,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              'Active Sessions',
+              AppLocalizations.of(context)!.activeSessions,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -701,21 +702,21 @@ class _SecurityScreenState extends State<SecurityScreen>
               children: [
                 _buildSessionItem(
                   'iPhone 13 Pro',
-                  'Current device',
+                  AppLocalizations.of(context)!.currentDevice,
                   true,
                   theme,
                   isTablet,
                 ),
                 _buildSessionItem(
                   'MacBook Pro',
-                  'Last active: 2 hours ago',
+                  '${AppLocalizations.of(context)!.lastActive} 2 hours ago',
                   false,
                   theme,
                   isTablet,
                 ),
                 _buildSessionItem(
                   'iPad Air',
-                  'Last active: 1 day ago',
+                  '${AppLocalizations.of(context)!.lastActive} 1 day ago',
                   false,
                   theme,
                   isTablet,
@@ -726,7 +727,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'Close',
+                  AppLocalizations.of(context)!.close,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -738,7 +739,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('All other sessions signed out'),
+                      content: Text(AppLocalizations.of(context)!.allSessionsSignedOut),
                       backgroundColor: Colors.orange,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
@@ -754,7 +755,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   ),
                 ),
                 child: Text(
-                  'Sign Out Others',
+                  AppLocalizations.of(context)!.signOutOthers,
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
                     fontSize: isTablet ? 16 : 14,
@@ -845,7 +846,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              'Security Alerts',
+              AppLocalizations.of(context)!.securityAlerts,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -853,7 +854,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               ),
             ),
             content: Text(
-              'Configure when you want to receive security notifications.',
+              AppLocalizations.of(context)!.configureSecurityDescription,
               style: TextStyle(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: isTablet ? 16 : 14,
@@ -863,7 +864,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'Cancel',
+                  AppLocalizations.of(context)!.cancel,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -879,7 +880,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   ),
                 ),
                 child: Text(
-                  'Configure',
+                  AppLocalizations.of(context)!.configure,
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
                     fontSize: isTablet ? 16 : 14,
@@ -900,7 +901,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              'Export Data',
+              AppLocalizations.of(context)!.dataExport,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -908,7 +909,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               ),
             ),
             content: Text(
-              'Download a copy of your account data. This may take a few minutes.',
+              AppLocalizations.of(context)!.downloadDataDescription,
               style: TextStyle(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: isTablet ? 16 : 14,
@@ -918,7 +919,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'Cancel',
+                  AppLocalizations.of(context)!.cancel,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -930,8 +931,8 @@ class _SecurityScreenState extends State<SecurityScreen>
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text(
-                        'Data export started. You will receive an email when ready.',
+                      content: Text(
+                        AppLocalizations.of(context)!.dataExportStarted,
                       ),
                       backgroundColor: theme.colorScheme.primary,
                       behavior: SnackBarBehavior.floating,
@@ -948,7 +949,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   ),
                 ),
                 child: Text(
-                  'Export',
+                  AppLocalizations.of(context)!.export,
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
                     fontSize: isTablet ? 16 : 14,

@@ -10,7 +10,8 @@ import 'package:provider/provider.dart';
 import 'package:frontend/models/email_message.dart';
 import 'package:frontend/providers/mail_provider.dart';
 import 'package:frontend/services/transcription_service.dart';
-import 'dart:convert'; // For encoding/decoding if needed
+import 'dart:convert';
+import 'package:frontend/utils/localization.dart';
 
 class ComposeMailScreen extends StatefulWidget {
   final MailItem? editingMail;
@@ -174,11 +175,11 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     }
     
     if (_toRecipients.isEmpty) {
-      _showFeedback('Please add at least one recipient', isError: true);
+      _showFeedback(AppLocalizations.of(context)!.pleaseAddRecipient, isError: true);
       return;
     }
     if (_subjectController.text.isEmpty) {
-      _showFeedback('Please add a subject', isError: true);
+      _showFeedback(AppLocalizations.of(context)!.pleaseAddSubject, isError: true);
       return;
     }
 
@@ -224,17 +225,17 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
 
       if (mounted) {
         if (result != null && result['error'] == null) {
-          _showFeedback('Message sent successfully');
+          _showFeedback(AppLocalizations.of(context)!.messageSent);
           setState(() => _allowPop = true);
           context.pop();
         } else {
-           final errorMsg = result?['error'] ?? 'Unknown error';
+           final errorMsg = result?['error'] ?? AppLocalizations.of(context)!.unknownError;
           _showFeedback(errorMsg.toString(), isError: true);
         }
       }
     } catch (e) {
       if (mounted) {
-        _showFeedback('Error sending message: $e', isError: true);
+        _showFeedback('${AppLocalizations.of(context)!.errorSendingEmail}: $e', isError: true);
       }
     } finally {
       if (mounted) {
@@ -263,7 +264,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     
     // Draft needs at least a recipient or subject or body
     if (_toRecipients.isEmpty && _subjectController.text.isEmpty && _bodyController.document.toPlainText().trim().isEmpty) {
-      _showFeedback('Draft is empty', isError: true);
+      _showFeedback(AppLocalizations.of(context)!.draftEmpty, isError: true);
       return;
     }
 
@@ -310,17 +311,17 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       if (mounted) {
         if (result != null && (result['success'] == true || result['draftId'] != null)) {
           HapticFeedback.lightImpact();
-          _showFeedback('Draft saved successfully');
+          _showFeedback(AppLocalizations.of(context)!.draftSaved);
           setState(() => _allowPop = true);
           context.pop();
         } else {
-           final errorMsg = result?['error'] ?? 'Failed to save draft';
+           final errorMsg = result?['error'] ?? AppLocalizations.of(context)!.draftSaveFailed;
           _showFeedback(errorMsg.toString(), isError: true);
         }
       }
     } catch (e) {
       if (mounted) {
-        _showFeedback('Error saving draft: $e', isError: true);
+        _showFeedback('${AppLocalizations.of(context)!.errorSavingDraft}: $e', isError: true);
       }
     } finally {
       if (mounted) {
@@ -339,7 +340,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       if (result != null) {
         for (PlatformFile file in result.files) {
           if (file.size > 25 * 1024 * 1024) {
-            _showFeedback('File "${file.name}" is too large (max 25MB)', isError: true);
+            _showFeedback('${AppLocalizations.of(context)!.fileTooLarge} "${file.name}"', isError: true);
             continue;
           }
            final attachment = AttachmentItem(
@@ -353,12 +354,12 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           });
         }
         if (result.files.isNotEmpty) {
-          _showFeedback('Added ${result.files.length} file(s)');
+          _showFeedback('${AppLocalizations.of(context)!.filesAdded} (${result.files.length})');
           HapticFeedback.lightImpact();
         }
       }
     } catch (e) {
-      _showFeedback('Error picking files: $e', isError: true);
+      _showFeedback('${AppLocalizations.of(context)!.errorPickingFiles}: $e', isError: true);
     } finally {
       setState(() => _isUploadingFile = false);
     }
@@ -385,11 +386,11 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           });
         }
         if (result.files.isNotEmpty) {
-          _showFeedback('Added ${result.files.length} image(s)');
+          _showFeedback('${AppLocalizations.of(context)!.imagesAdded} (${result.files.length})');
         }
       }
     } catch (e) {
-      _showFeedback('Error picking images: $e', isError: true);
+      _showFeedback('${AppLocalizations.of(context)!.errorPickingImages}: $e', isError: true);
     } finally {
       setState(() => _isUploadingFile = false);
     }
@@ -400,7 +401,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       _attachments.removeAt(index);
     });
     HapticFeedback.lightImpact();
-    _showFeedback('Attachment removed');
+    _showFeedback(AppLocalizations.of(context)!.attachmentRemoved);
   }
 
   void _showFeedback(String message, {bool isError = false}) {
@@ -511,7 +512,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  widget.editingMail != null ? 'Edit Message' : 'Compose',
+                  widget.editingMail != null ? AppLocalizations.of(context)!.editMessage : AppLocalizations.of(context)!.compose,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontSize:
@@ -639,7 +640,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             controller: _toController,
             focusNode: _toFocus,
             selectedValues: _toRecipients,
-            hint: 'To',
+            hint: AppLocalizations.of(context)!.to,
             isTablet: isTablet,
             isRequired: true,
             suggestions: _suggestions,
@@ -650,14 +651,14 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               children: [
                 if (!_showCc)
                   _buildSmallButton(
-                    'Cc',
+                    AppLocalizations.of(context)!.cc,
                     () => setState(() => _showCc = true),
                     isTablet,
                   ),
                 if (!_showCc && !_showBcc) SizedBox(width: isTablet ? 8 : 6),
                 if (!_showBcc)
                   _buildSmallButton(
-                    'Bcc',
+                    AppLocalizations.of(context)!.bcc,
                     () => setState(() => _showBcc = true),
                     isTablet,
                   ),
@@ -669,7 +670,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               controller: _ccController,
               focusNode: _ccFocus,
               selectedValues: _ccRecipients,
-              hint: 'Cc',
+              hint: AppLocalizations.of(context)!.cc,
               isTablet: isTablet,
               suggestions: _suggestions,
             ),
@@ -680,7 +681,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               controller: _bccController,
               focusNode: _bccFocus,
               selectedValues: _bccRecipients,
-              hint: 'Bcc',
+              hint: AppLocalizations.of(context)!.bcc,
               isTablet: isTablet,
               suggestions: _suggestions,
             ),
@@ -689,7 +690,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           _buildCompactTextField(
             controller: _subjectController,
             focusNode: _subjectFocus,
-            hint: 'Subject',
+            hint: AppLocalizations.of(context)!.subject,
             isTablet: isTablet,
             isRequired: true,
           ),
@@ -1038,7 +1039,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           Row(
             children: [
               Text(
-                'Attachments (${_attachments.length})',
+                '${AppLocalizations.of(context)!.attachments} (${_attachments.length})',
                 style: TextStyle(
                   color: Theme.of(
                     context,
@@ -1049,7 +1050,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               ),
               const Spacer(),
               Text(
-                'Total: ${_formatFileSize(_attachments.fold<int>(0, (sum, item) => sum + item.size))}',
+                '${AppLocalizations.of(context)!.total}: ${_formatFileSize(_attachments.fold<int>(0, (sum, item) => sum + item.size))}',
                 style: TextStyle(
                   color: Theme.of(
                     context,
@@ -1304,7 +1305,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
            icon: _isSending 
              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
              : const Icon(Icons.send),
-           label: Text(_isSending ? 'Sending...' : 'Send'),
+           label: Text(_isSending ? AppLocalizations.of(context)!.sending : AppLocalizations.of(context)!.send),
         ),
       ),
     );
@@ -1313,7 +1314,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   // AI Refinement Methods
   Future<void> _startVoiceRefinement() async {
     if (_refinementAttempts >= 2) {
-      _showFeedback('Voice refinement limit reached (2/2). Edit manually.', isError: true);
+      _showFeedback(AppLocalizations.of(context)!.voiceRefinementLimit, isError: true);
       return;
     }
 
@@ -1324,7 +1325,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           await _stopAndRefine();
         },
       );
-      _showFeedback('Listening... Tap stop to refine.');
+      _showFeedback(AppLocalizations.of(context)!.listeningTapStop);
     } catch (e) {
       setState(() => _isRecording = false);
       _showFeedback('Failed to start recording: $e', isError: true);
@@ -1339,17 +1340,17 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       setState(() => _isRecording = false);
       
       if (path != null) {
-        _showFeedback('Transcribing...', isError: false);
+        _showFeedback(AppLocalizations.of(context)!.transcribing, isError: false);
         final instruction = await _transcriptionService.transcribe(path);
         if (instruction != null && instruction.isNotEmpty) {
            _refineWithInstruction(instruction);
         } else {
-           _showFeedback('No voice detected', isError: true);
+           _showFeedback(AppLocalizations.of(context)!.noVoiceDetected, isError: true);
         }
       }
     } catch (e) {
       setState(() => _isRecording = false);
-      _showFeedback('Refinement failed: $e', isError: true);
+      _showFeedback('${AppLocalizations.of(context)!.refinementFailed}: $e', isError: true);
     }
   }
   

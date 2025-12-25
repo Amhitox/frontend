@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:frontend/utils/localization.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -316,7 +317,7 @@ class _SplashScreenState extends State<SplashScreen>
                                       ),
                                       SizedBox(height: isSmallScreen ? 6 : 8),
                                       Text(
-                                        'Where your ideas become reality',
+                                        AppLocalizations.of(context)!.appTagline,
                                         style: TextStyle(
                                           color: secondaryTextColor,
                                           fontSize: subtitleSize,
@@ -362,7 +363,7 @@ class _SplashScreenState extends State<SplashScreen>
                                     ),
                                     SizedBox(height: isSmallScreen ? 12 : 16),
                                     Text(
-                                      'Loading...',
+                                      AppLocalizations.of(context)!.loading,
                                       style: TextStyle(
                                         color: secondaryTextColor.withValues(
                                           alpha: 0.8,

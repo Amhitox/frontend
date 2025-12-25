@@ -13,7 +13,6 @@ class EmailVerificationScreen extends StatefulWidget {
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   bool _isVerifying = true;
   bool _isVerified = false;
-  bool _isVerified = false;
   String _message = '';
   @override
   void initState() {

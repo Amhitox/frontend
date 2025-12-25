@@ -5,6 +5,7 @@ import 'package:frontend/providers/sub_provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/utils/quota_dialog.dart';
 import 'package:dio/dio.dart';
+import 'package:frontend/utils/localization.dart';
 
 class PriorityEmailsScreen extends StatefulWidget {
   const PriorityEmailsScreen({super.key});
@@ -53,7 +54,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Added $email to VIP list'),
+              content: Text('${AppLocalizations.of(context)!.addedToVIP} $email'),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
             ),
@@ -64,10 +65,10 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
           QuotaDialog.show(context, message: result['error']);
         }
       } else {
-         _showError(result['error'] ?? 'Failed to add email');
+         _showError(result['error'] ?? AppLocalizations.of(context)!.failedToAddEmail);
       }
     } catch (e) {
-      _showError('An unexpected error occurred');
+      _showError(AppLocalizations.of(context)!.unexpectedError);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -97,7 +98,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Removed $email from VIP list'),
+            content: Text('${AppLocalizations.of(context)!.removedFromVIP} $email'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -106,7 +107,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to remove email: $e'),
+            content: Text('${AppLocalizations.of(context)!.failedToRemoveEmail}: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -133,7 +134,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Priority Emails'),
+        title: Text(AppLocalizations.of(context)!.priorityEmails),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -175,7 +176,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                    Text(
-                    'Add VIP Email',
+                   AppLocalizations.of(context)!.addVipEmail,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -190,7 +191,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Quota: ${quota.usage.priorityEmails} / ${quota.limits.priorityEmailsTotal} used',
+                      '${AppLocalizations.of(context)!.quota}: ${quota.usage.priorityEmails} / ${quota.limits.priorityEmailsTotal} ${AppLocalizations.of(context)!.used}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -200,7 +201,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                     const SizedBox(height: 12),
                   ],
                   Text(
-                    'Emails from these senders will trigger voice summaries.',
+                    AppLocalizations.of(context)!.vipEmailDescription,
                     style: TextStyle(
                       fontSize: 13,
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -215,7 +216,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                           child: TextFormField(
                             controller: _emailController,
                             decoration: InputDecoration(
-                              hintText: 'partner@example.com',
+                              hintText: AppLocalizations.of(context)!.emailPlaceholder,
                               filled: true,
                               fillColor: theme.colorScheme.surface,
                               border: OutlineInputBorder(
@@ -229,10 +230,10 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return 'Please enter an email';
+                                return AppLocalizations.of(context)!.pleaseEnterEmail;
                               }
                               if (!value.contains('@')) {
-                                return 'Invalid email address';
+                                return AppLocalizations.of(context)!.invalidEmailAddress;
                               }
                               return null;
                             },
@@ -280,7 +281,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No VIP emails yet',
+                            AppLocalizations.of(context)!.noVipEmails,
                             style: TextStyle(
                               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                               fontSize: 16,

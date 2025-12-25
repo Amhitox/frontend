@@ -339,7 +339,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             textInputAction: TextInputAction.next,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-            decoration: InputDecoration(
               labelText: AppLocalizations.of(context)!.newPassword,
               hintText: AppLocalizations.of(context)!.newPasswordHint,
               labelStyle: TextStyle(
@@ -415,7 +414,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             obscureText: !_showConfirmPassword,
             textInputAction: TextInputAction.done,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
-            decoration: InputDecoration(
             decoration: InputDecoration(
               labelText: AppLocalizations.of(context)!.confirmPassword,
               hintText: AppLocalizations.of(context)!.confirmNewPasswordHint,

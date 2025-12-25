@@ -11,6 +11,7 @@ import 'package:frontend/providers/mail_provider.dart';
 import 'package:frontend/ui/screens/mail/skeleton_mail_loader.dart';
 import 'dart:async'; // For StreamSubscription
 import 'package:provider/provider.dart';
+import 'package:frontend/utils/localization.dart';
 
 class MailScreen extends StatefulWidget {
   final Map<String, dynamic>? initialExtra;
@@ -176,6 +177,20 @@ class _MailScreenState extends State<MailScreen>
     }
   }
 
+  String _getLocalizedFilterName(BuildContext context, String filter) {
+    final loc = AppLocalizations.of(context)!;
+    switch (filter) {
+      case 'Primary': return loc.primary;
+      case 'Sent': return loc.sent;
+      case 'Drafts': return loc.drafts;
+      case 'Important': return loc.important;
+      case 'Trash': return loc.trash;
+      case 'Spam': return loc.spam;
+      case 'Other': return loc.other;
+      default: return filter;
+    }
+  }
+
   Future<void> _checkConnectionAndLoadEmails() async {
     final provider = context.read<MailProvider>();
     await provider.checkConnection();
@@ -275,14 +290,14 @@ class _MailScreenState extends State<MailScreen>
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Email deleted successfully'),
+            content: Text(AppLocalizations.of(context)!.emailDeletedSuccess),
             backgroundColor: Colors.green,
           ),
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete email'),
+            content: Text(AppLocalizations.of(context)!.emailDeleteFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -291,7 +306,7 @@ class _MailScreenState extends State<MailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error deleting email: $e'),
+            content: Text('${AppLocalizations.of(context)!.emailDeleteError}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -351,7 +366,7 @@ class _MailScreenState extends State<MailScreen>
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   title: Text(
-                    email.isUnread ? 'Mark as Read' : 'Mark as Unread',
+                    email.isUnread ? AppLocalizations.of(context)!.markAsRead : AppLocalizations.of(context)!.markAsUnread,
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -367,7 +382,7 @@ class _MailScreenState extends State<MailScreen>
                     Icons.delete_outline_rounded,
                     color: Colors.red,
                   ),
-                  title: Text('Delete'),
+                  title: Text(AppLocalizations.of(context)!.delete),
                   onTap: () {
                     Navigator.pop(context);
                     _deleteEmail(email);
@@ -446,7 +461,7 @@ class _MailScreenState extends State<MailScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _selectedFilter,
+                    _getLocalizedFilterName(context, _selectedFilter),
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurface,
                       fontSize:
@@ -460,7 +475,7 @@ class _MailScreenState extends State<MailScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_filteredEmails.length} messages',
+                    '${_filteredEmails.length} ${AppLocalizations.of(context)!.messages}',
                     style: TextStyle(
                       color: Theme.of(
                         context,
@@ -474,7 +489,7 @@ class _MailScreenState extends State<MailScreen>
                 controller: _searchController,
                 onChanged: (value) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Search mail...',
+                  hintText: AppLocalizations.of(context)!.searchMail,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20.0),
                     borderSide: BorderSide.none,
@@ -630,7 +645,7 @@ class _MailScreenState extends State<MailScreen>
               ),
               child: Center(
                 child: Text(
-                  filter,
+                  _getLocalizedFilterName(context, filter),
                   style: TextStyle(
                     color:
                         isSelected
@@ -677,7 +692,7 @@ class _MailScreenState extends State<MailScreen>
                    Expanded(
                     child: _buildStatChip(
                       '${emails.where((e) => e.isUnread).length}',
-                      'Unread',
+                      AppLocalizations.of(context)!.unread,
                       Colors.blue,
                       isTablet,
                     ),
@@ -686,7 +701,7 @@ class _MailScreenState extends State<MailScreen>
                   Expanded(
                     child: _buildStatChip(
                       '${emails.where((e) => e.isImportant).length}',
-                      'Important',
+                      AppLocalizations.of(context)!.important,
                       Colors.red,
                       isTablet,
                     ),
@@ -695,7 +710,7 @@ class _MailScreenState extends State<MailScreen>
                   Expanded(
                     child: _buildStatChip(
                       '${emails.length}',
-                      'Total',
+                      AppLocalizations.of(context)!.total,
                       Colors.green,
                       isTablet,
                     ),
@@ -706,21 +721,21 @@ class _MailScreenState extends State<MailScreen>
                 children: [
                   _buildStatChip(
                     '${emails.where((e) => e.isUnread).length}',
-                    'Unread',
+                    AppLocalizations.of(context)!.unread,
                     Colors.blue,
                     isTablet,
                   ),
                   SizedBox(width: isTablet ? 16 : 12),
                   _buildStatChip(
                     '${emails.where((e) => e.isImportant).length}',
-                    'Important',
+                    AppLocalizations.of(context)!.important,
                     Colors.red,
                     isTablet,
                   ),
                   SizedBox(width: isTablet ? 16 : 12),
                   _buildStatChip(
                     '${emails.length}',
-                    'Total',
+                    AppLocalizations.of(context)!.total,
                     Colors.green,
                     isTablet,
                   ),
@@ -821,7 +836,7 @@ class _MailScreenState extends State<MailScreen>
           CircularProgressIndicator(),
           SizedBox(height: 16),
           Text(
-            'Loading...',
+            AppLocalizations.of(context)!.loading,
             style: TextStyle(
               color: Theme.of(
                 context,
@@ -844,7 +859,7 @@ class _MailScreenState extends State<MailScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Connect Email Account',
+                AppLocalizations.of(context)!.connectEmailAccount,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -989,7 +1004,7 @@ class _MailScreenState extends State<MailScreen>
                       : 16,
             ),
             Text(
-              'Something went wrong',
+              AppLocalizations.of(context)!.somethingWentWrong,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize:
@@ -1032,7 +1047,7 @@ class _MailScreenState extends State<MailScreen>
             ElevatedButton.icon(
               onPressed: () => context.read<MailProvider>().loadEmails(filter: _selectedFilter, forceRefresh: true),
               icon: Icon(Icons.refresh_rounded),
-              label: Text('Retry'),
+              label: Text(AppLocalizations.of(context)!.retry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: Colors.white,
@@ -1094,7 +1109,7 @@ class _MailScreenState extends State<MailScreen>
                       : 16,
             ),
             Text(
-              'No emails found',
+              AppLocalizations.of(context)!.noEmailsFound,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize:
@@ -1115,7 +1130,18 @@ class _MailScreenState extends State<MailScreen>
                       : 8,
             ),
             Text(
-              'Your ${_selectedFilter.toLowerCase()} folder is empty',
+              (){
+                 final loc = AppLocalizations.of(context)!;
+                 switch (_selectedFilter) {
+                   case 'Primary': return loc.emptyPrimary;
+                   case 'Sent': return loc.emptySent;
+                   case 'Drafts': return loc.emptyDrafts;
+                   case 'Important': return loc.emptyImportant;
+                   case 'Trash': return loc.emptyTrash;
+                   case 'Spam': return loc.emptySpam;
+                   default: return loc.emptyOther;
+                 }
+              }(),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
@@ -1204,19 +1230,19 @@ class _MailScreenState extends State<MailScreen>
               context: context,
               builder:
                   (context) => AlertDialog(
-                    title: Text('Delete Email'),
+                    title: Text(AppLocalizations.of(context)!.deleteEmail),
                     content: Text(
-                      'Are you sure you want to delete this email?',
+                      AppLocalizations.of(context)!.confirmDeleteEmail,
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(false),
-                        child: Text('Cancel'),
+                        child: Text(AppLocalizations.of(context)!.cancel),
                       ),
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(true),
                         child: Text(
-                          'Delete',
+                          AppLocalizations.of(context)!.delete,
                           style: TextStyle(color: Colors.red),
                         ),
                       ),

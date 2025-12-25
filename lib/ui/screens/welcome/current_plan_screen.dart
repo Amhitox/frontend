@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/utils/localization.dart';
 
 class CurrentPlanScreen extends StatelessWidget {
   const CurrentPlanScreen({super.key});
@@ -32,8 +33,8 @@ class CurrentPlanScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Current Plan',
+                    Text(
+                      AppLocalizations.of(context)!.currentPlan,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -122,7 +123,7 @@ class CurrentPlanScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 24),
                               Text(
-                                isEssential ? 'Essential Plan' : 'Premium Plan',
+                                isEssential ? AppLocalizations.of(context)!.essentialPlan : AppLocalizations.of(context)!.premiumPlan,
                                 style: const TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.w800,
@@ -159,8 +160,8 @@ class CurrentPlanScreen extends StatelessWidget {
                               const SizedBox(height: 32),
                               Text(
                                 isEssential
-                                    ? 'You have access to essential voice features and basic productivity tools.'
-                                    : 'You have access to all premium features including advanced AI capabilities and unlimited storage.',
+                                    ? AppLocalizations.of(context)!.essentialPlanDesc
+                                    : AppLocalizations.of(context)!.premiumPlanDesc,
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.grey[300],
@@ -175,7 +176,7 @@ class CurrentPlanScreen extends StatelessWidget {
                                   TextButton(
                                     onPressed: () => context.pop(),
                                     child: Text(
-                                      'Back to Home',
+                                      AppLocalizations.of(context)!.backToHome,
                                       style: TextStyle(
                                         color: Colors.grey[400],
                                         fontSize: 14,

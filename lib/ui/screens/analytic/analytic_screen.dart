@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:file_saver/file_saver.dart';
 import 'dart:io';
+import 'package:frontend/utils/localization.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -392,7 +393,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      theme.localizedString(context, 'analyticsDashboard'),
+                      AppLocalizations.of(context)!.analytics,
                       style: TextStyle(
                         color: theme.colorScheme.onSurface,
                         fontSize: titleSize,
@@ -402,7 +403,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     ),
                     SizedBox(height: _isTablet(screenWidth) ? 6 : 4),
                     Text(
-                      theme.localizedString(context, 'analyticsSubtitle'),
+                      AppLocalizations.of(context)!.analyticsSubtitle,
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.7,

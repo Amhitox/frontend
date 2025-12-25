@@ -10,6 +10,7 @@ import 'package:frontend/providers/meeting_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../models/meeting.dart';
 import 'package:intl/intl.dart';
+import 'package:frontend/utils/localization.dart';
 
 class CalendarPage extends StatefulWidget {
   final Map<String, dynamic>? data;
@@ -92,9 +93,9 @@ class _CalendarPageState extends State<CalendarPage>
         meeting.attendees ?? [],
         meeting.location ?? MeetingLocation.online,
       );
-      _showSuccessMessage('Meeting added successfully!');
+      _showSuccessMessage(AppLocalizations.of(context).meetingAddedSuccess);
     } catch (e) {
-      _showErrorMessage('Failed to add meeting: $e');
+      _showErrorMessage('${AppLocalizations.of(context).meetingAddFailed}: $e');
     }
   }
 
@@ -114,9 +115,9 @@ class _CalendarPageState extends State<CalendarPage>
         updatedMeeting.attendees ?? [],
         updatedMeeting.location ?? MeetingLocation.online,
       );
-      _showSuccessMessage('Meeting updated successfully!');
+      _showSuccessMessage(AppLocalizations.of(context).meetingUpdatedSuccess);
     } catch (e) {
-      _showErrorMessage('Failed to update meeting: $e');
+      _showErrorMessage('${AppLocalizations.of(context).meetingUpdateFailed}: $e');
     }
   }
 
@@ -124,9 +125,9 @@ class _CalendarPageState extends State<CalendarPage>
     try {
       final meetingProvider = context.read<MeetingProvider>();
       await meetingProvider.deleteMeeting(meeting.id ?? '');
-      _showSuccessMessage('Meeting deleted successfully!');
+      _showSuccessMessage(AppLocalizations.of(context).meetingDeletedSuccess);
     } catch (e) {
-      _showErrorMessage('Failed to delete meeting: $e');
+      _showErrorMessage('${AppLocalizations.of(context).meetingDeleteFailed}: $e');
     }
   }
 
@@ -284,7 +285,7 @@ class _CalendarPageState extends State<CalendarPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Calendar',
+                  AppLocalizations.of(context).calendar,
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontSize: isTablet ? 28 : 24,
                     fontWeight: FontWeight.w700,
@@ -515,7 +516,7 @@ class _CalendarPageState extends State<CalendarPage>
                 ),
                 const Spacer(),
                 Text(
-                  '${meetings.length} meetings',
+                  '${meetings.length} ${AppLocalizations.of(context).meetings.toLowerCase()}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
@@ -849,8 +850,8 @@ class _CalendarPageState extends State<CalendarPage>
                             const SizedBox(width: 2),
                             Text(
                               meeting.location == MeetingLocation.online
-                                  ? 'Online'
-                                  : 'On-site',
+                                  ? AppLocalizations.of(context).online
+                                  : AppLocalizations.of(context).onsite,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: accentColor.withValues(alpha: 0.7),
                                 fontSize: locationFontSize,
@@ -905,10 +906,7 @@ class _CalendarPageState extends State<CalendarPage>
   }
 
   String _formatHour24(int hour) {
-    if (hour == 0) return '12 AM';
-    if (hour < 12) return '$hour AM';
-    if (hour == 12) return '12 PM';
-    return '${hour - 12} PM';
+    return DateFormat('hh a').format(DateTime(2022, 1, 1, hour));
   }
 
   double _getInitialScrollOffset(double timeSlotHeight) {
@@ -997,8 +995,8 @@ class _CalendarPageState extends State<CalendarPage>
                             const SizedBox(width: 4),
                             Text(
                               meeting.location == MeetingLocation.online
-                                  ? 'Online'
-                                  : 'On-site',
+                                  ? AppLocalizations.of(context).online
+                                  : AppLocalizations.of(context).onsite,
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: accentColor,
                                 fontWeight: FontWeight.w600,
@@ -1013,7 +1011,7 @@ class _CalendarPageState extends State<CalendarPage>
                 if (meeting.description != null && meeting.description!.isNotEmpty) ...[
                    _buildDetailRow(
                     Icons.description_outlined,
-                    'Description',
+                    AppLocalizations.of(context).description,
                     meeting.description!,
                     theme,
                   ),
@@ -1021,21 +1019,21 @@ class _CalendarPageState extends State<CalendarPage>
                 ],
                 _buildDetailRow(
                   Icons.play_circle_outline_rounded,
-                  'Start',
-                  '${DateFormat('EEEE d MMM, y').format(DateTime.parse(meeting.date ?? DateTime.now().toIso8601String()))}   ${_formatTimeString(meeting.startTime)}',
+                  AppLocalizations.of(context).startTime,
+                  '${DateFormat('EEEE d MMM, y', AppLocalizations.of(context).locale.toString()).format(DateTime.parse(meeting.date ?? DateTime.now().toIso8601String()))}   ${_formatTimeString(meeting.startTime)}',
                   theme,
                 ),
                 const SizedBox(height: 16),
                 _buildDetailRow(
                   Icons.stop_circle_outlined,
-                  'End',
-                  '${DateFormat('EEEE d MMM, y').format(DateTime.parse(meeting.date ?? DateTime.now().toIso8601String()))}   ${_formatTimeString(meeting.endTime)}',
+                  AppLocalizations.of(context).endTime,
+                  '${DateFormat('EEEE d MMM, y', AppLocalizations.of(context).locale.toString()).format(DateTime.parse(meeting.date ?? DateTime.now().toIso8601String()))}   ${_formatTimeString(meeting.endTime)}',
                   theme,
                 ),
                 const SizedBox(height: 16),
                   _buildDetailRow(
                     Icons.people_outline_rounded,
-                    'Attendees',
+                    AppLocalizations.of(context).attendees,
                     meeting.attendees?.join(', ') ?? '',
                     theme,
                   ),
@@ -1049,7 +1047,7 @@ class _CalendarPageState extends State<CalendarPage>
                             _editMeeting(meeting);
                           },
                           icon: const Icon(Icons.edit_rounded),
-                          label: const Text('Edit'),
+                          label: Text(AppLocalizations.of(context).edit),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -1071,7 +1069,7 @@ class _CalendarPageState extends State<CalendarPage>
                             }
                           },
                           icon: const Icon(Icons.delete_outline_rounded),
-                          label: const Text('Delete'),
+                          label: Text(AppLocalizations.of(context).delete),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.red,
                             side: const BorderSide(color: Colors.red),
@@ -1152,14 +1150,14 @@ class _CalendarPageState extends State<CalendarPage>
                   borderRadius: BorderRadius.circular(16),
                 ),
                 title: Text(
-                  'Delete Meeting',
+                  AppLocalizations.of(context).deleteMeeting,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 content: Text(
-                  'Are you sure you want to delete "${meeting.title}"?',
+                  AppLocalizations.of(context).confirmDeleteMeeting,
                   style: TextStyle(
                     color: Theme.of(
                       context,
@@ -1170,7 +1168,7 @@ class _CalendarPageState extends State<CalendarPage>
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
                     child: Text(
-                      'Cancel',
+                      AppLocalizations.of(context).cancel,
                       style: TextStyle(
                         color: Theme.of(
                           context,
@@ -1180,8 +1178,8 @@ class _CalendarPageState extends State<CalendarPage>
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text(
-                      'Delete',
+                    child: Text(
+                      AppLocalizations.of(context).delete,
                       style: TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.w600,
@@ -1204,63 +1202,25 @@ class _CalendarPageState extends State<CalendarPage>
   }
 
   String _formatDate(DateTime date) {
-    List<String> months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}';
+    return DateFormat('MMM d', AppLocalizations.of(context).locale.toString()).format(date);
   }
 
   String _formatMonthYear(DateTime date) {
-    List<String> months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
+    return DateFormat('MMMM y', AppLocalizations.of(context).locale.toString()).format(date);
   }
 
   String _formatDayName(DateTime date) {
-    List<String> days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[date.weekday - 1];
+    return DateFormat('E', AppLocalizations.of(context).locale.toString()).format(date);
   }
 
   String _formatDayHeader(DateTime date) {
-    List<String> days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    return '${days[date.weekday - 1]}, ${_formatDate(date)}';
+    return DateFormat('EEEE, MMM d', AppLocalizations.of(context).locale.toString()).format(date);
   }
 
   String _getWeekTitle(DateTime weekStart) {
     final weekEnd = weekStart.add(const Duration(days: 6));
     if (weekStart.month == weekEnd.month) {
-      return '${_formatDate(weekStart)} - ${weekEnd.day}, ${weekStart.year}';
+      return '${_formatDate(weekStart)} - ${_formatDate(weekEnd)}';
     } else {
       return '${_formatDate(weekStart)} - ${_formatDate(weekEnd)}';
     }

@@ -7,6 +7,8 @@ import 'package:frontend/utils/quota_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import '../../../models/meeting.dart';
+import 'package:frontend/utils/localization.dart';
+import 'package:intl/intl.dart';
 import '../../../models/meeting_location.dart';
 
 class AddScheduleScreen extends StatefulWidget {
@@ -101,7 +103,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
 
   void _saveSchedule() async {
     if (_titleController.text.trim().isEmpty) {
-      _showFeedback('Please enter a title', isError: true);
+      _showFeedback(AppLocalizations.of(context).pleaseEnterTitle, isError: true);
       return;
     }
     setState(() => _isSaving = true);
@@ -146,8 +148,8 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
 
       _showFeedback(
         _isEditMode
-            ? 'Meeting updated successfully'
-            : 'Schedule added successfully',
+            ? AppLocalizations.of(context).meetingUpdatedSuccess
+            : AppLocalizations.of(context).meetingAddedSuccess,
       );
       await Future.delayed(const Duration(milliseconds: 600));
       if (mounted) {
@@ -163,7 +165,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           return;
         }
       }
-      _showFeedback('Failed to save meeting: $e', isError: true);
+      _showFeedback('${AppLocalizations.of(context).meetingAddFailed}: $e', isError: true);
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -277,7 +279,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           SizedBox(width: isTablet ? 20 : 16),
           Expanded(
             child: Text(
-              _isEditMode ? 'Edit Meeting' : 'New Schedule',
+              _isEditMode ? AppLocalizations.of(context).editMeeting : AppLocalizations.of(context).newSchedule,
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontSize:
                     isLargeScreen
@@ -309,8 +311,8 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           SizedBox(height: isTablet ? 24 : 20),
           _buildTextField(
             controller: _titleController,
-            label: 'Meeting Title',
-            hint: 'What is this meeting about?',
+            label: AppLocalizations.of(context).meetingTitle,
+            hint: AppLocalizations.of(context).meetingTitleHint,
             icon: Icons.title_rounded,
             theme: theme,
             isTablet: isTablet,
@@ -319,8 +321,8 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           SizedBox(height: isTablet ? 24 : 20),
           _buildTextField(
             controller: _descriptionController,
-            label: 'Description',
-            hint: 'Meeting agenda or details (optional)',
+            label: AppLocalizations.of(context).description,
+            hint: AppLocalizations.of(context).meetingDescriptionHint,
             icon: Icons.description_rounded,
             maxLines: 3,
             theme: theme,
@@ -334,8 +336,8 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           SizedBox(height: isTablet ? 24 : 20),
           _buildTextField(
             controller: _attendeesController,
-            label: 'Attendees',
-            hint: 'Enter email addresses separated by commas',
+            label: AppLocalizations.of(context).attendees,
+            hint: AppLocalizations.of(context).attendeesHint,
             icon: Icons.people_rounded,
             theme: theme,
             isTablet: isTablet,
@@ -453,7 +455,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'DATE & TIME',
+          AppLocalizations.of(context).dateTime,
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             fontSize:
@@ -584,7 +586,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
       children: [
         Expanded(
           child: _buildTimePicker(
-            'Start',
+            AppLocalizations.of(context).startTime,
             _startTime,
             (t) => setState(() => _startTime = t),
             theme,
@@ -595,7 +597,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
         SizedBox(width: isTablet ? 12 : 8),
         Expanded(
           child: _buildTimePicker(
-            'End',
+            AppLocalizations.of(context).endTime,
             _endTime,
             (t) => setState(() => _endTime = t),
             theme,
@@ -708,7 +710,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'MEETING TYPE',
+          AppLocalizations.of(context).meetingType,
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             fontSize:
@@ -793,7 +795,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
                                 ],
                       ),
                       child: Text(
-                        _getTypeLabel(type),
+                        _getTypeLabel(type, context),
                         style: theme.textTheme.labelLarge?.copyWith(
                           color:
                               isSelected
@@ -898,7 +900,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
                           ),
                           SizedBox(width: isTablet ? 12 : 8),
                           Text(
-                            _isEditMode ? 'Update Meeting' : 'Add Schedule',
+                            _isEditMode ? AppLocalizations.of(context).updateMeeting : AppLocalizations.of(context).addSchedule,
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: Colors.white,
                               fontSize:
@@ -919,12 +921,12 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
     );
   }
 
-  String _getTypeLabel(MeetingLocation type) {
+  String _getTypeLabel(MeetingLocation type, BuildContext context) {
     switch (type) {
       case MeetingLocation.online:
-        return 'Online';
+        return AppLocalizations.of(context).online;
       case MeetingLocation.onsite:
-        return 'Onsite';
+        return AppLocalizations.of(context).onsite;
     }
   }
 }

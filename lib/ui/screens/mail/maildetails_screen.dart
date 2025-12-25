@@ -18,6 +18,7 @@ import 'package:frontend/ui/screens/mail/composemail_screen.dart';
 import 'package:audioplayers/audioplayers.dart'; // Keep for types if needed, or remove if provider manages completely. Provider exposes simple states.
 import 'package:frontend/providers/audio_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
+import 'package:frontend/utils/localization.dart';
 
 class MailDetailScreen extends StatefulWidget {
   final EmailMessage email;
@@ -471,14 +472,14 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
            }
         } else {
            ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to generate summary')),
+            SnackBar(content: Text(AppLocalizations.of(context)!.failedToGenerate)),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error summarizing: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context)!.errorSummarizing}: $e')),
         );
       }
     } finally {
@@ -496,7 +497,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Email deleted successfully'),
+            content: Text(AppLocalizations.of(context)!.emailDeletedSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -505,7 +506,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete email'),
+            content: Text(AppLocalizations.of(context)!.emailDeleteFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -515,7 +516,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error deleting email: $e'),
+            content: Text('${AppLocalizations.of(context)!.emailDeleteError}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -530,21 +531,21 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text('Delete Email'),
+            title: Text(AppLocalizations.of(context)!.deleteEmail),
             content: Text(
-              'Are you sure you want to delete this email? This action cannot be undone.',
+              AppLocalizations.of(context)!.confirmDeleteEmailPermanent,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Cancel'),
+                child: Text(AppLocalizations.of(context)!.cancel),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   _deleteEmail();
                 },
-                child: Text('Delete', style: TextStyle(color: Colors.red)),
+                child: Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
@@ -569,11 +570,11 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       subject = 'Fwd: $subject';
       to = '';
       // Add user write space at the top, then the forwarded message header
-      bodyPrefix = '$userWriteSpace---------- Forwarded message ---------\n'
-          'From: ${email.sender} <${email.senderEmail}>\n'
-          'Date: $dateStr\n'
-          'Subject: ${email.subject}\n'
-          'To: ${email.headers?.to ?? "Unknown"}\n\n';
+      bodyPrefix = '$userWriteSpace---------- ${AppLocalizations.of(context)!.forwardedMessage} ---------\n'
+          '${AppLocalizations.of(context)!.from}: ${email.sender} <${email.senderEmail}>\n'
+          '${AppLocalizations.of(context)!.date}: $dateStr\n'
+          '${AppLocalizations.of(context)!.subject}: ${email.subject}\n'
+          '${AppLocalizations.of(context)!.to}: ${email.headers?.to ?? AppLocalizations.of(context)!.unknown}\n\n';
     } else {
       // Reply or Reply All
       if (!subject.startsWith('Re:')) {
@@ -601,7 +602,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       }
 
       // Add user write space at the top, then the quoted message header
-      bodyPrefix = '${userWriteSpace}On $dateStr, ${email.sender} wrote:\n';
+      bodyPrefix = '${userWriteSpace}On $dateStr, ${email.sender} ${AppLocalizations.of(context)!.wrote}:\n';
     }
 
     // Append original body (stripping HTML tags and decoding entities)
@@ -697,8 +698,8 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                  child: Column(
                    crossAxisAlignment: CrossAxisAlignment.start,
                    children: [
-                      Text(
-                        'Priority Audio Summary',
+                        Text(
+                        AppLocalizations.of(context)!.priorityAudioSummary,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
@@ -717,7 +718,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                         )
                       else 
                         Text(
-                          'Tap to play',
+                          AppLocalizations.of(context)!.tapToPlay,
                           style: TextStyle(
                             fontSize: 12,
                             color: theme.colorScheme.onSurfaceVariant,
@@ -1024,21 +1025,21 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
           children: [
             _buildActionButton(
               icon: Icons.reply,
-              label: 'Reply',
+              label: AppLocalizations.of(context)!.reply,
               onTap: () => _navigateToCompose(type: 'reply'),
               theme: theme, 
               isTablet: isTablet
             ),
             _buildActionButton(
               icon: Icons.reply_all,
-              label: 'Reply All',
+              label: AppLocalizations.of(context)!.replyAll,
               onTap: () => _navigateToCompose(type: 'replyAll'),
               theme: theme,
               isTablet: isTablet
             ),
             _buildActionButton(
               icon: Icons.forward,
-              label: 'Forward',
+              label: AppLocalizations.of(context)!.forward,
               onTap: () => _navigateToCompose(type: 'forward'),
               theme: theme,
               isTablet: isTablet
@@ -1095,21 +1096,21 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                           await userProvider.removePriorityEmail(userId, senderEmail);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Removed from VIP list')),
+                              SnackBar(content: Text(AppLocalizations.of(context)!.removedFromVIP)),
                             );
                           }
                         } else {
                           await userProvider.addPriorityEmail(userId, senderEmail);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Added to VIP list')),
+                              SnackBar(content: Text(AppLocalizations.of(context)!.addedToVIP)),
                             );
                           }
                         }
                       } catch (e) {
                          if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Failed to update VIP status')),
+                              SnackBar(content: Text(AppLocalizations.of(context)!.vipStatusUpdateFailed)),
                             );
                           }
                       }
@@ -1138,7 +1139,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'VIP',
+                            AppLocalizations.of(context)!.vip,
                             style: TextStyle(
                               color: isPriority ? Colors.orange : theme.colorScheme.onSurfaceVariant,
                               fontSize: isTablet ? 12 : 10,
@@ -1298,23 +1299,23 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
               try {
                 if (isPriority) {
                   await userProvider.removePriorityEmail(userId, senderEmail);
-                  if (mounted) {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Removed from VIP list')),
-                    );
-                  }
+                     if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                         SnackBar(content: Text(AppLocalizations.of(context)!.removedFromVIP)),
+                       );
+                     }
                 } else {
                   await userProvider.addPriorityEmail(userId, senderEmail);
                    if (mounted) {
                      ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Added to VIP list')),
+                      SnackBar(content: Text(AppLocalizations.of(context)!.addedToVIP)),
                     );
                   }
                 }
               } catch (e) {
                  if (mounted) {
                      ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to update VIP status')),
+                      SnackBar(content: Text(AppLocalizations.of(context)!.vipStatusUpdateFailed)),
                     );
                   }
               }
@@ -1342,7 +1343,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'VIP',
+                    AppLocalizations.of(context)!.vip,
                     style: TextStyle(
                       color: isPriority ? Colors.orange : theme.colorScheme.onSurfaceVariant,
                       fontSize: isTablet ? 12 : 10,
@@ -1373,7 +1374,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Important',
+                    AppLocalizations.of(context)!.important,
                     style: TextStyle(
                       color: Colors.red,
                       fontSize: isTablet ? 12 : 10,
@@ -1494,7 +1495,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     } else if (widget.email.snippet.isNotEmpty) {
       displayContent = widget.email.snippet;
     } else {
-      displayContent = 'No content available';
+      displayContent = AppLocalizations.of(context).noContentAvailable;
     }
 
     // Check if content is HTML
@@ -1541,7 +1542,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                         CircularProgressIndicator(),
                         const SizedBox(height: 16),
                         Text(
-                          'Loading email...',
+                          AppLocalizations.of(context)!.loadingEmail,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -1567,7 +1568,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Failed to load email content',
+                          AppLocalizations.of(context)!.failedToLoadEmail,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: theme.colorScheme.error,
                           ),
@@ -1581,7 +1582,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                             });
                             _loadContentToWebView();
                           },
-                          child: Text('Retry'),
+                          child: Text(AppLocalizations.of(context)!.retry),
                         ),
                       ],
                     ),

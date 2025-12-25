@@ -643,9 +643,6 @@ class _SignupScreenState extends State<SignupScreen> {
             name: 'phone',
             keyboardType: TextInputType.phone,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
-            name: 'phone',
-            keyboardType: TextInputType.phone,
-            style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
               labelText: AppLocalizations.of(context)!.phone,
               hintText: AppLocalizations.of(context)!.enterPhone,

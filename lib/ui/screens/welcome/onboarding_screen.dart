@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:frontend/utils/localization.dart';
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
   @override
@@ -12,29 +13,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   late AnimationController _slideController;
   late AnimationController _breathingController;
   late Animation<Offset> _slideAnimation;
-  final List<OnboardingPage> _pages = [
-    OnboardingPage(
-      icon: Icons.mic,
-      title: 'Voice Control',
-      subtitle: 'Speak Naturally',
-      description:
-          'Transform your productivity with intuitive voice commands. Just speak and watch your tasks come to life.',
-    ),
-    OnboardingPage(
-      icon: Icons.analytics_outlined,
-      title: 'Smart Insights',
-      subtitle: 'Track Progress',
-      description:
-          'Gain powerful insights into your productivity patterns with beautiful analytics and detailed reports.',
-    ),
-    OnboardingPage(
-      icon: Icons.security_outlined,
-      title: 'Privacy First',
-      subtitle: 'Stay Protected',
-      description:
-          'Your data is encrypted and secure. Experience powerful features while maintaining complete privacy.',
-    ),
-  ];
   @override
   void initState() {
     super.initState();
@@ -60,8 +38,28 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _breathingController.dispose();
     super.dispose();
   }
-  @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final pages = [
+      OnboardingPage(
+        icon: Icons.mic,
+        title: loc.voiceControl,
+        subtitle: loc.speakNaturally,
+        description: loc.voiceControlDesc,
+      ),
+      OnboardingPage(
+        icon: Icons.analytics_outlined,
+        title: loc.smartInsights,
+        subtitle: loc.trackProgress,
+        description: loc.smartInsightsDesc,
+      ),
+      OnboardingPage(
+        icon: Icons.security_outlined,
+        title: loc.privacyFirst,
+        subtitle: loc.stayProtected,
+        description: loc.privacyFirstDesc,
+      ),
+    ];
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final screenSize = MediaQuery.of(context).size;
@@ -124,10 +122,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     controller: _pageController,
                     onPageChanged:
                         (index) => setState(() => _currentPage = index),
-                    itemCount: _pages.length,
+                    itemCount: pages.length,
                     itemBuilder:
                         (context, index) => _buildPage(
-                          _pages[index],
+                          pages[index],
                           index,
                           isVerySmallScreen,
                           isSmallScreen,
@@ -253,7 +251,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
               ),
               child: Text(
-                'Skip',
+                AppLocalizations.of(context)!.skip,
                 style: TextStyle(
                   color:
                       isDark
@@ -576,7 +574,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                _pages.length,
+                pages.length,
                 (index) => AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: EdgeInsets.symmetric(
@@ -627,7 +625,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               height: buttonHeight,
               child: ElevatedButton(
                 onPressed: () {
-                  if (_currentPage < _pages.length - 1) {
+                  if (_currentPage < pages.length - 1) {
                     _pageController.nextPage(
                       duration: const Duration(milliseconds: 400),
                       curve: Curves.easeInOut,
@@ -645,7 +643,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ),
                 ),
                 child: Text(
-                  _currentPage < _pages.length - 1 ? 'Continue' : 'Get Started',
+                  _currentPage < pages.length - 1 ? AppLocalizations.of(context)!.continueBtn : AppLocalizations.of(context)!.getStarted,
                   style: TextStyle(
                     fontSize: buttonFontSize,
                     fontWeight: FontWeight.w700,
@@ -674,7 +672,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         curve: Curves.easeInOut,
                       ),
                   child: Text(
-                    'Back',
+                    AppLocalizations.of(context)!.back,
                     style: TextStyle(
                       color: secondaryTextColor,
                       fontSize: buttonFontSize,
