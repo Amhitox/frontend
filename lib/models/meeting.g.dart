@@ -1,7 +1,15 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'meeting.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
 class MeetingAdapter extends TypeAdapter<Meeting> {
   @override
   final int typeId = 2;
+
   @override
   Meeting read(BinaryReader reader) {
     final numOfFields = reader.readByte();
@@ -15,10 +23,10 @@ class MeetingAdapter extends TypeAdapter<Meeting> {
       date: fields[3] as String?,
       startTime: fields[4] as String?,
       endTime: fields[5] as String?,
-      attendees: (fields[6] as List?)?.cast<String>(),
       location: fields[7] as MeetingLocation?,
     );
   }
+
   @override
   void write(BinaryWriter writer, Meeting obj) {
     writer
@@ -36,12 +44,14 @@ class MeetingAdapter extends TypeAdapter<Meeting> {
       ..writeByte(5)
       ..write(obj.endTime)
       ..writeByte(6)
-      ..write(obj.attendees)
+      ..write(obj.attendeesRaw)
       ..writeByte(7)
       ..write(obj.location);
   }
+
   @override
   int get hashCode => typeId.hashCode;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

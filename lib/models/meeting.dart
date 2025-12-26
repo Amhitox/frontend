@@ -1,6 +1,8 @@
 import 'package:hive/hive.dart';
 import 'meeting_location.dart';
+import 'attendee.dart';
 part 'meeting.g.dart';
+
 @HiveType(typeId: 2)
 class Meeting extends HiveObject {
   @HiveField(0)
@@ -15,10 +17,14 @@ class Meeting extends HiveObject {
   final String? startTime;
   @HiveField(5)
   final String? endTime;
+  
+  // Changed to dynamic to support legacy List<String> and new List<Attendee>
   @HiveField(6)
-  final List<String>? attendees;
+  final List<dynamic>? attendeesRaw;
+  
   @HiveField(7)
   final MeetingLocation? location;
+  
   Meeting({
     this.id,
     this.title,
@@ -26,9 +32,20 @@ class Meeting extends HiveObject {
     this.date,
     this.startTime,
     this.endTime,
-    this.attendees,
+    List<Attendee>? attendees,
     this.location,
-  });
+  }) : attendeesRaw = attendees;
+  
+  List<Attendee>? get attendees {
+    if (attendeesRaw == null) return null;
+    return attendeesRaw!.map((e) {
+      if (e is Attendee) return e;
+      if (e is String) return Attendee(email: e, name: e.split('@').first);
+      if (e is Map) return Attendee.fromJson(Map<String, dynamic>.from(e));
+      return Attendee(email: '', name: '');
+    }).toList();
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -37,10 +54,11 @@ class Meeting extends HiveObject {
       'date': date,
       'startTime': startTime,
       'endTime': endTime,
-      'attendees': attendees,
+      'attendees': attendees?.map((e) => e.toJson()).toList(),
       'location': location,
     };
   }
+  
   factory Meeting.fromJson(Map<String, dynamic> json) {
     String? normalizedDate = json['date'];
     String? startTime = json['startTime'];
@@ -51,6 +69,15 @@ class Meeting extends HiveObject {
        normalizedDate = normalizedDate.split('T').first;
     }
     
+    List<Attendee> parsedAttendees = [];
+    if (json['attendees'] != null) {
+      parsedAttendees = (json['attendees'] as List<dynamic>)
+          .map((e) => e is String 
+              ? Attendee(email: e, name: e.split('@').first) 
+              : Attendee.fromJson(e as Map<String, dynamic>))
+          .toList();
+    }
+    
     return Meeting(
       id: json['eventId'] ?? json['id'] ?? '', 
       title: json['title'] ?? '',
@@ -58,10 +85,11 @@ class Meeting extends HiveObject {
       date: normalizedDate ?? '',
       startTime: startTime ?? '',
       endTime: json['endTime'] ?? '',
-      attendees: (json['attendees'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [], // Safe cast
+      attendees: parsedAttendees,
       location: _parseLocation(json['location']),
     );
   }
+  
   static MeetingLocation _parseLocation(String? locationString) {
     switch (locationString?.toLowerCase()) {
       case 'online':
@@ -72,6 +100,7 @@ class Meeting extends HiveObject {
         return MeetingLocation.online;
     }
   }
+  
   Meeting copyWith({
     String? id,
     String? title,
@@ -79,7 +108,7 @@ class Meeting extends HiveObject {
     String? date,
     String? startTime,
     String? endTime,
-    List<String>? attendees,
+    List<Attendee>? attendees,
     MeetingLocation? location,
   }) {
     return Meeting(

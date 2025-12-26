@@ -1,0 +1,179 @@
+POLITIQUE DE CONFIDENTIALITÉ / Privacy Policy– AIXY
+
+Version du 10 octobre 2025
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 1 : Introduction / Introduction
+
+FR :
+
+ELYO AI NOVA attache une grande importance à la protection de vos données personnelles. La présente Politique de Confidentialité décrit quelles données sont collectées, comment elles sont utilisées, et vos droits en matière de protection des données.
+
+EN :
+
+ELYO AI NOVA attaches great importance to the protection of your personal data. This Privacy Policy describes which data are collected, how they are used, and your rights regarding data protection.
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 2 : Données collectées / Data Collected
+
+FR :
+
+· L’Application peut collecter les données suivantes :
+
+· Données personnelles : nom, prénom, email, téléphone.
+
+· Données vocales : commandes vocales, enregistrements audio pour traitement par IA.
+
+· Données d’usage : historique d’utilisation, préférences, logs techniques.
+
+· Données de localisation : si l’utilisateur active cette fonctionnalité.
+
+· Autres données : pouvant être collectées à l’avenir pour améliorer les services, y compris la gestion des vols et autres services.
+
+EN :
+
+· The Application may collect the following data:
+
+· Personal data: name, first name, email, phone number.
+
+· Voice data: voice commands, audio recordings for AI processing.
+
+· Usage data: usage history, preferences, technical logs.
+
+· Location data: if the user enables this feature.
+
+· Other data: may be collected in the future to improve services, including flight management and other services.
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 3 : Finalités du traitement / Purpose of Processing
+
+FR :
+
+Les données sont utilisées pour :
+
+· Fournir et améliorer les services de l’Application.
+
+· Personnaliser l’expérience utilisateur.
+
+· Assurer la sécurité et le bon fonctionnement de l’Application.
+
+· Respecter les obligations légales.
+
+EN :
+
+The data are used to:
+
+· Provide and improve the services of the Application.
+
+· Personalize the user experience.
+
+· Ensure the security and proper functioning of the Application.
+
+· Comply with legal obligations.
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 4 : Base légale du traitement / Legal Basis for Processing
+
+FR :
+
+· Consentement de l’utilisateur pour la collecte et le traitement des données.
+· Exécution d’un contrat pour la fourniture des services de l’Application.
+· Respect des obligations légales.
+
+EN :
+· User consent for data collection and processing.
+· Execution of a contract for the provision of the Application’s services.
+· Compliance with legal obligations.
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 5 : Partage et transfert des données / Data Sharing and Transfer
+
+FR :
+Les données peuvent être partagées avec des prestataires techniques et partenaires pour la fourniture des services (ex. hébergement cloud, intelligence artificielle, traitement vocal).
+Aucun transfert international n’aura lieu sans garanties adéquates conformes aux normes CNDP et RGPD.
+En cas d’exigence légale ou de demande émanant d’une autorité compétente (judiciaire, administrative ou de sécurité), ELYO AI NOVA pourra être amenée à communiquer certaines données personnelles, dans le strict respect de la loi et de la confidentialité.
+
+EN :
+Data may be shared with technical providers and partners to ensure service delivery (e.g., cloud hosting, artificial intelligence, voice processing).
+No international transfer will occur without adequate safeguards in accordance with CNDP and GDPR standards.
+In the event of a legal requirement or a request from a competent authority (judicial, administrative, or security), ELYO AI NOVA may be required to disclose certain personal data, in strict compliance with applicable law and confidentiality obligations.
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 6 : Durée de conservation / Data Retention
+
+FR :
+Les données personnelles sont conservées aussi longtemps que nécessaire pour fournir les services ou selon la réglementation applicable.
+
+EN :
+Personal data are retained only as long as necessary to provide services or according to applicable law.
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 7 : Sécurité des données / Data Security
+
+FR :
+L’éditeur met en œuvre des mesures techniques et organisationnelles pour protéger les données contre tout accès non autorisé, perte ou divulgation.
+
+EN :
+The publisher implements technical and organizational measures to protect data against unauthorized access, loss, or disclosure.
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 8 : Droits des utilisateurs / User Rights
+
+FR :
+Conformément à la loi n°09-08 et au RGPD, l’utilisateur peut :
+· Accéder à ses données personnelles.
+· Demander leur rectification ou suppression.
+· S’opposer au traitement ou demander la limitation.
+· Retirer son consentement à tout moment. Pour exercer vos droits : support@elyoainova.com
+
+EN :
+In accordance with Law No. 09-08 and GDPR, users may:
+· Access their personal data.
+· Request correction or deletion.
+· Object to processing or request limitation.
+· Withdraw consent at any time. To exercise these rights: support@elyoainova.com
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 9 : Modifications de la politique / Policy Changes
+
+FR :
+· L’éditeur peut modifier cette Politique de Confidentialité à tout moment.
+· La version la plus récente sera toujours disponible sur l’Application.
+
+EN :
+· The publisher may modify this Privacy Policy at any time.
+· The latest version will always be available on the Application.
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 10 : Contact CNDP / CNDP Contact
+
+FR :
+Pour toute réclamation relative à la protection des données personnelles :
+CNDP – Commission Nationale de Contrôle de la Protection des Données à Caractère Personnel Site web : www.cndp.ma Email : info@cndp.ma
+
+EN :
+For any complaint regarding personal data protection:
+CNDP – National Commission for the Control of Personal Data Protection Website: www.cndp.ma Email: info@cndp.ma
+
+-----------------------------------------------------------------------------------------------------------
+
+Article 11 : Mentions légales / Legal Notices
+
+FR :
+Éditeur : ELYO AI NOVA
+Adresse : 26 Avenue Mers Soultane, Apt 3, Étage 1, Casablanca, Maroc Email : support@elyoainova.com
+
+
+EN :
+Publisher: ELYO AI NOVA
+adress :26 avenue Mers Soultane, Apt 3, 1st Floor, Casablanca, Morocco Email: support@elyoainova.com

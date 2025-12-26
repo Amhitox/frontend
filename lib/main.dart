@@ -10,6 +10,7 @@ import 'package:frontend/models/email_message.dart';
 import 'package:frontend/models/taskpriority.dart';
 import 'package:frontend/models/meeting.dart';
 import 'package:frontend/models/meeting_location.dart';
+import 'package:frontend/models/attendee.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/providers/meeting_provider.dart';
@@ -52,6 +53,7 @@ Future<void> main() async {
   Hive.registerAdapter(TaskPriorityAdapter());
   Hive.registerAdapter(MeetingAdapter());
   Hive.registerAdapter(MeetingLocationAdapter());
+  Hive.registerAdapter(AttendeeAdapter());
   await dotenv.load(fileName: '.env');
   Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
   final authProvider = AuthProvider();

@@ -1,7 +1,15 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'meeting_location.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
 class MeetingLocationAdapter extends TypeAdapter<MeetingLocation> {
   @override
   final int typeId = 3;
+
   @override
   MeetingLocation read(BinaryReader reader) {
     switch (reader.readByte()) {
@@ -13,6 +21,7 @@ class MeetingLocationAdapter extends TypeAdapter<MeetingLocation> {
         return MeetingLocation.online;
     }
   }
+
   @override
   void write(BinaryWriter writer, MeetingLocation obj) {
     switch (obj) {
@@ -24,8 +33,10 @@ class MeetingLocationAdapter extends TypeAdapter<MeetingLocation> {
         break;
     }
   }
+
   @override
   int get hashCode => typeId.hashCode;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

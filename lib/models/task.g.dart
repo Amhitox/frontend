@@ -1,7 +1,15 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'task.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
 class TaskAdapter extends TypeAdapter<Task> {
   @override
   final int typeId = 0;
+
   @override
   Task read(BinaryReader reader) {
     final numOfFields = reader.readByte();
@@ -18,6 +26,7 @@ class TaskAdapter extends TypeAdapter<Task> {
       dueDate: fields[3] as String?,
     );
   }
+
   @override
   void write(BinaryWriter writer, Task obj) {
     writer
@@ -37,8 +46,10 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(6)
       ..write(obj.isCompleted);
   }
+
   @override
   int get hashCode => typeId.hashCode;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

@@ -145,6 +145,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   primaryTextColor,
                   secondaryTextColor,
                   isDark,
+                  pages,
                 ),
               ],
             ),
@@ -532,6 +533,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     Color primaryTextColor,
     Color secondaryTextColor,
     bool isDark,
+    List<OnboardingPage> pages,
   ) {
     final bottomPadding =
         isVerySmallScreen

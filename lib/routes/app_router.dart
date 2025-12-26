@@ -36,7 +36,9 @@ import '../ui/screens/welcome/onboarding_screen.dart';
 import '../ui/screens/auth/forgetpassword_screen.dart';
 import '../models/task.dart';
 import '../ui/screens/settings/priority_emails_screen.dart';
-import '../ui/screens/settings/legal_screen.dart';
+import '../ui/screens/settings/terms_screen.dart';
+import '../ui/screens/settings/privacy_policy_screen.dart';
+import '../ui/screens/settings/general_conditions_screen.dart';
 import '../ui/screens/settings/support_screen.dart';
 
 class AppRoutes {
@@ -63,6 +65,9 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String profile = '/profile';
   static const String security = '/security';
+  static const String terms = '/terms';
+  static const String privacy = '/privacy';
+  static const String generalConditions = '/generalConditions';
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   static late SharedPreferences pref;
   bool firstOpen = true;
@@ -375,6 +380,21 @@ class AppRoutes {
           name: 'security',
           builder: (context, state) => const SecurityScreen(),
         ),
+        GoRoute(
+          path: terms,
+          name: 'terms',
+          builder: (context, state) => const TermsScreen(),
+        ),
+        GoRoute(
+          path: privacy,
+          name: 'privacy',
+          builder: (context, state) => const PrivacyPolicyScreen(),
+        ),
+        GoRoute(
+          path: generalConditions,
+          name: 'generalConditions',
+          builder: (context, state) => const GeneralConditionsScreen(),
+        ),
       GoRoute(
           path: '/settings/priority',
           name: 'priorityEmails',
@@ -385,16 +405,7 @@ class AppRoutes {
           name: 'support',
           builder: (context, state) => const SupportScreen(),
         ),
-        GoRoute(
-          path: '/privacy',
-          name: 'privacy',
-          builder: (context, state) => const LegalScreen(initialIndex: 0),
-        ),
-        GoRoute(
-          path: '/terms',
-          name: 'terms',
-          builder: (context, state) => const LegalScreen(initialIndex: 1),
-        ),
+
       ],
       errorBuilder:
           (context, state) => Scaffold(

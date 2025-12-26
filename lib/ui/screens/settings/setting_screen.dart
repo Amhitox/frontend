@@ -185,6 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           theme,
                           user,
                         ),
+                        
                         // _buildConnectedAccountsSection(isTablet, isLargeScreen, theme),
                         _buildSection(
                           AppLocalizations.of(context).appPreferences,
@@ -222,14 +223,14 @@ class _SettingsScreenState extends State<SettingsScreen>
                             //   isTablet: isTablet,
                             //   theme: theme,
                             // ),
-                            _buildSettingItem(
-                              AppLocalizations.of(context).shareApp,
-                              AppLocalizations.of(context).tellYourFriends,
-                              Icons.share_outlined,
-                              onTap: () => _shareApp(theme, isTablet),
-                              isTablet: isTablet,
-                              theme: theme,
-                            ),
+                            // _buildSettingItem(
+                            //   AppLocalizations.of(context).shareApp,
+                            //   AppLocalizations.of(context).tellYourFriends,
+                            //   Icons.share_outlined,
+                            //   onTap: () => _shareApp(theme, isTablet),
+                            //   isTablet: isTablet,
+                            //   theme: theme,
+                            // ),
                             _buildSettingItem(
                               AppLocalizations.of(context).helpSupport,
                               AppLocalizations.of(context).getHelp,
@@ -244,22 +245,30 @@ class _SettingsScreenState extends State<SettingsScreen>
                           theme,
                         ),
                         _buildSection(
-                          AppLocalizations.of(context).legalInformation,
-                          Icons.info_outline,
+                          AppLocalizations.of(context).legalDocuments,
+                          Icons.gavel_outlined,
                           [
-                            _buildSettingItem(
+                            _buildSettingItem( // Changed from _buildSettingsTile to _buildSettingItem to match existing code
+                              AppLocalizations.of(context).termsOfService,
+                              AppLocalizations.of(context).termsAndConditions, // Added subtitle
+                              Icons.description_outlined,
+                              onTap: () => context.push('/terms'),
+                              isTablet: isTablet,
+                              theme: theme,
+                            ),
+                            _buildSettingItem( // Changed from _buildSettingsTile to _buildSettingItem to match existing code
                               AppLocalizations.of(context).privacyPolicy,
-                              AppLocalizations.of(context).howWeProtectYourData,
+                              AppLocalizations.of(context).howWeProtectYourData, // Added subtitle
                               Icons.privacy_tip_outlined,
                               onTap: () => context.push('/privacy'),
                               isTablet: isTablet,
                               theme: theme,
                             ),
-                            _buildSettingItem(
-                              AppLocalizations.of(context).termsOfService,
-                              AppLocalizations.of(context).termsAndConditions,
-                              Icons.description_outlined,
-                              onTap: () => context.push('/terms'),
+                            _buildSettingItem( // Changed from _buildSettingsTile to _buildSettingItem to match existing code
+                              AppLocalizations.of(context).generalConditions,
+                              AppLocalizations.of(context).termsAndConditions, // Assuming a similar subtitle for general conditions
+                              Icons.rule_outlined,
+                              onTap: () => context.push('/generalConditions'),
                               isTablet: isTablet,
                               theme: theme,
                             ),
@@ -1243,7 +1252,7 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
             SizedBox(width: isTablet ? 14 : 12),
             Text(
-              'Sign Out',
+              AppLocalizations.of(context).signOut,
               style: TextStyle(
                 color: Colors.red.withValues(alpha: 0.9),
                 fontSize: isTablet ? 18 : 16,
@@ -1700,14 +1709,15 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showSignOutDialog(ThemeData theme, bool isTablet) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder:
           (context) => _buildCustomDialog(
-            'Sign Out',
-            'Are you sure you want to sign out? You\'ll need to log in again to access your account.',
+            l10n.signOut,
+            l10n.signOutConfirmation,
             Icons.logout,
-            primaryAction: 'Sign Out',
+            primaryAction: l10n.signOut,
             primaryActionColor: Colors.red,
             onPrimaryAction: () {
               Navigator.of(context).pop();
@@ -1774,7 +1784,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
-            'Cancel',
+            AppLocalizations.of(context).cancel,
             style: TextStyle(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: isTablet ? 16 : 14,

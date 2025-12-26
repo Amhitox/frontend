@@ -64,6 +64,7 @@ class AppLocalizations {
   String get date => _localizedValues[locale.languageCode]!['date']!;
   String get duration => _localizedValues[locale.languageCode]!['duration']!;
   String get attendees => _localizedValues[locale.languageCode]!['attendees']!;
+  String get addAttendee => _localizedValues[locale.languageCode]!['addAttendee']!;
   String get notes => _localizedValues[locale.languageCode]!['notes']!;
   String get search => _localizedValues[locale.languageCode]!['search']!;
   String get filter => _localizedValues[locale.languageCode]!['filter']!;
@@ -199,14 +200,11 @@ class AppLocalizations {
   String get getHelp => _localizedValues[locale.languageCode]!['getHelp']!;
   String get legalInformation =>
       _localizedValues[locale.languageCode]!['legalInformation']!;
-  String get privacyPolicy =>
-      _localizedValues[locale.languageCode]!['privacyPolicy']!;
-  String get howWeProtectYourData =>
-      _localizedValues[locale.languageCode]!['howWeProtectYourData']!;
-  String get termsOfService =>
-      _localizedValues[locale.languageCode]!['termsOfService']!;
+
   String get termsAndConditions =>
       _localizedValues[locale.languageCode]!['termsAndConditions']!;
+  String get howWeProtectYourData =>
+      _localizedValues[locale.languageCode]!['howWeProtectYourData']!;
   String get appVersion =>
       _localizedValues[locale.languageCode]!['appVersion']!;
   String get version123 =>
@@ -497,7 +495,12 @@ class AppLocalizations {
   String get loginHistory => _localizedValues[locale.languageCode]!['loginHistory']!;
   String get activeSessions => _localizedValues[locale.languageCode]!['activeSessions']!;
   String get manageActiveSessions => _localizedValues[locale.languageCode]!['manageActiveSessions']!;
+
   String get securityAlerts => _localizedValues[locale.languageCode]!['securityAlerts']!;
+  String get termsOfService => _localizedValues[locale.languageCode]!['termsOfService']!;
+  String get privacyPolicy => _localizedValues[locale.languageCode]!['privacyPolicy']!;
+  String get generalConditions => _localizedValues[locale.languageCode]!['generalConditions']!;
+  String get legalDocuments => _localizedValues[locale.languageCode]!['legalDocuments']!;
   String get configureSecurityNotifications => _localizedValues[locale.languageCode]!['configureSecurityNotifications']!;
   String get dataExport => _localizedValues[locale.languageCode]!['dataExport']!;
   String get downloadAccountData => _localizedValues[locale.languageCode]!['downloadAccountData']!;
@@ -530,6 +533,7 @@ class AppLocalizations {
   String get privacyFirstDesc => _localizedValues[locale.languageCode]!['privacyFirstDesc']!;
   String get continueBtn => _localizedValues[locale.languageCode]!['continueBtn']!;
   String get getStarted => _localizedValues[locale.languageCode]!['getStarted']!;
+  String get back => _localizedValues[locale.languageCode]!['back']!;
   
   // Splash
   String get appTagline => _localizedValues[locale.languageCode]!['appTagline']!;
@@ -607,6 +611,7 @@ class AppLocalizations {
   String get newPassword => _localizedValues[locale.languageCode]!['newPassword']!;
   String get passwordUpdated => _localizedValues[locale.languageCode]!['passwordUpdated']!;
   String get update => _localizedValues[locale.languageCode]!['update']!;
+  String get signOutConfirmation => _localizedValues[locale.languageCode]!['signOutConfirmation']!;
 
 
 
@@ -633,6 +638,7 @@ class AppLocalizations {
       'error': 'Error',
       'errorOccurred': 'An error occurred',
       'success': 'Success',
+      'signOutConfirmation': 'Are you sure you want to sign out? You\'ll need to log in again to access your account.',
       'all': 'All',
       'completed': 'Completed',
       'inProgress': 'In Progress',
@@ -766,6 +772,7 @@ class AppLocalizations {
       'privacyPolicy': 'Privacy Policy',
       'howWeProtectYourData': 'How we protect your data',
       'termsOfService': 'Terms of Service',
+      'generalConditions': 'General Conditions',
       'termsAndConditions': 'Terms and conditions of use',
       'appVersion': 'App Version',
       'version123': 'Version 0.0.1',
@@ -850,7 +857,7 @@ class AppLocalizations {
       'invalidLink': 'Invalid verification link',
       'goToLogin': 'Go to Login',
       'passwordMatchError': 'Passwords do not match',
-      'passwordLengthError': 'Password must be at least 8 characters',
+      'passwordLengthError': 'Password must be at least 9 characters',
       'passwordRequired': 'Password is required',
       'enterPassword': 'Enter your password',
       'getStartedNow': 'Get Started now',
@@ -874,7 +881,7 @@ class AppLocalizations {
       'confirmNewPasswordHint': 'Confirm your new password',
       'verificationFailedMessage': 'Email verification failed: This can be caused by an invalid verification link or the email has already been verified.',
       'createSecurePassword': 'Create a new secure password for your account',
-      'passwordRequirements': 'Your new password must be at least 8 characters long',
+      'passwordRequirements': 'Your new password must be at least 9 characters long',
       'emailVerification': 'Email Verification',
       'productivityScore': 'Productivity Score',
       'emailsSent': 'Emails Sent',
@@ -956,7 +963,7 @@ class AppLocalizations {
       'send': 'Send',
       'sending': 'Sending...',
       'attachments': 'Attachments',
-      'total': 'Total',
+
       'messageSent': 'Message sent successfully',
       'draftSaved': 'Draft saved successfully',
       'draftEmpty': 'Draft is empty',
@@ -978,7 +985,7 @@ class AppLocalizations {
       'errorPickingImages': 'Error picking images',
       'errorSendingEmail': 'Error sending email',
       'errorSavingDraft': 'Error saving draft',
-      'important': 'Important',
+
       'errorSummarizing': 'Error summarizing',
       'confirmDeleteEmailPermanent': 'Are you sure you want to delete this email? This action cannot be undone.',
       'unknownSender': 'Unknown Sender',
@@ -1008,6 +1015,7 @@ class AppLocalizations {
       'meetingTitleHint': 'What is this meeting about?',
       'meetingDescriptionHint': 'Meeting agenda or details (optional)',
       'attendees': 'ATTENDEES',
+      'addAttendee': 'Add Attendee',
       'attendeesHint': 'Enter email addresses separated by commas',
       'dateTime': 'DATE & TIME',
       'startTime': 'Start',
@@ -1046,8 +1054,13 @@ class AppLocalizations {
       'loginHistory': 'Login History',
       'activeSessions': 'Active Sessions',
       'manageActiveSessions': 'Manage your active sessions',
-      'securityAlerts': 'Security Alerts',
-      'configureSecurityNotifications': 'Configure security notifications',
+      'securityAlerts': 'Scan and Alert on Security Risks',
+      'configureSecurityNotifications': 'Configure Security Notifications',
+      'termsOfService': 'Terms of Service',
+      'privacyPolicy': 'Privacy Policy',
+      'howWeProtectYourData': 'How we protect your data',
+      'generalConditions': 'General Conditions',
+      'legalDocuments': 'Legal Documents',
       'dataExport': 'Data Export',
       'downloadAccountData': 'Download your account data',
       'passwordUpdatedSuccess': 'Password updated successfully!',
@@ -1079,6 +1092,7 @@ class AppLocalizations {
       'privacyFirstDesc': 'Your data is encrypted and secure. Experience powerful features while maintaining complete privacy.',
       'continueBtn': 'Continue',
       'getStarted': 'Get Started',
+      'back': 'Back',
       
       // Splash
       'appTagline': 'Where your ideas become reality',
@@ -1272,6 +1286,7 @@ class AppLocalizations {
       'version': 'Version',
       'logout': 'Déconnexion',
       'signOut': 'Se déconnecter',
+      'signOutConfirmation': 'Êtes-vous sûr de vouloir vous déconnecter ? Vous devrez vous reconnecter pour accéder à votre compte.',
       'language': 'Langue',
       'theme': 'Thème',
       'light': 'Clair',
@@ -1327,6 +1342,7 @@ class AppLocalizations {
       'privacyPolicy': 'Politique de confidentialité',
       'howWeProtectYourData': 'Comment nous protégeons vos données',
       'termsOfService': 'Conditions d\'utilisation',
+      'generalConditions': 'Conditions générales',
       'termsAndConditions': 'Conditions d\'utilisation',
       'appVersion': 'Version de l\'application',
       'version123': 'Version 1.0.0',
@@ -1441,7 +1457,7 @@ class AppLocalizations {
       'invalidLink': 'Lien de vérification invalide',
       'goToLogin': 'Aller à la connexion',
       'passwordMatchError': 'Les mots de passe ne correspondent pas',
-      'passwordLengthError': 'Le mot de passe doit contenir au moins 8 caractères',
+      'passwordLengthError': 'Le mot de passe doit contenir au moins 9 caractères',
       'passwordRequired': 'Le mot de passe est requis',
       'enterPassword': 'Entrez votre mot de passe',
       'getStartedNow': 'Commencer maintenant',
@@ -1465,7 +1481,7 @@ class AppLocalizations {
       'confirmNewPasswordHint': 'Confirmez votre nouveau mot de passe',
       'verificationFailedMessage': 'La vérification de l\'email a échoué : Cela peut être causé par un lien de vérification invalide ou l\'email a déjà été vérifié.',
       'createSecurePassword': 'Créez un nouveau mot de passe sécurisé pour votre compte',
-      'passwordRequirements': 'Votre nouveau mot de passe doit contenir au moins 8 caractères',
+      'passwordRequirements': 'Votre nouveau mot de passe doit contenir au moins 9 caractères',
       'emailVerification': 'Vérification de l\'email',
       'productivityScore': 'Score de productivité',
       'emailsSent': 'Emails envoyés',
@@ -1534,6 +1550,7 @@ class AppLocalizations {
       'meetingTitleHint': 'De quoi parle cette réunion ?',
       'meetingDescriptionHint': 'Ordre du jour ou détails (facultatif)',
       'attendees': 'PARTICIPANTS',
+      'addAttendee': 'Ajouter un participant',
       'attendeesHint': 'Entrez les adresses emails séparées par des virgules',
       'dateTime': 'DATE ET HEURE',
       'startTime': 'Début',
@@ -1572,8 +1589,9 @@ class AppLocalizations {
       'loginHistory': 'Historique de connexion',
       'activeSessions': 'Sessions actives',
       'manageActiveSessions': 'Gérer vos sessions actives',
-      'securityAlerts': 'Alertes de sécurité',
+      'securityAlerts': 'Numériser et alerter sur les risques de sécurité',
       'configureSecurityNotifications': 'Configurer les notifications de sécurité',
+      'legalDocuments': 'Documents légaux',
       'dataExport': 'Export de données',
       'downloadAccountData': 'Télécharger vos données',
       'passwordUpdatedSuccess': 'Mot de passe mis à jour !',
@@ -1605,6 +1623,7 @@ class AppLocalizations {
       'privacyFirstDesc': 'Vos données sont cryptées et sécurisées. Profitez de fonctionnalités puissantes tout en maintenant une confidentialité complète.',
       'continueBtn': 'Continuer',
       'getStarted': 'Commencer',
+      'back': 'Retour',
       
       // Splash
       'appTagline': 'Où vos idées deviennent réalité',
@@ -1669,7 +1688,7 @@ class AppLocalizations {
       'send': 'Envoyer',
       'sending': 'Envoi...',
       'attachments': 'Pièces jointes',
-      'total': 'Total',
+
       'messageSent': 'Message envoyé avec succès',
       'draftSaved': 'Brouillon enregistré avec succès',
       'draftEmpty': 'Le brouillon est vide',
@@ -1691,7 +1710,7 @@ class AppLocalizations {
       'errorPickingImages': 'Erreur lors de la sélection des images',
       'errorSendingEmail': 'Erreur lors de l\'envoi de l\'email',
       'errorSavingDraft': 'Erreur lors de l\'enregistrement du brouillon',
-      'important': 'Important',
+
       'errorSummarizing': 'Erreur lors du résumé',
       'confirmDeleteEmailPermanent': 'Êtes-vous sûr de vouloir supprimer cet email ? Cette action est irréversible.',
       'unknownSender': 'Expéditeur inconnu',
@@ -1699,10 +1718,7 @@ class AppLocalizations {
       'wrote': 'a écrit',
       'forwardedMessage': 'Message transféré',
       'from': 'De',
-      'date': 'Date',
-      'reply': 'Répondre',
-      'replyAll': 'Répondre à tous',
-      'forward': 'Transférer',
+
 
 
 

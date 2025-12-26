@@ -115,19 +115,37 @@ class AuthProvider extends ChangeNotifier {
       );
       if (response.statusCode == 201) {
         _errorMessage =
+            response.data["message"] ??
             "Account created successfully! check your email for verification";
         return true;
       } else {
-        _errorMessage =
-            response.data?["message"] ??
-            "Registration failed. Please try again.";
+        final data = response.data;
+        if (data != null) {
+           if (data["error"] == "Validation failed" && data["details"] is List) {
+             _errorMessage = (data["details"] as List)
+                .map((e) => e["message"]?.toString() ?? e.toString())
+                .join("\n");
+           } else {
+             _errorMessage = data["error"] ?? data["message"] ?? "Registration failed. Please try again.";
+           }
+        } else {
+           _errorMessage = "Registration failed. Please try again.";
+        }
         return false;
       }
     } on DioException catch (e) {
-      _errorMessage =
-          e.response?.data?["message"] ??
-          e.message ??
-          "Network error. Please try again.";
+      final data = e.response?.data;
+      if (data != null) {
+         if (data["error"] == "Validation failed" && data["details"] is List) {
+             _errorMessage = (data["details"] as List)
+                .map((item) => item["message"]?.toString() ?? item.toString())
+                .join("\n");
+         } else {
+             _errorMessage = data["error"] ?? data["message"] ?? e.message ?? "Network error. Please try again.";
+         }
+      } else {
+         _errorMessage = e.message ?? "Network error. Please try again.";
+      }
       return false;
     } finally {
       _isLoading = false;

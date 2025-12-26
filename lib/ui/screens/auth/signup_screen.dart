@@ -23,7 +23,6 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _agreeToTerms = false;
   final List<Map<String, String>> _countries = [
     {'name': 'Morocco', 'code': '+212', 'flag': '🇲🇦'},
-    {'name': 'United States', 'code': '+1', 'flag': '🇺🇸'},
     {'name': 'United Kingdom', 'code': '+44', 'flag': '🇬🇧'},
     {'name': 'Canada', 'code': '+1', 'flag': '🇨🇦'},
     {'name': 'France', 'code': '+33', 'flag': '🇫🇷'},
@@ -374,13 +373,19 @@ class _SignupScreenState extends State<SignupScreen> {
             fontSize: fontSize,
             validators: [
               FormBuilderValidators.required(errorText: AppLocalizations.of(context)!.passwordRequired),
-              FormBuilderValidators.match(
-                RegExp(
-                  r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#\$&*~]).{8,}$',
-                ),
-                errorText:
-                    AppLocalizations.of(context)!.passwordLengthError,
-              ),
+              (value) {
+                if (value == null || value.isEmpty) return null;
+                List<String> missing = [];
+                if (value.length < 9) missing.add("9+ chars");
+                if (!value.contains(RegExp(r'[A-Z]'))) missing.add("uppercase");
+                if (!value.contains(RegExp(r'[a-z]'))) missing.add("lowercase");
+                if (!value.contains(RegExp(r'[0-9]'))) missing.add("number");
+                if (!value.contains(RegExp(r'[!@#\$&*~^%_+=(){}\[\]:;<>?\/|,-]'))) missing.add("special char");
+                if (missing.isNotEmpty) {
+                  return "Missing: ${missing.join(', ')}";
+                }
+                return null;
+              },
             ],
           ),
           const SizedBox(height: 16),
@@ -985,7 +990,7 @@ class _SignupScreenState extends State<SignupScreen> {
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? "test"),
+            content: Text(authProvider.errorMessage ?? AppLocalizations.of(context).success),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -998,7 +1003,7 @@ class _SignupScreenState extends State<SignupScreen> {
       } else if (mounted && success == false) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(authProvider.errorMessage ?? "test"),
+            content: Text(authProvider.errorMessage ?? AppLocalizations.of(context).errorOccurred),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../models/attendee.dart';
 
 class MeetingService {
   final Dio _dio;
@@ -41,7 +42,7 @@ class MeetingService {
     String description,
     String startDateTime,
     String endDateTime,
-    List<String> attendees,
+    List<Attendee> attendees,
     String location,
     String timezoneOffset, // Timezone offset in format "+05:30" or "-05:00"
   ) async {
@@ -54,7 +55,7 @@ class MeetingService {
           "startTime": startDateTime,
           "endTime": endDateTime,
           "location": location,
-          "attendees": attendees, // Include attendees for notifications
+          "attendees": attendees.map((e) => e.toJson()).toList(), // Include attendees for notifications
           "timezoneOffset": timezoneOffset, // Send timezone offset for accurate scheduling
         },
       );
@@ -74,7 +75,7 @@ class MeetingService {
     String description,
     String startDateTime,
     String endDateTime,
-    List<String> attendees,
+    List<Attendee> attendees,
     String location,
     String timezoneOffset, // Timezone offset in format "+05:30" or "-05:00"
   ) async {
@@ -87,7 +88,7 @@ class MeetingService {
           "startTime": startDateTime,
           "endTime": endDateTime,
           "location": location,
-          "attendees": attendees, // Include attendees for notifications
+          "attendees": attendees.map((e) => e.toJson()).toList(), // Include attendees for notifications
           "timezoneOffset": timezoneOffset, // Send timezone offset for accurate scheduling
         },
       );
@@ -111,6 +112,23 @@ class MeetingService {
         statusCode: e.response?.statusCode ?? 500,
         requestOptions: e.requestOptions,
       );
+    }
+  }
+
+  Future<Response> getSuggestedAttendees({String? query}) async {
+    try {
+      final response = await _dio.get(
+        "/api/calendar/attendees",
+        queryParameters: query != null && query.isNotEmpty ? {"q": query} : null,
+      );
+      return response;
+    } on DioException catch (e) {
+      return e.response ??
+          Response(
+            data: {'error': 'Network error'},
+            statusCode: 500,
+            requestOptions: RequestOptions(path: '/api/calendar/attendees'),
+          );
     }
   }
 }

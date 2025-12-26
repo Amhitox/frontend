@@ -10,6 +10,7 @@ import '../../../models/meeting.dart';
 import 'package:frontend/utils/localization.dart';
 import 'package:intl/intl.dart';
 import '../../../models/meeting_location.dart';
+import '../../../models/attendee.dart';
 
 class AddScheduleScreen extends StatefulWidget {
   final Meeting? meeting;
@@ -26,18 +27,18 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
   late Animation<double> _fadeAnimation;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _attendeesController = TextEditingController();
+  // Removed _attendeesController
+  List<Attendee> _attendees = [];
   DateTime _selectedDate = DateTime.now();
-  TimeOfDay _startTime = TimeOfDay.now();
-  TimeOfDay _endTime = TimeOfDay.now().replacing(
-    hour: TimeOfDay.now().hour + 1,
-  );
+  late TimeOfDay _startTime;
+  late TimeOfDay _endTime;
   MeetingLocation _selectedType = MeetingLocation.onsite;
   bool _isSaving = false;
   bool _isEditMode = false;
   @override
   void initState() {
     super.initState();
+    _initializeTimes();
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -68,7 +69,8 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
     _titleController.text = meeting.title ?? '';
     _descriptionController.text = meeting.description ?? '';
     _selectedDate = DateTime.parse(meeting.date ?? '');
-    _attendeesController.text = meeting.attendees?.join(', ') ?? '';
+    _selectedDate = DateTime.parse(meeting.date ?? '');
+    _attendees = meeting.attendees != null ? List.from(meeting.attendees!) : [];
     _selectedType = meeting.location ?? MeetingLocation.online;
     _startTime = _parseTimeString(meeting.startTime ?? '');
     _endTime = _parseTimeString(meeting.endTime ?? '');
@@ -97,8 +99,51 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
     _fadeController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
-    _attendeesController.dispose();
     super.dispose();
+  }
+
+  void _initializeTimes() {
+    final now = DateTime.now();
+    // Round up to next 15 minutes
+    int minute = now.minute;
+    int hour = now.hour;
+    int next15 = ((minute / 15).ceil() * 15);
+    
+    if (next15 == 60) {
+      next15 = 0;
+      hour++;
+    }
+    
+    // If rounded time is essentially "now" or past (within 1 min of now), move to next slot
+    if (hour == now.hour && (next15 - now.minute) <= 1) {
+       next15 += 15;
+       if (next15 >= 60) {
+         next15 -= 60;
+         hour++;
+       }
+    }
+    
+    // If we've crossed midnight, stick to 23:45 for today to avoid date complexity for now
+    if (hour >= 24) {
+      hour = 23; 
+      next15 = 45; 
+    }
+
+    _startTime = TimeOfDay(hour: hour, minute: next15);
+    
+    // End time 30 mins after start
+    int endHour = hour;
+    int endMinute = next15 + 30;
+    if (endMinute >= 60) {
+      endMinute -= 60;
+      endHour++;
+    }
+    if (endHour >= 24) {
+      endHour = 23;
+      endMinute = 59;
+    }
+    
+    _endTime = TimeOfDay(hour: endHour, minute: endMinute);
   }
 
   void _saveSchedule() async {
@@ -106,6 +151,26 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
       _showFeedback(AppLocalizations.of(context).pleaseEnterTitle, isError: true);
       return;
     }
+
+    final now = DateTime.now();
+    final startDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+
+    if (startDateTime.isBefore(now)) {
+       _showFeedback("Start time must be in the future", isError: true);
+       return;
+    }
+    
+    if (startDateTime.difference(now).inMinutes < 10) {
+       _showFeedback("Start time must be at least 10 minutes from now", isError: true);
+       return;
+    }
+
     setState(() => _isSaving = true);
     HapticFeedback.mediumImpact();
     try {
@@ -118,11 +183,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           _selectedDate,
           _startTime,
           _endTime,
-          _attendeesController.text
-              .split(',')
-              .map((e) => e.trim())
-              .where((e) => e.isNotEmpty)
-              .toList(),
+          _attendees,
           _selectedType,
         );
       } else {
@@ -132,11 +193,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           _selectedDate,
           _startTime,
           _endTime,
-          _attendeesController.text
-              .split(',')
-              .map((e) => e.trim())
-              .where((e) => e.isNotEmpty)
-              .toList(),
+          _attendees,
           _selectedType,
         );
       }
@@ -158,11 +215,33 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
     } catch (e) {
       if (e is DioException) {
         final data = e.response?.data;
-        if (data is Map && data['code'] == 'QUOTA_EXCEEDED') {
-          if (mounted) {
-            QuotaDialog.show(context, message: data['error']);
+        if (data is Map) {
+          // Handle Quota exceeded
+          if (data['code'] == 'QUOTA_EXCEEDED') {
+            if (mounted) {
+              QuotaDialog.show(context, message: data['error']);
+            }
+            return;
           }
-          return;
+          
+          // Handle Validation Errors (e.g. invalid time range)
+          if (data['code'] == 'INVALID_TIME_RANGE' || 
+              data['code'] == 'INVALID_DATE' || 
+              data['code'] == 'VALIDATION_ERROR') {
+             String errorMessage = data['details'] ?? data['error'] ?? 'Validation Error';
+             // If details is an object/map, try to make it string
+             if (errorMessage.startsWith('{') || errorMessage.startsWith('[')) {
+                errorMessage = data['error'] ?? 'Invalid input data';
+             }
+             _showFeedback(errorMessage, isError: true);
+             return;
+          }
+          
+           // Handle generic Conflict
+          if (e.response?.statusCode == 409) {
+             _showFeedback(data['error'] ?? 'Conflict error', isError: true);
+             return;
+          }
         }
       }
       _showFeedback('${AppLocalizations.of(context).meetingAddFailed}: $e', isError: true);
@@ -297,6 +376,201 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
     );
   }
 
+  Widget _buildAttendeesSection(
+    ThemeData theme,
+    bool isTablet,
+    bool isLargeScreen,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              AppLocalizations.of(context).attendees.toUpperCase(),
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                fontSize:
+                    isLargeScreen
+                        ? 14
+                        : isTablet
+                        ? 13
+                        : 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _showAddAttendeeDialog,
+              icon: Icon(Icons.add, size: 18),
+              label: Text(AppLocalizations.of(context).add),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.primary,
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: isTablet ? 12 : 8),
+        if (_attendees.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              vertical: isTablet ? 16 : 12,
+              horizontal: isTablet ? 16 : 12,
+            ),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              AppLocalizations.of(context).attendeesHint,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children:
+                _attendees.map((attendee) {
+                  return Chip(
+                    label: Text('${attendee.name} (${attendee.email})'),
+                    onDeleted: () {
+                      setState(() {
+                        _attendees.remove(attendee);
+                      });
+                    },
+                    backgroundColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.1,
+                    ),
+                    labelStyle: TextStyle(color: theme.colorScheme.primary),
+                    deleteIconColor: theme.colorScheme.primary,
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  );
+                }).toList(),
+          ),
+      ],
+    );
+  }
+
+  void _showAddAttendeeDialog() {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(AppLocalizations.of(context).addAttendee),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Autocomplete for Email
+            Autocomplete<Attendee>(
+              optionsBuilder: (TextEditingValue textEditingValue) async {
+                if (textEditingValue.text == '') {
+                   return const Iterable<Attendee>.empty();
+                }
+                final provider = context.read<MeetingProvider>();
+                return await provider.getSuggestedAttendees(query: textEditingValue.text);
+              },
+              onSelected: (Attendee selection) {
+                emailController.text = selection.email;
+                if (selection.name != null && selection.name!.isNotEmpty) {
+                  nameController.text = selection.name!;
+                }
+              },
+              fieldViewBuilder: (context, fieldTextEditingController, focusNode, onFieldSubmitted) {
+                // Keep the local controller in sync if needed, but here we just use the field controller
+                // We'll hook up a listener to update our local emailController
+                 fieldTextEditingController.addListener(() {
+                   emailController.text = fieldTextEditingController.text;
+                 });
+                 return TextField(
+                  controller: fieldTextEditingController,
+                  focusNode: focusNode,
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context).email,
+                    hintText: 'john@example.com',
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                );
+              },
+              displayStringForOption: (Attendee option) => option.email,
+              optionsViewBuilder: (context, onSelected, options) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4.0,
+                    child: SizedBox(
+                      width: 250, 
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(8.0),
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final Attendee option = options.elementAt(index);
+                          return ListTile(
+                            title: Text(option.name ?? 'Unknown'),
+                            subtitle: Text(option.email),
+                            onTap: () {
+                              onSelected(option);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            
+            SizedBox(height: 16),
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).name,
+                hintText: 'John Doe',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context).cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Use emailController.text which is updated by Autocomplete
+              if (emailController.text.isNotEmpty) {
+                setState(() {
+                  _attendees.add(Attendee(
+                    name: nameController.text.trim().isEmpty ? 'Guest' : nameController.text.trim(),
+                    email: emailController.text.trim(),
+                  ));
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: Text(AppLocalizations.of(context).add),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildForm(ThemeData theme, bool isTablet, bool isLargeScreen) {
     final padding =
         isLargeScreen
@@ -334,15 +608,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           SizedBox(height: isTablet ? 24 : 20),
           _buildTypeSelector(theme, isTablet, isLargeScreen),
           SizedBox(height: isTablet ? 24 : 20),
-          _buildTextField(
-            controller: _attendeesController,
-            label: AppLocalizations.of(context).attendees,
-            hint: AppLocalizations.of(context).attendeesHint,
-            icon: Icons.people_rounded,
-            theme: theme,
-            isTablet: isTablet,
-            isLargeScreen: isLargeScreen,
-          ),
+          _buildAttendeesSection(theme, isTablet, isLargeScreen),
           SizedBox(height: isTablet ? 24 : 20),
         ],
       ),

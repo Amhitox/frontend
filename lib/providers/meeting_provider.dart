@@ -8,6 +8,7 @@ import 'package:frontend/models/meeting_location.dart';
 import 'package:frontend/services/meeting_service.dart';
 import 'package:frontend/providers/sub_provider.dart';
 import 'package:provider/provider.dart' as provider;
+import 'package:frontend/models/attendee.dart';
 
 class MeetingProvider extends ChangeNotifier {
   final MeetingService meeting;
@@ -144,7 +145,7 @@ class MeetingProvider extends ChangeNotifier {
     DateTime date,
     TimeOfDay startTime,
     TimeOfDay endTime,
-    List<String> attendees,
+    List<Attendee> attendees,
     MeetingLocation location,
   ) async {
     String meetingId;
@@ -217,13 +218,34 @@ class MeetingProvider extends ChangeNotifier {
           );
         }
       } on DioException catch (e) {
-        if (e.response?.statusCode == 400 || e.response?.statusCode == 403) {
+        // Rethrow validation errors and quota exceeded errors
+        if (e.response?.statusCode == 400 || 
+            e.response?.statusCode == 403 || 
+            e.response?.statusCode == 409) {
           final data = e.response?.data;
+          
+          // Check for quota exceeded
           if (data is Map && data['code'] == 'QUOTA_EXCEEDED') {
             print("MeetingProvider: Quota exceeded: ${data['error']}");
             rethrow;
           }
+          
+          // Check for validation errors (like invalid time range)
+          if (data is Map && (data['code'] == 'INVALID_TIME_RANGE' || 
+                              data['code'] == 'INVALID_DATE' ||
+                              data['code'] == 'VALIDATION_ERROR')) {
+             print("MeetingProvider: Validation error: ${data['details'] ?? data['error']}");
+             rethrow;
+          }
+          
+           // Generic fallback for other 409s if needed, or just rethrow all 409s
+           if (e.response?.statusCode == 409) {
+              rethrow;
+           }
         }
+        
+        // Only fallback to local creation for network errors or server errors (5xx)
+        // that are not explicit validation rejections
         meetingId = await _createLocalMeeting(
           title,
           description,
@@ -266,7 +288,7 @@ class MeetingProvider extends ChangeNotifier {
     DateTime date,
     TimeOfDay startTime,
     TimeOfDay endTime,
-    List<String> attendees,
+    List<Attendee> attendees,
     MeetingLocation location,
   ) async {
     final newMeeting = Meeting(
@@ -294,10 +316,7 @@ class MeetingProvider extends ChangeNotifier {
     final localMeetings = _calendarManager.getMeetingOfDate(
       DateTime.parse(date),
     );
-
-    _isLoading = false;
-    notifyListeners();
-
+    // Don't modify state or notify listeners in a getter-like method
     return localMeetings;
   }
 
@@ -345,8 +364,6 @@ class MeetingProvider extends ChangeNotifier {
     }
   }
 
-
-
   Future<void> updateMeeting(
     String id,
     String title,
@@ -354,7 +371,7 @@ class MeetingProvider extends ChangeNotifier {
     DateTime date,
     TimeOfDay startTime,
     TimeOfDay endTime,
-    List<String> attendees,
+    List<Attendee> attendees,
     MeetingLocation location,
   ) async {
     final existingMeeting = _calendarManager.getMeetingById(id);
@@ -682,5 +699,22 @@ class MeetingProvider extends ChangeNotifier {
     } catch (e) {}
 
     return const TimeOfDay(hour: 9, minute: 0);
+  }
+
+  Future<List<Attendee>> getSuggestedAttendees({String? query}) async {
+    if (!_isOnline) return [];
+    try {
+      final response = await meeting.getSuggestedAttendees(query: query);
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map && data['success'] == true && data['attendees'] is List) {
+           return (data['attendees'] as List).map((e) => Attendee.fromJson(e)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print("MeetingProvider: Error fetching suggestions: $e");
+      return [];
+    }
   }
 }
