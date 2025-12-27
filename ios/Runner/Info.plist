@@ -49,12 +49,8 @@
 	<string>We need access to your photo library to attach images and files to your emails.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We need permission to save images to your photo library.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>We need access to your camera to take photos for email attachments.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need access to your microphone for voice commands, audio notes, and email transcription.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>We need access to speech recognition to convert your voice commands and notes into text.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

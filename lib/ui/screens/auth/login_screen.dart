@@ -658,7 +658,14 @@ class _LoginScreenState extends State<LoginScreen> {
           width: double.infinity,
           height: buttonHeight,
           child: ElevatedButton(
-            style: socialButtonStyle,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? Colors.white : Colors.black,
+              foregroundColor: isDark ? Colors.black : Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             onPressed: () async {
               final success =
                   await context.read<AuthProvider>().signInWithApple();
@@ -683,23 +690,18 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: iconSize,
-                  height: iconSize,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0078D4),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Icon(
-                    Icons.window,
-                    color: Colors.white,
-                    size: 12,
-                  ),
+                Icon(
+                  Icons.apple,
+                  color: isDark ? Colors.black : Colors.white,
+                  size: iconSize + 4, // Apple icon often needs to be slightly larger to look optical balanced
                 ),
                 const SizedBox(width: 12),
                 Text(
                   AppLocalizations.of(context)!.continueWithApple,
-                  style: TextStyle(fontSize: fontSize),
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
