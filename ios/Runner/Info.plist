@@ -64,6 +64,10 @@
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key>Google</key>
+			<string>com.googleusercontent.apps.1025295810293-4sh9femgtgg0rkis92j5s4kq9u04m5vv</string>
+		</dict>
+		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>

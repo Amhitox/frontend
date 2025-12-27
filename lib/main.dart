@@ -30,7 +30,7 @@ import 'services/mail_service.dart';
 import 'services/notification_service.dart';
 import 'providers/mail_provider.dart';
 import 'package:frontend/providers/audio_provider.dart';
-
+import 'firebase_options.dart';
 // Top-level function to handle background messages (must be top-level)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -40,7 +40,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize notification service
   await NotificationService().initialize();
