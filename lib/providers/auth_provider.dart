@@ -178,12 +178,9 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Don't specify clientId - let it use the default from google-services.json
-      // This ensures the correct Android client ID is used
-      await _googleSignIn.initialize(
-        clientId:
-            "1025295810293-4sh9femgtgg0rkis92j5s4kq9u04m5vv.apps.googleusercontent.com",
-      );
+      // Don't specify clientId - let it use the default from google-services.json/GoogleService-Info.plist
+      // This ensures the correct platform-specific client ID is used
+      await _googleSignIn.initialize();
 
       final account = await _googleSignIn.authenticate();
 
