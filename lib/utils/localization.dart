@@ -13,6 +13,7 @@ class AppLocalizations {
       _AppLocalizationsDelegate();
 
   // Common strings
+  String get offlineMessage => _localizedValues[locale.languageCode]!['offlineMessage']!;
   String get retry => _localizedValues[locale.languageCode]!['retry']!;
   String get emails => _localizedValues[locale.languageCode]!['emails']!;
   String get errorLoadingAnalytics => _localizedValues[locale.languageCode]!['errorLoadingAnalytics']!;
@@ -638,6 +639,7 @@ class AppLocalizations {
       'errorOccurred': 'An error occurred',
       'success': 'Success',
       'signOutConfirmation': 'Are you sure you want to sign out? You\'ll need to log in again to access your account.',
+      'offlineMessage': 'You are offline. Manual entries sync when online.',
       'all': 'All',
       'completed': 'Completed',
       'inProgress': 'In Progress',
@@ -1173,6 +1175,7 @@ class AppLocalizations {
 
     },
     'fr': {
+      'offlineMessage': 'Vous êtes hors ligne. Les modifications manuelles seront synchronisées une fois en ligne.',
       'retry': 'Réessayer',
       'emails': 'Emails',
       'errorLoadingAnalytics': 'Erreur de chargement des analyses',
@@ -1574,7 +1577,7 @@ class AppLocalizations {
       'used': 'utilisé',
       
       // Security
-      'security': 'Sécurité',
+
       'secure': 'Sécurisé',
       'accountSecure': 'Votre compte est sécurisé',
       'lastSecurityCheck': 'Dernière vérification : Aujourd\'hui à 15h24',

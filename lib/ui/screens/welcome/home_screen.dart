@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/providers/meeting_provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:frontend/services/connectivity_service.dart';
+
 import 'package:frontend/services/firabasesync_service.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
@@ -14,9 +16,8 @@ import 'package:frontend/models/ai_response.dart';
 import 'package:frontend/models/email_message.dart';
 import 'package:frontend/services/ai_service.dart';
 import 'package:frontend/services/transcription_service.dart';
-import 'package:audioplayers/audioplayers.dart';
-import 'dart:io';
 import 'package:frontend/routes/app_router.dart';
+
 import 'package:frontend/utils/quota_dialog.dart';
 import 'package:frontend/providers/sub_provider.dart';
 import 'package:frontend/ui/widgets/side_menu_button.dart';
@@ -44,10 +45,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isProcessing = false;
   String? _transcribedText;
   String _typewriterText = '';
+  bool _isOnline = true;
+
 
   // Debug - Audio Playback
-  String? _lastAudioPath;
-  final AudioPlayer _audioPlayer = AudioPlayer();
+
 
   @override
   void initState() {
@@ -80,11 +82,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 3000),
       vsync: this,
     );
+
     _breathingController.repeat(reverse: true);
     _subtleController.repeat();
     _pulseController.repeat(reverse: true);
     _orbitalController.repeat();
     _glowController.repeat(reverse: true);
+
+    Connectivity().checkConnectivity().then((results) {
+      final isConnected = results.any((r) => r != ConnectivityResult.none);
+      if (mounted) setState(() => _isOnline = isConnected);
+    });
+
+    Connectivity().onConnectivityChanged.listen((results) {
+      final isConnected = results.any((r) => r != ConnectivityResult.none);
+      if (mounted) setState(() => _isOnline = isConnected);
+    });
   }
 
   @override
@@ -151,7 +164,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (!mounted) return;
     setState(() {
        _isProcessing = true;
-       _lastAudioPath = path; // Save for debug playback
     });
     
     // Optional: Cancelable operation? For now just show processing state.
@@ -209,30 +221,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _playLastAudio() async {
-    if (_lastAudioPath != null && File(_lastAudioPath!).existsSync()) {
-      try {
-        await _audioPlayer.stop();
-        await _audioPlayer.play(DeviceFileSource(_lastAudioPath!));
-        ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(
-               content: Text('Playing last recorded audio...'),
-               duration: Duration(seconds: 2),
-               behavior: SnackBarBehavior.floating,
-             ),
-        );
-      } catch (e) {
-        print('Error playing audio: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('Error playing audio: $e')),
-        );
-      }
-    } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text('No audio recorded yet')),
-        );
-    }
-  }
+
 
   Future<void> _processAiRequest(String text) async {
     final auth = context.read<AuthProvider>();
@@ -658,16 +647,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
            if (_isProcessing && _transcribedText != null)
              _buildTranscribedText(isTablet),
           _buildVoiceIndicator(isTablet),
-          // Debug Play Button
-          if (_lastAudioPath != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: IconButton(
-                icon: const Icon(Icons.play_circle_outline, color: Colors.white70),
-                onPressed: _playLastAudio,
-                tooltip: 'Play Last Audio',
-              ),
-            ),
+
           // _buildQuickActions(isTablet, isLargeScreen),
           SizedBox(height: spacing * 0.3),
         ],
@@ -802,7 +782,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Stack(
       alignment: Alignment.center,
       children: [
-        AnimatedBuilder(
+        if (_isOnline)
+          AnimatedBuilder(
           animation: _breathingController,
           builder: (context, child) {
             return Stack(
@@ -861,14 +842,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           },
         ),
         GestureDetector(
-          onTap: _toggleListening,
+          onTap: () {
+             if (!_isOnline) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(AppLocalizations.of(context).offlineMessage),
+                  duration: const Duration(seconds: 3),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              return;
+            }
+            _toggleListening();
+          },
           child: AnimatedContainer(
             duration: Duration(milliseconds: 300),
             width: micSize,
             height: micSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: _isProcessing 
+              color: !_isOnline ? Colors.grey.withOpacity(0.3) : null,
+              gradient: !_isOnline ? null : (_isProcessing 
                   ? LinearGradient(
                       colors: [Colors.grey.shade400, Colors.grey.shade600],
                     )
@@ -894,18 +888,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                             context,
                           ).colorScheme.surface.withValues(alpha: 0.08),
                         ],
-                      )),
+                      ))),
               border: Border.all(
-                color:
-                    _isListening
+                color: !_isOnline 
+                    ? Colors.grey 
+                    : (_isListening
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(
                           context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.25),
+                        ).colorScheme.onSurface.withValues(alpha: 0.25)),
                 width: _isListening ? 2 : 1.5,
               ),
               boxShadow:
-                  _isListening
+                  _isListening && _isOnline
                       ? [
                         BoxShadow(
                           color: Theme.of(
@@ -932,9 +927,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 : Icon(
                     _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
                     size: isTablet ? 40 : 36,
-                    color: _isListening
-                        ? Colors.white
-                        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85),
+                    color: !_isOnline 
+                        ? Colors.grey 
+                        : (_isListening
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.85)),
                   ),
             ),
           ),
@@ -1019,80 +1016,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildQuickActions(bool isTablet, bool isLargeScreen) {
-    return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal:
-            isLargeScreen
-                ? 65
-                : isTablet
-                ? 55
-                : 45,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildActionButton('Emails', Icons.email_rounded, () {
-            context.pushNamed('mail');
-          }, isTablet),
-          _buildActionButton('Calendar', Icons.calendar_month_rounded, () {
-            context.pushNamed('calendar');
-          }, isTablet),
-          _buildActionButton('Tasks', Icons.task_alt_rounded, () {
-            context.pushNamed('task');
-          }, isTablet),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildActionButton(
-    String label,
-    IconData icon,
-    VoidCallback onTap,
-    bool isTablet,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 20 : 16,
-          vertical: isTablet ? 14 : 12,
-        ),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.1),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: Theme.of(context).colorScheme.primary,
-              size: isTablet ? 22 : 20,
-            ),
-            SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.8),
-                fontSize: isTablet ? 12 : 11,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   String _formatTimezoneOffset(Duration offset) {
     final totalMinutes = offset.inMinutes;
