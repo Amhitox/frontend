@@ -74,14 +74,22 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
 
   void _navigateTo(String route) {
     Navigator.of(context).pop();
-    // Delay slightly to allow drawer to close/pop animation to start
-    // This often fixes issues where immediate push confuses the navigator or context
     Future.delayed(const Duration(milliseconds: 250), () {
       if (!mounted) return;
+
       if (route == '/') {
         context.go('/');
       } else {
-        context.push(route);
+        try {
+          final String currentLocation = GoRouterState.of(context).uri.toString();
+          if (currentLocation == '/') {
+            context.push(route);
+          } else {
+            context.pushReplacement(route);
+          }
+        } catch (e) {
+          context.go(route);
+        }
       }
     });
   }
@@ -449,7 +457,8 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
                 // Clear mail cache
                 context.read<MailProvider>().clearCache();
                 context.read<AuthProvider>().logout();
-                context.pushNamed('login');
+                // Use go() to clear the navigation stack on logout
+                context.go('/login');
               },
               child: Container(
                 padding: EdgeInsets.symmetric(
@@ -473,7 +482,7 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
                     ),
                     SizedBox(width: isTablet ? 10 : 8),
                     Text(
-                      'Logout',
+                      AppLocalizations.of(context).logout,
                       style: TextStyle(
                         color: colorScheme.onSurface.withValues(alpha: 0.7),
                         fontSize: logoutFontSize,

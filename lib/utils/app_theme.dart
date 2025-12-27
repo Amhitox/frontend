@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 class AppTheme {
   AppTheme._();
   static const Color primaryBlue = Color(0xFF2563EB);
@@ -63,6 +65,11 @@ class AppTheme {
         foregroundColor: lightPrimary,
         elevation: 0,
         centerTitle: false,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
         surfaceTintColor: Colors.transparent,
         shadowColor: Colors.black.withValues(alpha: 0.05),
         titleTextStyle: TextStyle(
@@ -275,6 +282,11 @@ class AppTheme {
         foregroundColor: lightGray,
         elevation: 0,
         centerTitle: false,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(

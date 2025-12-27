@@ -340,7 +340,6 @@ class AppLocalizations {
   String get enterPassword => _localizedValues[locale.languageCode]!['enterPassword']!;
   String get getStartedNow => _localizedValues[locale.languageCode]!['getStartedNow']!;
   String get loginSubtitle => _localizedValues[locale.languageCode]!['loginSubtitle']!;
-  String get dataProcessingAgreement => _localizedValues[locale.languageCode]!['dataProcessingAgreement']!;
   String get and => _localizedValues[locale.languageCode]!['and']!;
   String get bySigningUpAgreeTo => _localizedValues[locale.languageCode]!['bySigningUpAgreeTo']!;
   String get enterFirstName => _localizedValues[locale.languageCode]!['enterFirstName']!;
@@ -862,7 +861,6 @@ class AppLocalizations {
       'enterPassword': 'Enter your password',
       'getStartedNow': 'Get Started now',
       'loginSubtitle': 'Create an account or log in to explore about our app',
-      'dataProcessingAgreement': 'Data Processing Agreement',
       'and': 'and',
       'bySigningUpAgreeTo': 'By signing up, you agree to the ',
       'enterFirstName': 'Enter first name',
@@ -1462,7 +1460,6 @@ class AppLocalizations {
       'enterPassword': 'Entrez votre mot de passe',
       'getStartedNow': 'Commencer maintenant',
       'loginSubtitle': 'Créez un compte ou connectez-vous pour explorer notre application',
-      'dataProcessingAgreement': 'Accord de traitement des données',
       'and': 'et',
       'bySigningUpAgreeTo': 'En vous inscrivant, vous acceptez les ',
       'enterFirstName': 'Entrez le prénom',

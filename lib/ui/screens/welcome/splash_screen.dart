@@ -101,16 +101,16 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (firstOpen) {
       if (mounted) {
-        context.push('/onboarding');
+        context.go('/onboarding');
       }
     } else {
       if (auth.isLoggedIn) {
         if (mounted) {
-          context.push('/');
+          context.go('/');
         }
       } else {
         if (mounted) {
-          context.push('/login');
+          context.go('/login');
         }
       }
     }

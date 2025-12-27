@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -31,15 +33,27 @@ import 'services/notification_service.dart';
 import 'providers/mail_provider.dart';
 import 'package:frontend/providers/audio_provider.dart';
 import 'firebase_options.dart';
-// Top-level function to handle background messages (must be top-level)
+
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint('📨 Background message received: ${message.messageId}');
 }
 
+
+
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+    ),
+  );
+  
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize notification service
@@ -131,7 +145,6 @@ class _MainAppState extends State<MainApp> {
            }
         }
         
-        // Pre-fetch notifications so count is available on app start
         context.read<NotificationProvider>().fetchNotifications();
       }
 

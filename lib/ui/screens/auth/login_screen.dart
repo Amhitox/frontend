@@ -500,7 +500,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   final success = await authProvider.login(email, password);
                   if (success && context.mounted) {
                     await TaskManager().init(authProvider.user!.id!);
-                    context.pushNamed('home');
+                    context.go('/');
                   } else if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -611,11 +611,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 await TaskManager().init(
                   context.read<AuthProvider>().user!.id!,
                 );
-                context.pushNamed('home');
+                context.go('/');
               } else if (context.mounted) {
                 final errorMsg = context.read<AuthProvider>().errorMessage;
-                // Only show error if there's an actual error message (not null)
-                // null means user canceled, which is fine
                 if (errorMsg != null && errorMsg.isNotEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -673,7 +671,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 await TaskManager().init(
                   context.read<AuthProvider>().user!.id!,
                 );
-                context.pushNamed('home');
+                context.go('/');
               } else if (context.mounted) {
                 final errorMsg = context.read<AuthProvider>().errorMessage;
                 if (errorMsg != null && errorMsg.isNotEmpty) {
@@ -693,7 +691,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Icon(
                   Icons.apple,
                   color: isDark ? Colors.black : Colors.white,
-                  size: iconSize + 4, // Apple icon often needs to be slightly larger to look optical balanced
+                  size: iconSize + 4,
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -777,7 +775,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 },
                 child: Text(
-                  AppLocalizations.of(context)!.dataProcessingAgreement,
+                  AppLocalizations.of(context)!.privacyPolicy,
                   style: TextStyle(
                     color: const Color(0xFF3B77D8),
                     fontWeight: FontWeight.w600,

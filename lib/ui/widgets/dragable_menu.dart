@@ -64,7 +64,21 @@ class _DraggableMenuState extends State<DraggableMenu>
   }
 
   void _navigateTo(String route) {
-    context.push(route);
+    if (route == '/') {
+      context.go('/');
+    } else {
+      try {
+        final String currentLocation = GoRouterState.of(context).uri.toString();
+        if (currentLocation == '/') {
+          context.push(route);
+        } else {
+          context.pushReplacement(route);
+        }
+      } catch (e) {
+        // Fallback
+        context.go(route);
+      }
+    }
     _toggleMenu();
   }
 

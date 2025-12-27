@@ -460,26 +460,6 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ],
                 ),
               ),
-              GestureDetector(
-                onTap: () => _showProfileMenu(theme, isTablet),
-                child: Container(
-                  width: isTablet ? 40 : 36,
-                  height: isTablet ? 40 : 36,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(isTablet ? 14 : 12),
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.1),
-                      width: 1,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.more_vert,
-                    color: theme.colorScheme.onSurface,
-                    size: isTablet ? 18 : 16,
-                  ),
-                ),
-              ),
             ],
           ),
           SizedBox(height: isTablet ? 20 : 16),
