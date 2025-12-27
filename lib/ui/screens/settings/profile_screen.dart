@@ -149,7 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => context.pushNamed('settings'),
+            onTap: () => context.pop(),
             child: Container(
               width: isTablet ? 44 : 40,
               height: isTablet ? 44 : 40,

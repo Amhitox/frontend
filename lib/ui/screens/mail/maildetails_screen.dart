@@ -345,9 +345,15 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
         });
       }
 
-      // Load HTML content - baseUrl: null allows HTTP images
       _webViewController.loadHtmlString(htmlContent, baseUrl: null);
-      print('📧 Loaded HTML content to WebView (${content.length} chars)');
+      
+      Future.delayed(const Duration(seconds: 4), () {
+        if (mounted && _isWebViewLoading) {
+          setState(() {
+            _isWebViewLoading = false;
+          });
+        }
+      });
     });
   }
 
@@ -1059,7 +1065,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                 borderRadius: BorderRadius.circular(24),
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  context.pushNamed('mail');
+                  context.pop();
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(8),

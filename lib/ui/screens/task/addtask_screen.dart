@@ -329,7 +329,11 @@ class _AddTaskScreenState extends State<AddTaskScreen>
               borderRadius: BorderRadius.circular(24),
               onTap: () {
                 HapticFeedback.lightImpact();
-                context.pushNamed('task');
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/task');
+                }
               },
               child: Container(
                 width: isTablet ? 48 : 40,

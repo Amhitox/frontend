@@ -80,15 +80,9 @@ class _SideMenuState extends State<SideMenu> with TickerProviderStateMixin {
       if (route == '/') {
         context.go('/');
       } else {
-        try {
-          final String currentLocation = GoRouterState.of(context).uri.toString();
-          if (currentLocation == '/') {
-            context.push(route);
-          } else {
-            context.pushReplacement(route);
-          }
-        } catch (e) {
-          context.go(route);
+        final String currentLocation = GoRouterState.of(context).uri.toString();
+        if (currentLocation != route) {
+          context.push(route);
         }
       }
     });

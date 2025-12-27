@@ -499,8 +499,11 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           _buildHeaderButton(
             Icons.arrow_back_ios_new,
             () {
-               // This will trigger PopScope
-               context.pop();
+               if (context.canPop()) {
+                context.pop();
+               } else {
+                context.go('/mail');
+               }
             },
             Theme.of(context),
             isTablet,

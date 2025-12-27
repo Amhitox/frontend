@@ -334,7 +334,11 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
               borderRadius: BorderRadius.circular(24),
               onTap: () {
                 HapticFeedback.lightImpact();
-                context.push('/calendar');
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/calendar');
+                }
               },
               child: Container(
                 width: isTablet ? 48 : 40,
