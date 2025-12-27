@@ -741,15 +741,7 @@ class _LoginScreenState extends State<LoginScreen> {
             TextSpan(text: AppLocalizations.of(context)!.bySigningUpAgreeTo),
             WidgetSpan(
               child: GestureDetector(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Terms of Service tapped'),
-                      backgroundColor: Color(0xFF3B77D8),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onTap: () => context.push('/terms'),
                 child: Text(
                   AppLocalizations.of(context)!.termsOfService,
                   style: TextStyle(
@@ -765,15 +757,7 @@ class _LoginScreenState extends State<LoginScreen> {
             TextSpan(text: ' ${AppLocalizations.of(context)!.and} '),
             WidgetSpan(
               child: GestureDetector(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Data Processing Agreement tapped'),
-                      backgroundColor: Color(0xFF3B77D8),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
+                onTap: () => context.push('/privacy'),
                 child: Text(
                   AppLocalizations.of(context)!.privacyPolicy,
                   style: TextStyle(
