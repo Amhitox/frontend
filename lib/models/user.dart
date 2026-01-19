@@ -8,7 +8,13 @@ class User {
   final String? id;
   String? workEmail;
   DateTime? birthday;
+  String? subscriptionStatus;
+  DateTime? trialEndDate;
   String? subscriptionTier;
+  String? subscriptionPeriod; // Added field
+  String? jobTitle;
+  Map<String, dynamic>? voicePreferences;
+
   User({
     this.uid,
     this.email,
@@ -20,7 +26,13 @@ class User {
     this.birthday,
     this.status,
     this.subscriptionTier,
+    this.subscriptionStatus,
+    this.trialEndDate,
+    this.subscriptionPeriod, // Added
+    this.jobTitle,
+    this.voicePreferences,
   });
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       uid: (json['uid'] ?? json['id']) as String?,
@@ -32,6 +44,11 @@ class User {
       id: (json['id'] ?? json['uid']) as String?,
       workEmail: json['workEmail'] as String?,
       subscriptionTier: json['subscriptionTier'] as String?,
+      subscriptionStatus: json['subscriptionStatus'] as String?,
+      subscriptionPeriod: json['subscriptionPeriod'] as String?, // Added
+      trialEndDate: json['trialEndDate'] is String ? DateTime.parse(json['trialEndDate']) : null,
+      jobTitle: json['jobTitle'] as String?,
+      voicePreferences: json['voicePreferences'] as Map<String, dynamic>?,
     );
   }
   Map<String, dynamic> toJson() {
@@ -47,8 +64,45 @@ class User {
       json['workEmail'] = workEmail;
     }
     if (subscriptionTier != null) json['subscriptionTier'] = subscriptionTier;
+    if (subscriptionStatus != null) json['subscriptionStatus'] = subscriptionStatus;
+    if (subscriptionPeriod != null) json['subscriptionPeriod'] = subscriptionPeriod; // Added
+    if (trialEndDate != null) json['trialEndDate'] = trialEndDate!.toIso8601String();
+    if (jobTitle != null) json['jobTitle'] = jobTitle;
+    if (voicePreferences != null) json['voicePreferences'] = voicePreferences;
     return json;
   }
 
-  copyWith({required String workEmail}) {}
+  User copyWith({
+    String? uid,
+    String? email,
+    String? lang,
+    String? lastName,
+    String? status,
+    String? firstName,
+    String? id,
+    String? workEmail,
+    String? subscriptionTier,
+    String? subscriptionStatus,
+    String? subscriptionPeriod, // Added
+    DateTime? trialEndDate,
+    String? jobTitle,
+    Map<String, dynamic>? voicePreferences,
+  }) {
+    return User(
+      uid: uid ?? this.uid,
+      email: email ?? this.email,
+      lang: lang ?? this.lang,
+      lastName: lastName ?? this.lastName,
+      status: status ?? this.status,
+      firstName: firstName ?? this.firstName,
+      id: id ?? this.id,
+      workEmail: workEmail ?? this.workEmail,
+      subscriptionTier: subscriptionTier ?? this.subscriptionTier,
+      subscriptionStatus: subscriptionStatus ?? this.subscriptionStatus,
+      subscriptionPeriod: subscriptionPeriod ?? this.subscriptionPeriod, // Added
+      trialEndDate: trialEndDate ?? this.trialEndDate,
+      jobTitle: jobTitle ?? this.jobTitle,
+      voicePreferences: voicePreferences ?? this.voicePreferences,
+    );
+  }
 }

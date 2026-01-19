@@ -17,6 +17,20 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
+  Future<dynamic> updateVoicePreference(String voiceId) async {
+    try {
+      final data = {
+        "voicePreferences": {
+          "defaultTtsVoiceId": voiceId
+        }
+      };
+      final response = await userService.updateProfile(data);
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> updateUserData(User updatedUser) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -54,6 +68,15 @@ class UserProvider extends ChangeNotifier {
         _priorityEmails.remove(email);
         notifyListeners();
       }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> changePassword(String oldPassword, String newPassword, String confirmPassword) async {
+    try {
+      final response = await userService.changePassword(oldPassword, newPassword, confirmPassword);
+      return response;
     } catch (e) {
       rethrow;
     }

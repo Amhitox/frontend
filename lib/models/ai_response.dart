@@ -37,11 +37,12 @@ class AiResponse {
 class AiAction {
   final String? type;
   final String? status;
-  final Map<String, dynamic>? data;
+  final dynamic data;
   final String? message;
   final String? deletedId;
   final bool? quotaExceeded;
   final String? error;
+  final String? targetDate;
 
   AiAction({
     this.type,
@@ -51,17 +52,19 @@ class AiAction {
     this.deletedId,
     this.quotaExceeded,
     this.error,
+    this.targetDate,
   });
 
   factory AiAction.fromJson(Map<String, dynamic> json) {
     return AiAction(
       type: json['type'],
       status: json['status'],
-      data: json['data'] is Map<String, dynamic> ? json['data'] : null,
+      data: json['data'],
       message: json['message'],
       deletedId: json['deletedId'],
       quotaExceeded: json['quotaExceeded'],
       error: json['error'],
+      targetDate: json['targetDate'],
     );
   }
 }

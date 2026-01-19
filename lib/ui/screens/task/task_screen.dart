@@ -26,6 +26,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
   DateTime _selectedDate = DateTime.now();
+  DateTime _currentWeekStart = DateTime.now();
   bool _showingCalendarView = false;
   String _selectedFilter = "All";
   bool _isLoading = false;
@@ -36,6 +37,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
     super.initState();
     _tasks = widget.tasks;
     _selectedDate = widget.date;
+    _currentWeekStart = _getWeekStart(_selectedDate);
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -119,6 +121,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
   void _selectDateFromCalendar(DateTime date) async {
     setState(() {
       _selectedDate = date;
+      _currentWeekStart = _getWeekStart(date);
       _showingCalendarView = false;
     });
     await _getTasksForDate(date);
@@ -141,7 +144,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
             builder: (BuildContext context) {
                 return AlertDialog(
                     title: Text(AppLocalizations.of(context).completeTask),
-                    content: Text("Are you sure you want to mark this task as completed?"),
+                    content: Text(AppLocalizations.of(context).confirmCompleteTask),
                     actions: [
                         TextButton(
                             onPressed: () => Navigator.of(context).pop(false),
@@ -186,7 +189,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text("Completed tasks cannot be edited"),
+                content: Text(AppLocalizations.of(context).completedTasksCannotBeEdited),
                 behavior: SnackBarBehavior.floating,
                 duration: Duration(seconds: 2),
             ),
@@ -263,44 +266,53 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
       _filters = [l10n.all, l10n.inProgress, l10n.completed];
       _selectedFilter = l10n.all;
     }
-    return Scaffold(
-      drawer: const SideMenu(),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).scaffoldBackgroundColor,
-              Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
-              Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        context.go('/');
+      },
+      child: Scaffold(
+        drawer: const SideMenu(),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).scaffoldBackgroundColor,
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
+                Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
+              ],
+            ),
+          ),
+          child: Stack(
+            children: [
+              SafeArea(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child:
+                      _showingCalendarView
+                          ? _buildCalendarView()
+                          : SlideTransition(
+                            position: _slideAnimation,
+                            child: Column(
+                              key: const ValueKey('tasks'),
+                              children: [
+                                _buildHeader(isTablet, isLargeScreen),
+                                _buildWeekNavigation(Theme.of(context), isTablet),
+                                _buildWeekDaysHeader(Theme.of(context), isTablet),
+                                _buildProgressCard(isTablet),
+                                _buildFilterTabs(isTablet),
+                                Expanded(child: _buildTasksList(isTablet)),
+                              ],
+                            ),
+                          ),
+                ),
+              ),
+              const DraggableMenu(),
             ],
           ),
-        ),
-        child: Stack(
-          children: [
-            SafeArea(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child:
-                    _showingCalendarView
-                        ? _buildCalendarView()
-                        : SlideTransition(
-                          position: _slideAnimation,
-                          child: Column(
-                            key: const ValueKey('tasks'),
-                            children: [
-                              _buildHeader(isTablet, isLargeScreen),
-                              _buildProgressCard(isTablet),
-                              _buildFilterTabs(isTablet),
-                              Expanded(child: _buildTasksList(isTablet)),
-                            ],
-                          ),
-                        ),
-              ),
-            ),
-            const DraggableMenu(),
-          ],
         ),
       ),
     );
@@ -335,19 +347,19 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text(
-                      '${_tasks.length} ${AppLocalizations.of(context).tasks} for ${_getDateLabel()}',
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.6),
-                        fontSize: isTablet ? 16 : 14,
+                  Row(
+                    children: [
+                      Text(
+                        '${_tasks.length} ${AppLocalizations.of(context).tasks}',
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
+                          fontSize: isTablet ? 16 : 14,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -1190,7 +1202,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
                   _buildDetailRow(
                   Icons.calendar_today_rounded,
-                  "Date & Time",
+                  AppLocalizations.of(context).dateAndTime,
                   "${DateFormat('EEEE d MMM, y').format(_selectedDate)} ${DataKey.formatTime(task.dueDate!)}",
                   theme,
                 ),
@@ -1198,7 +1210,7 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
                   
                   _buildDetailRow(
                     Icons.category_outlined,
-                    "Category",
+                    AppLocalizations.of(context).category,
                     task.category ?? 'General',
                     theme,
                   ),
@@ -1307,4 +1319,178 @@ class _TaskScreenState extends State<TaskScreen> with TickerProviderStateMixin {
 
   int _getHighPriorityCount() =>
       _tasks.where((t) => t.priority == TaskPriority.high).length;
+
+  DateTime _getWeekStart(DateTime date) {
+    return date.subtract(Duration(days: date.weekday - 1));
+  }
+  
+  List<DateTime> _getWeekDays(DateTime weekStart) {
+    return List.generate(7, (index) => weekStart.add(Duration(days: index)));
+  }
+
+  void _goToPreviousWeek() {
+    setState(() {
+      _currentWeekStart = _currentWeekStart.subtract(const Duration(days: 7));
+    });
+  }
+
+  void _goToNextWeek() {
+    setState(() {
+      _currentWeekStart = _currentWeekStart.add(const Duration(days: 7));
+    });
+  }
+
+  void _goToToday() async {
+    setState(() {
+      _selectedDate = DateTime.now();
+      _currentWeekStart = _getWeekStart(DateTime.now());
+    });
+    await _getTasksForDate(_selectedDate);
+  }
+
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('MMM d', AppLocalizations.of(context).locale.toString()).format(date);
+  }
+
+  String _formatDayName(DateTime date) {
+    return DateFormat('E', AppLocalizations.of(context).locale.toString()).format(date);
+  }
+
+  String _getWeekTitle(DateTime weekStart) {
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    return '${_formatDate(weekStart)} - ${_formatDate(weekEnd)}';
+  }
+
+  Widget _buildWeekNavigation(ThemeData theme, bool isTablet) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: isTablet ? 24.0 : 20.0,
+        vertical: isTablet ? 12.0 : 8.0,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: _goToPreviousWeek,
+            icon: Icon(
+              Icons.chevron_left_rounded,
+              color: theme.colorScheme.onSurface,
+              size: isTablet ? 28 : 24,
+            ),
+          ),
+          GestureDetector(
+            onTap: _goToToday,
+            child: Text(
+              _getWeekTitle(_currentWeekStart),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontSize: isTablet ? 18 : 16,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+          IconButton(
+            onPressed: _goToNextWeek,
+            icon: Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurface,
+              size: isTablet ? 28 : 24,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeekDaysHeader(ThemeData theme, bool isTablet) {
+    final weekDays = _getWeekDays(_currentWeekStart);
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: isTablet ? 24.0 : 20.0),
+      height: isTablet ? 70 : 60,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children:
+            weekDays
+                .map((day) => _buildWeekDayHeader(day, theme, isTablet))
+                .toList(),
+      ),
+    );
+  }
+
+  Widget _buildWeekDayHeader(DateTime day, ThemeData theme, bool isTablet) {
+    final isToday = _isSameDay(day, DateTime.now());
+    final isSelected = _isSameDay(day, _selectedDate);
+    return Expanded(
+      child: GestureDetector(
+        onTap: () async {
+          setState(() {
+            _selectedDate = day;
+          });
+          await _getTasksForDate(day);
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color:
+                isSelected
+                    ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _formatDayName(day),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontSize: isTablet ? 12 : 10,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                width: isTablet ? 28 : 24,
+                height: isTablet ? 28 : 24,
+                decoration: BoxDecoration(
+                  color:
+                      isToday
+                          ? theme.colorScheme.primary
+                          : isSelected
+                          ? theme.colorScheme.primary.withValues(alpha: 0.2)
+                          : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    day.day.toString(),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color:
+                          isToday
+                              ? Colors.white
+                              : isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface,
+                      fontSize: isTablet ? 14 : 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

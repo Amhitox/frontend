@@ -146,45 +146,8 @@ class _AddTaskScreenState extends State<AddTaskScreen>
       );
       return;
     }
-    final now = DateTime.now();
-    final combinedDateTime = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-      _selectedTime.hour,
-      _selectedTime.minute,
-    );
-    final today = DateTime(now.year, now.month, now.day);
-    final selectedDateOnly = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-    );
-    if (selectedDateOnly.isBefore(today)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).taskDateCannotBeInThePast),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
-    if (selectedDateOnly.isAtSameMomentAs(today)) {
-      final oneHourFromNow = now.add(const Duration(hours: 1));
-      if (combinedDateTime.isBefore(oneHourFromNow)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context).taskTimeMustBeAtLeastOneHourFromNow,
-            ),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-        return;
-      }
-    }
+
+
     setState(() => _isSaving = true);
     try {
       if (!isEditMode) {

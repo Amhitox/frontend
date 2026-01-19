@@ -4,6 +4,8 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:frontend/managers/task_manager.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/services/vpn_service.dart';
+import 'package:flutter/services.dart';
 import 'package:frontend/ui/widgets/tab_switch.dart';
 import 'package:frontend/ui/widgets/cosmic_background.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +28,9 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     _handleFirstLaunch();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkVpnStatus();
+    });
   }
 
   Future<void> _handleFirstLaunch() async {
@@ -33,6 +38,46 @@ class _LoginScreenState extends State<LoginScreen> {
       final pref = await SharedPreferences.getInstance();
       await pref.setBool("firstOpen", false);
     } catch (e) {}
+  }
+
+  Future<void> _checkVpnStatus() async {
+    final isVpnActive = await VpnService().isVpnActive();
+    if (isVpnActive && mounted) {
+      _showVpnBlockedDialog();
+    }
+  }
+
+  void _showVpnBlockedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            title: const Text("VPN/Proxy Detected"),
+            content: const Text(
+              "We detected that you are using a VPN or Proxy. Please disable it to continue using the app.",
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await _checkVpnStatus();
+                },
+                child: const Text("Retry"),
+              ),
+              TextButton(
+                onPressed: () {
+                     SystemNavigator.pop();
+                },
+                child: const Text("Exit App"),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -132,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Expanded(
                       child: SingleChildScrollView(
                         padding: EdgeInsets.only(
-                          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                          bottom: MediaQuery.of(context).viewInsets.bottom + 40,
                         ),
                         child: Column(
                           children: [
@@ -491,6 +536,13 @@ class _LoginScreenState extends State<LoginScreen> {
             child: ElevatedButton(
               onPressed: () async {
                 FocusScope.of(context).unfocus();
+                
+                final isVpnActive = await VpnService().isVpnActive();
+                if (isVpnActive && context.mounted) {
+                   _showVpnBlockedDialog();
+                   return;
+                }
+
                 if (_formKey.currentState != null &&
                     _formKey.currentState!.saveAndValidate()) {
                   final email = _formKey.currentState?.fields['email']?.value;
@@ -719,7 +771,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: 20,
-        vertical: isSmallScreen ? 12 : 16,
+        vertical: isSmallScreen ? 16 : 24,
       ),
       decoration: BoxDecoration(
         border: Border(

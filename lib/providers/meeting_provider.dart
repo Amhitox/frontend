@@ -181,16 +181,12 @@ class MeetingProvider extends ChangeNotifier {
           timezoneOffset,
         );
 
-        if (response.statusCode == 201) {
+        if (response.statusCode == 201 && response.data['success'] == true) {
           final data = response.data;
-          if (data is Map && data.containsKey('data')) {
-             if (data['data'] is Map && data['data'].containsKey('event')) {
-                meetingId = data['data']['event']['eventId'];
-             } else {
-                 meetingId = '';
-             }
-          } else if (data is Map && data.containsKey('event')) {
-             meetingId = data['event']['eventId'];
+          if (data is Map && data.containsKey('event')) {
+             meetingId = data['event']['eventId'] ?? '';
+          } else if (data is Map && data.containsKey('data') && data['data'] is Map && data['data'].containsKey('event')) {
+             meetingId = data['data']['event']['eventId'] ?? '';
           } else {
             meetingId = '';
           }
@@ -212,6 +208,12 @@ class MeetingProvider extends ChangeNotifier {
           );
 
           await _calendarManager.addOrUpdateMeeting(newMeeting, isSynced: true);
+        } else if (response.statusCode == 400) {
+          final error = response.data['error'] ?? 'Title, startTime, and endTime are required';
+          throw Exception(error);
+        } else if (response.statusCode == 500) {
+          final error = response.data['error'] ?? 'Failed to create event';
+          throw Exception(error);
         } else {
           throw Exception(
             'Server returned ${response.statusCode}: ${response.data}',
@@ -330,7 +332,7 @@ class MeetingProvider extends ChangeNotifier {
       print('MeetingProvider: Response status: ${response.statusCode}');
       print('MeetingProvider: Response data type: ${response.data.runtimeType}');
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && response.data['success'] == true) {
         List<dynamic> jsonList = [];
         if (response.data is Map && response.data.containsKey('events')) {
              jsonList = response.data["events"] as List<dynamic>;
@@ -357,6 +359,10 @@ class MeetingProvider extends ChangeNotifier {
         } else {
             print('MeetingProvider: No events found in response data structure: ${response.data}');
         }
+      } else if (response.statusCode == 401) {
+        print('MeetingProvider: Unauthorized - ${response.data['error']}');
+      } else if (response.statusCode == 500) {
+        print('MeetingProvider: Server error - ${response.data['error']}');
       }
     } catch (e, stackTrace) {
       print('MeetingProvider: Error in syncAllFromServer: $e');
@@ -409,7 +415,7 @@ class MeetingProvider extends ChangeNotifier {
 
     if (_isOnline) {
       try {
-        await meeting.updateMeeting(
+        final response = await meeting.updateMeeting(
           id,
           title,
           description,
@@ -420,10 +426,19 @@ class MeetingProvider extends ChangeNotifier {
           timezoneOffset,
         );
 
-        await _calendarManager.addOrUpdateMeeting(
-          updatedMeeting,
-          isSynced: true,
-        );
+        if (response.statusCode == 200 && response.data['success'] == true) {
+          await _calendarManager.addOrUpdateMeeting(
+            updatedMeeting,
+            isSynced: true,
+          );
+        } else if (response.statusCode == 404) {
+          throw Exception(response.data['error'] ?? 'Event not found');
+        } else {
+          await _calendarManager.addOrUpdateMeeting(
+            updatedMeeting,
+            isSynced: false,
+          );
+        }
       } catch (e) {
         await _calendarManager.addOrUpdateMeeting(
           updatedMeeting,
@@ -650,18 +665,7 @@ class MeetingProvider extends ChangeNotifier {
   }
 
   String _formatTimeOfDay(TimeOfDay time) {
-    final hour = time.hour;
-    final minute = time.minute;
-
-    if (hour == 0) {
-      return '12:${minute.toString().padLeft(2, '0')} AM';
-    } else if (hour < 12) {
-      return '$hour:${minute.toString().padLeft(2, '0')} AM';
-    } else if (hour == 12) {
-      return '12:${minute.toString().padLeft(2, '0')} PM';
-    } else {
-      return '${hour - 12}:${minute.toString().padLeft(2, '0')} PM';
-    }
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   /// Format timezone offset as "+05:30" or "-05:00"

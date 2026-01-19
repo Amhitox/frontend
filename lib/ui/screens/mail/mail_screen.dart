@@ -27,6 +27,7 @@ class _MailScreenState extends State<MailScreen>
   late Animation<Offset> _slideAnimation;
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   List<EmailMessage> _emails = [];
   String? _nextPageToken;
@@ -40,12 +41,10 @@ class _MailScreenState extends State<MailScreen>
   String _selectedFilter = 'Primary';
   final List<String> _filters = [
     'Primary',
+    'Priority',
     'Sent',
     'Drafts',
-    'Important',
     'Spam',
-    'Trash',
-    'Other',
   ];
 
   bool _hasShownSnackbar = false;
@@ -89,9 +88,9 @@ class _MailScreenState extends State<MailScreen>
     ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
     _slideController.forward();
 
-    // Load emails via provider for All filters
+    // Load emails via provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkConnectionAndLoadEmails();
+      _resolveInitialState();
     });
     
     // Listen for incoming notifications to refresh list active filter
@@ -130,57 +129,123 @@ class _MailScreenState extends State<MailScreen>
   }
 
   @override
+  void didUpdateWidget(MailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialExtra != oldWidget.initialExtra) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _resolveInitialState();
+      });
+    }
+  }
+
+  void _resolveInitialState() {
+      if (widget.initialExtra != null) {
+        if (widget.initialExtra!.containsKey('emails')) {
+          setState(() {
+            _emails = widget.initialExtra!['emails'] as List<EmailMessage>;
+            _hasInitiallyLoaded = true;
+            _isLoading = false;
+          });
+          return;
+        }
+
+        // Handle Search/Filter from AI
+        if (widget.initialExtra!.containsKey('query') || widget.initialExtra!.containsKey('filter')) {
+           final query = widget.initialExtra!['query'] as String?;
+           final filter = widget.initialExtra!['filter'] as String?;
+           
+           // Ensure we are connected first
+           final provider = context.read<MailProvider>();
+           provider.checkConnection().then((_) {
+               if (!mounted) return;
+                
+               if (filter != null) {
+                 setState(() => _selectedFilter = filter);
+               }
+
+               if (query != null) {
+                   setState(() {
+                     _isSearching = true;
+                     _searchController.text = query;
+                     // Auto-focus removed as per user request
+                   });
+                   // Only load if connected, otherwise the UI will show connect view naturally
+                   if (provider.isConnected) {
+                     provider.loadEmails(filter: _selectedFilter, query: query);
+                   }
+                   _hasInitiallyLoaded = true;
+                   setState(() => _isCheckingConnection = false);
+               } else if (filter != null) {
+                    if (provider.isConnected) {
+                       provider.loadEmails(filter: filter);
+                    }
+                   _hasInitiallyLoaded = true;
+                   setState(() => _isCheckingConnection = false);
+               }
+           });
+           return;
+        }
+      } else {
+        // If we are revisiting without params, and we were searching, reset.
+        if (_isSearching) {
+           setState(() {
+             _isSearching = false;
+             _searchController.clear();
+             // Reset to Primary if desired, or keep current filter
+           });
+           
+           // Reload logic for normal view will handle the rest
+           final provider = context.read<MailProvider>();
+           if (provider.isConnected) {
+               provider.loadEmails(filter: _selectedFilter);
+           }
+           return;
+        }
+      }
+      
+      _checkConnectionAndLoadEmails();
+  }
+
+  @override
   bool get wantKeepAlive => true;
+
+  Timer? _debounce;
 
   @override
   void dispose() {
     _slideController.dispose();
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _scrollController.dispose();
     _notificationSub?.cancel();
+    _debounce?.cancel();
     super.dispose();
   }
 
   List<EmailMessage> get _filteredEmails {
     final provider = context.read<MailProvider>();
-    final emails = provider.getEmailsForFilter(_selectedFilter);
-    final query = _searchController.text.toLowerCase();
+    return provider.getEmailsForFilter(_selectedFilter);
+  }
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
     
-    if (query.isNotEmpty) {
-      return emails.where((email) {
-        return email.sender.toLowerCase().contains(query) ||
-            email.subject.toLowerCase().contains(query) ||
-            email.snippet.toLowerCase().contains(query);
-      }).toList();
-    }
-    return emails;
-  }
+    setState(() {}); // Update string if needed for UI
 
-  String _getBackendType(String filter) {
-    switch (filter) {
-      case 'Primary':
-        return 'primary';
-      case 'Sent':
-        return 'sent';
-      case 'Drafts':
-        return 'drafts';
-      case 'Important':
-        return 'important';
-      case 'Trash':
-        return 'trash';
-      case 'Spam':
-        return 'spam';
-      case 'Other':
-        return 'other';
-      default:
-        return 'primary';
-    }
+    _debounce = Timer(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      context.read<MailProvider>().loadEmails(
+        filter: _selectedFilter,
+        query: query.isEmpty ? null : query,
+      );
+    });
   }
-
+  
   String _getLocalizedFilterName(BuildContext context, String filter) {
     final loc = AppLocalizations.of(context)!;
     switch (filter) {
       case 'Primary': return loc.primary;
+      case 'Priority': return loc.priority;
       case 'Sent': return loc.sent;
       case 'Drafts': return loc.drafts;
       case 'Important': return loc.important;
@@ -207,72 +272,7 @@ class _MailScreenState extends State<MailScreen>
     });
   }
 
-  EmailMessage _parseEmailMessage(Map<String, dynamic> data) {
-    final headers = data['headers'] as Map<String, dynamic>? ?? {};
-
-    String sender = 'Unknown Sender';
-    String senderEmail = '';
-
-    final fromHeader = headers['from'] as String? ?? '';
-    if (fromHeader.isNotEmpty) {
-      if (fromHeader.contains('<') && fromHeader.contains('>')) {
-        final parts = fromHeader.split('<');
-        sender = parts[0].trim();
-        senderEmail = parts[1].replaceAll('>', '').trim();
-      } else {
-        senderEmail = fromHeader;
-        sender = fromHeader.split('@').first;
-      }
-    }
-
-    final subject = headers['subject'] as String? ?? '(No Subject)';
-
-    final snippet = data['snippet'] as String? ?? '';
-    final body = data['body'] as String? ?? snippet;
-
-    DateTime date = DateTime.now();
-    final dateString = data['date'] as String? ?? headers['date'] as String?;
-    if (dateString != null) {
-      try {
-        date = DateTime.parse(dateString);
-      } catch (e) {
-        print('❌ Error parsing date: $dateString');
-      }
-    }
-
-    final labelIds = data['labelIds'] as List<dynamic>? ?? [];
-    final isUnread = labelIds.contains('UNREAD');
-
-    final hasAttachments = data['hasAttachments'] == true;
-
-    // Create EmailHeaders object
-    final emailHeaders = EmailHeaders(
-      subject: headers['subject'] as String?,
-      from: headers['from'] as String?,
-      to: headers['to'] as String?,
-      date: headers['date'] as String?,
-    );
-
-    return EmailMessage(
-      id: data['id'] as String? ?? '',
-      threadId: data['threadId'] as String? ?? data['id'] as String? ?? '',
-      draftId: data['draftId'] as String?,
-      sender: sender,
-      senderEmail: senderEmail,
-      subject: subject,
-      snippet: snippet,
-      body: body,
-      date: date,
-      isUnread: isUnread,
-      labelIds: labelIds.map((e) => e.toString()).toList(),
-      hasAttachments: hasAttachments,
-      attachments: null,
-      headers: emailHeaders,
-    );
-  }
-
   Future<void> _loadMoreEmails() async {
-    // Rely on provider's loadMore
     await context.read<MailProvider>().loadMore(filter: _selectedFilter);
   }
 
@@ -318,7 +318,7 @@ class _MailScreenState extends State<MailScreen>
     try {
       await context.read<MailProvider>().markAsRead(email.id);
     } catch (e) {
-      print('❌ Error marking email as read: $e');
+      debugPrint('❌ Error marking email as read: $e');
     }
   }
 
@@ -326,7 +326,7 @@ class _MailScreenState extends State<MailScreen>
     try {
       await context.read<MailProvider>().markAsUnread(email.id);
     } catch (e) {
-      print('❌ Error marking email as unread: $e');
+      debugPrint('❌ Error marking email as unread: $e');
     }
   }
 
@@ -401,39 +401,46 @@ class _MailScreenState extends State<MailScreen>
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     final isLargeScreen = screenSize.width > 900;
-    return Scaffold(
-      drawer: const SideMenu(),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).scaffoldBackgroundColor,
-              Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
-              Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
-            ],
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        context.go('/');
+      },
+      child: Scaffold(
+        drawer: const SideMenu(),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).scaffoldBackgroundColor,
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
+                Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
+              ],
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            SafeArea(
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Column(
-                  children: [
-                    _buildHeader(isTablet, isLargeScreen),
-                    if (context.watch<MailProvider>().isConnected) ...[
-                      _buildFilterTabs(isTablet, isLargeScreen),
-                      _buildQuickStats(isTablet, isLargeScreen),
+          child: Stack(
+            children: [
+              SafeArea(
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    children: [
+                      _buildHeader(isTablet, isLargeScreen),
+                      if (context.watch<MailProvider>().isConnected) ...[
+                        _buildQuickStats(isTablet, isLargeScreen),
+                        _buildFilterDropdown(isTablet, isLargeScreen),
+                      ],
+                      Expanded(child: _buildMainContent(isTablet, isLargeScreen)),
                     ],
-                    Expanded(child: _buildMainContent(isTablet, isLargeScreen)),
-                  ],
+                  ),
                 ),
               ),
-            ),
-            const DraggableMenu(),
-          ],
+              const DraggableMenu(),
+            ],
+          ),
         ),
       ),
     );
@@ -487,7 +494,8 @@ class _MailScreenState extends State<MailScreen>
               ),
               secondChild: TextField(
                 controller: _searchController,
-                onChanged: (value) => setState(() {}),
+                focusNode: _searchFocusNode,
+                onChanged: _onSearchChanged,
                 decoration: InputDecoration(
                   hintText: AppLocalizations.of(context)!.searchMail,
                   border: OutlineInputBorder(
@@ -516,8 +524,17 @@ class _MailScreenState extends State<MailScreen>
             () {
               setState(() {
                 _isSearching = !_isSearching;
-                if (!_isSearching) {
+                if (_isSearching) {
+                  // Delay focus to allow CrossFade animation to reveal the TextField
+                  Future.delayed(const Duration(milliseconds: 350), () {
+                     if (mounted && _isSearching) {
+                      _searchFocusNode.requestFocus();
+                     }
+                  });
+                } else {
+                  _searchFocusNode.unfocus();
                   _searchController.clear();
+                  _onSearchChanged(''); // Clear search results
                 }
               });
             },
@@ -590,77 +607,62 @@ class _MailScreenState extends State<MailScreen>
     );
   }
 
-  Widget _buildFilterTabs(bool isTablet, bool isLargeScreen) {
+  Widget _buildFilterDropdown(bool isTablet, bool isLargeScreen) {
     return Container(
-      height: isTablet ? 60 : 50,
       margin: EdgeInsets.symmetric(
-        horizontal:
-            isLargeScreen
-                ? 24
-                : isTablet
-                ? 20
-                : 16,
+        horizontal: isLargeScreen ? 24 : (isTablet ? 20 : 16),
+        vertical: 8,
       ),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _filters.length,
-        itemBuilder: (context, index) {
-          final filter = _filters[index];
-          final isSelected = _selectedFilter == filter;
-          return GestureDetector(
-            onTap: () {
-              if (_selectedFilter != filter) {
-                setState(() => _selectedFilter = filter);
-                context.read<MailProvider>().loadEmails(filter: filter);
-              }
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: EdgeInsets.only(right: isTablet ? 16 : 12),
-              padding: EdgeInsets.symmetric(
-                horizontal: isTablet ? 20 : 16,
-                vertical: isTablet ? 12 : 8,
-              ),
-              decoration: BoxDecoration(
-                color:
-                    isSelected
-                        ? Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.15)
-                        : Theme.of(
-                          context,
-                        ).colorScheme.surface.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color:
-                      isSelected
-                          ? Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.3)
-                          : Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.1),
-                  width: 1,
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  _getLocalizedFilterName(context, filter),
-                  style: TextStyle(
-                    color:
-                        isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.7),
-                    fontSize: isTablet ? 16 : 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-              ),
-            ),
-          );
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
+      ),
+      child: PopupMenuButton<String>(
+        offset: const Offset(0, 50),
+        constraints: BoxConstraints(
+           minWidth: MediaQuery.of(context).size.width - (isLargeScreen ? 48 : (isTablet ? 40 : 32)),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        initialValue: _selectedFilter,
+        onSelected: (String newValue) {
+            if (newValue != _selectedFilter) {
+               setState(() => _selectedFilter = newValue);
+               context.read<MailProvider>().loadEmails(filter: newValue);
+            }
         },
+        itemBuilder: (BuildContext context) {
+           return _filters.map((String value) {
+            return PopupMenuItem<String>(
+              value: value,
+              child: Text(_getLocalizedFilterName(context, value)),
+            );
+          }).toList();
+        },
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _getLocalizedFilterName(context, _selectedFilter),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: isTablet ? 16 : 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -800,9 +802,8 @@ class _MailScreenState extends State<MailScreen>
       return _buildLoadingState();
     }
 
-    // Watch provider state
     final mailProvider = context.watch<MailProvider>();
-    final emails = mailProvider.getEmailsForFilter(_selectedFilter);
+    final emails = _filteredEmails;
     final isLoading = mailProvider.isLoading;
     final error = mailProvider.error;
     final isConnected = mailProvider.isConnected;
@@ -823,7 +824,7 @@ class _MailScreenState extends State<MailScreen>
       return _buildEmptyState(isTablet, isLargeScreen);
     }
 
-    return _buildMailList(isTablet, isLargeScreen);
+    return _buildMailList(emails, isTablet, isLargeScreen);
   }
 
 
@@ -1159,49 +1160,48 @@ class _MailScreenState extends State<MailScreen>
     );
   }
 
-  Widget _buildMailList(bool isTablet, bool isLargeScreen) {
-    return Consumer<MailProvider>(
-      builder: (context, mailProvider, child) {
-        final allEmails = mailProvider.getEmailsForFilter(_selectedFilter);
-        final isLoading = mailProvider.isLoading;
-        final hasMore = mailProvider.hasMoreForFilter(_selectedFilter);
+  Widget _buildMailList(List<EmailMessage> emails, bool isTablet, bool isLargeScreen) {
+    final mailProvider = context.watch<MailProvider>();
+    final isLoading = mailProvider.isLoading;
+    final hasMore = mailProvider.hasMoreForFilter(_selectedFilter);
 
-        if (isLoading && allEmails.isEmpty) {
-          return SkeletonMailList(isTablet: isTablet);
-        }
+    if (isLoading && emails.isEmpty) {
+      return SkeletonMailList(isTablet: isTablet);
+    }
 
-        List<Widget> listItems = allEmails.map((e) => _buildDismissibleEmailItem(e, isTablet, isLargeScreen)).toList();
+    List<Widget> listItems =
+        emails
+            .map((e) => _buildDismissibleEmailItem(e, isTablet, isLargeScreen))
+            .toList();
 
-        if (allEmails.isEmpty && !isLoading) {
-           return _buildEmptyState(isTablet, isLargeScreen);
-        }
+    if (emails.isEmpty && !isLoading) {
+      return _buildEmptyState(isTablet, isLargeScreen);
+    }
 
-        if (hasMore || isLoading) {
-          listItems.add(_buildPaginationLoader());
-        }
+    if (hasMore || isLoading) {
+      listItems.add(_buildPaginationLoader());
+    }
 
-        return RefreshIndicator(
-          onRefresh: () async {
-            await mailProvider.loadEmails(
-              filter: _selectedFilter,
-              forceRefresh: true,
-            );
-          },
-          color: Theme.of(context).colorScheme.primary,
-          child: ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-            controller: _scrollController,
-            padding: EdgeInsets.symmetric(
-              horizontal: isLargeScreen ? 24 : isTablet ? 20 : 16,
-              vertical: 16,
-            ),
-            itemCount: listItems.length,
-            itemBuilder: (context, index) {
-              return listItems[index];
-            },
-          ),
+    return RefreshIndicator(
+      onRefresh: () async {
+        await mailProvider.loadEmails(
+          filter: _selectedFilter,
+          forceRefresh: true,
         );
       },
+      color: Theme.of(context).colorScheme.primary,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        controller: _scrollController,
+        padding: EdgeInsets.symmetric(
+          horizontal: isLargeScreen ? 24 : isTablet ? 20 : 16,
+          vertical: 16,
+        ),
+        itemCount: listItems.length,
+        itemBuilder: (context, index) {
+          return listItems[index];
+        },
+      ),
     );
   }
 
@@ -1415,6 +1415,47 @@ class _MailScreenState extends State<MailScreen>
             maxLines: isTablet ? 3 : 2,
             overflow: TextOverflow.ellipsis,
           ),
+          if (email.hasAttachments && email.attachments != null && email.attachments!.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(top: isTablet ? 12 : 8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: email.attachments!.map((attachment) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          attachment.fileIcon,
+                          style: TextStyle(fontSize: isTablet ? 14 : 12),
+                        ),
+                        const SizedBox(width: 6),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: isTablet ? 150 : 100),
+                          child: Text(
+                            attachment.filename,
+                            style: TextStyle(
+                              fontSize: isTablet ? 13 : 11,
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
         ],
       ),
     );

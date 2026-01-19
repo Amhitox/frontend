@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/providers/meeting_provider.dart';
+import 'package:frontend/providers/mail_provider.dart';
+import 'package:frontend/providers/notification_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:frontend/services/connectivity_service.dart';
 
@@ -231,7 +233,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final offset = DateTime.now().timeZoneOffset;
     final timezoneOffset = _formatTimezoneOffset(offset);
     
-    final response = await _aiService.processQuery(text, userId, timezoneOffset);
+    // Get Gmail Access Token if available
+    String? accessToken;
+    Map<String, dynamic>? googleTokens;
+    try {
+      final mailProvider = context.read<MailProvider>();
+      accessToken = await mailProvider.getGmailAccessToken();
+      googleTokens = await mailProvider.getGmailTokens();
+    } catch (e) {
+      print('⚠️ Failed to get Gmail token for AI: $e');
+    }
+
+    final response = await _aiService.processQuery(
+      text, 
+      userId, 
+      timezoneOffset, 
+      accessToken: accessToken,
+      tokens: googleTokens,
+    );
     if (!mounted) return;
 
     if (response != null) {
@@ -271,12 +290,64 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
            
            if (action.type == 'list_tasks') {
               message += 'Opening tasks... ';
-              if (mounted) context.pushNamed('task');
+              DateTime? targetDate;
+              if (action.targetDate != null) {
+                try {
+                  targetDate = DateTime.parse(action.targetDate!);
+                } catch (e) {
+                  // ignore
+                }
+              }
+              if (mounted) context.pushNamed('task', extra: targetDate);
            }
            
            if (action.type == 'list_events') {
               message += 'Opening calendar... ';
-              if (mounted) context.pushNamed('calendar');
+              DateTime? targetDate;
+              if (action.targetDate != null) {
+                try {
+                  targetDate = DateTime.parse(action.targetDate!);
+                } catch (e) {
+                   // ignore
+                }
+              }
+              if (mounted) context.pushNamed('calendar', extra: targetDate);
+           }
+           
+           if (action.type == 'list_emails') {
+             message += 'Opening inbox... ';
+             Map<String, dynamic> extras = {};
+             
+             if (action.data is Map<String, dynamic>) {
+                final data = action.data as Map<String, dynamic>;
+                if (data['query'] != null) {
+                   extras['query'] = data['query'];
+                }
+                
+                if (data['filter'] != null) {
+                   final filter = data['filter'].toString().toLowerCase();
+                   if (filter == 'unread') {
+                      extras['filter'] = 'Primary'; 
+                      if (extras['query'] != null) {
+                         extras['query'] = '${extras['query']} is:unread';
+                      } else {
+                         extras['query'] = 'is:unread';
+                      }
+                   } else if (filter == 'sent') {
+                        extras['filter'] = 'Sent';
+                   } else if (filter == 'important') {
+                        extras['filter'] = 'Important';
+                   } else if (filter == 'drafts') {
+                        extras['filter'] = 'Drafts';
+                   } else if (filter == 'spam') {
+                        extras['filter'] = 'Spam';
+                   } else {
+                        extras['filter'] = 'Primary';
+                   }
+                }
+             }
+             
+             if (mounted) context.pushNamed('mail', extra: extras);
            }
 
            // Quota Check
@@ -363,6 +434,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _initializeServices() async {
     try {
       final authProvider = context.read<AuthProvider>();
+      
+      // Refresh profile and check access
+      await authProvider.refreshUserProfile();
+      if (!authProvider.canAccessApp && mounted) {
+         context.goNamed('accessGate');
+         return;
+      }
+
       // Initialize AiService with AuthProvider's dio
       _aiService = AiService(dio: authProvider.dio);
 
@@ -371,6 +450,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (authProvider.user?.id != null) {
         await taskProvider.init(authProvider.user!.id!);
         await meetingProvider.init(authProvider.user!.id!);
+        context.read<NotificationProvider>().init(authProvider.user!.id!);
         firebaseSyncService = FirebaseSyncService(
           userId: authProvider.user!.id!,
         );
@@ -584,43 +664,53 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildPremiumBadge(bool isTablet, bool isLargeScreen) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isLargeScreen ? 18 : isTablet ? 16 : 14,
-        vertical: isTablet ? 10 : 8,
-      ),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF9966), Color(0xFFFF5E62)], // Sunset orange gradient
+    final user = context.watch<AuthProvider>().user;
+    final isTrial = user?.subscriptionTier == 'FREE_TRIAL';
+    final isPremium = context.read<AuthProvider>().isPremium;
+    final subscriptionTier = user?.subscriptionTier;
+    final badgeText = isTrial ? 'TRIAL' : (isPremium ? subscriptionTier! : 'UPGRADE');
+    
+    // Customize colors for Trial/Upgrade vs Premium
+    final colors = isTrial 
+        ? [Colors.blue, Colors.blueAccent] 
+        : (isPremium ? [const Color(0xFFFF9966), const Color(0xFFFF5E62)] : [Colors.grey, Colors.grey]);
+
+    return GestureDetector(
+      onTap: () {
+        context.pushNamed('subscription');
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isLargeScreen ? 18 : isTablet ? 16 : 14,
+          vertical: isTablet ? 10 : 8,
         ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF5E62).withValues(alpha: 0.3),
-            blurRadius: 8,
-            spreadRadius: 1,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: colors,
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.science_rounded,
-            color: Colors.white,
-            size: isTablet ? 16 : 14,
-          ),
-          SizedBox(width: isTablet ? 8 : 6),
-          Text(
-            'BETA',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: isLargeScreen ? 13 : isTablet ? 12 : 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.0,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: colors.last.withValues(alpha: 0.3),
+              blurRadius: 8,
+              spreadRadius: 1,
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+             Text(
+              badgeText,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: isLargeScreen ? 13 : isTablet ? 12 : 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -9,9 +9,11 @@ import 'package:frontend/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/models/email_message.dart';
 import 'package:frontend/providers/mail_provider.dart';
-import 'package:frontend/services/transcription_service.dart';
+
 import 'dart:convert';
 import 'package:frontend/utils/localization.dart';
+import 'package:frontend/services/ai_service.dart';
+import 'package:frontend/services/transcription_service.dart';
 
 class ComposeMailScreen extends StatefulWidget {
   final MailItem? editingMail;
@@ -41,10 +43,8 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   final FocusNode _bccFocus = FocusNode();
   
   // AI Refinement State
-  final TranscriptionService _transcriptionService = TranscriptionService();
   int _refinementAttempts = 0;
   bool _isRefining = false;
-  bool _isRecording = false;
   final FocusNode _bodyFocus = FocusNode();
 
   // Selected recipients lists
@@ -58,6 +58,12 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   bool _showCc = false;
   bool _showBcc = false;
   bool _isUploadingFile = false;
+  bool _quotedBodyExpanded = false;
+  bool _hasUsedAiReply = false;
+  bool _hasUsedMic = false;
+  bool _isAiGenerating = false;
+  bool _isListening = false;
+  late TranscriptionService _transcriptionService;
   final List<AttachmentItem> _attachments = [];
   final List<String> _suggestions = [
     'john.doe@company.com',
@@ -91,6 +97,8 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     } else {
       _bodyController = quill.QuillController.basic();
     }
+    
+    _transcriptionService = TranscriptionService();
 
     if (widget.editingMail != null) {
       if (widget.editingMail!.sender.isNotEmpty) {
@@ -163,8 +171,8 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     _subjectFocus.dispose();
     _ccFocus.dispose();
     _bccFocus.dispose();
-    _transcriptionService.dispose();
     _bodyFocus.dispose();
+    _transcriptionService.dispose();
     super.dispose();
   }
 
@@ -198,7 +206,14 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
         _bccRecipients.add(pendingBcc);
       }
 
-      final body = _bodyController.document.toPlainText();
+      final plainText = _bodyController.document.toPlainText();
+      // Convert newlines to <br> to ensure they are preserved in HTML emails
+      var body = plainText.replaceAll('\n', '<br>');
+      
+      // Append hidden quoted body if not expanded
+      if (widget.editingMail?.quotedBody != null && !_quotedBodyExpanded) {
+         body += '<br><br>${widget.editingMail!.quotedBody!.replaceAll('\n', '<br>')}';
+      }
       
       List<Map<String, dynamic>>? attachmentData;
       if (_attachments.isNotEmpty) {
@@ -226,8 +241,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       if (mounted) {
         if (result != null && result['error'] == null) {
           _showFeedback(AppLocalizations.of(context)!.messageSent);
-          setState(() => _allowPop = true);
-          context.pop();
+          _closeScreen();
         } else {
            final errorMsg = result?['error'] ?? AppLocalizations.of(context)!.unknownError;
           _showFeedback(errorMsg.toString(), isError: true);
@@ -271,9 +285,8 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     setState(() => _isSending = true);
 
     try {
-      final auth = context.read<AuthProvider>();
-      final mailService = MailService(dio: auth.dio);
-      await mailService.initialize();
+      final provider = context.read<MailProvider>();
+      await provider.checkConnection();
 
       final pendingCc = _ccController.text.trim();
       if (pendingCc.isNotEmpty && !_ccRecipients.contains(pendingCc)) {
@@ -284,7 +297,8 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
         _bccRecipients.add(pendingBcc);
       }
 
-      final body = _bodyController.document.toPlainText();
+      final plainText = _bodyController.document.toPlainText();
+      final body = plainText.replaceAll('\n', '<br>');
       
       List<Map<String, dynamic>>? attachmentData;
       if (_attachments.isNotEmpty) {
@@ -299,7 +313,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             .toList();
       }
 
-      final result = await mailService.createDraft(
+      final result = await provider.createDraft(
         _toRecipients.join(','),
         _subjectController.text,
         body,
@@ -312,8 +326,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
         if (result != null && (result['success'] == true || result['draftId'] != null)) {
           HapticFeedback.lightImpact();
           _showFeedback(AppLocalizations.of(context)!.draftSaved);
-          setState(() => _allowPop = true);
-          context.pop();
+          _closeScreen();
         } else {
            final errorMsg = result?['error'] ?? AppLocalizations.of(context)!.draftSaveFailed;
           _showFeedback(errorMsg.toString(), isError: true);
@@ -439,14 +452,22 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
 
   Future<void> _handleBackNavigation() async {
     if (!_hasContent) {
-      if (mounted) {
-        setState(() => _allowPop = true);
-      }
-      context.pop();
+      _closeScreen();
       return;
     }
     
     await _saveDraft();
+  }
+
+  void _closeScreen() {
+    if (mounted) {
+      setState(() => _allowPop = true);
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/mail');
+      }
+    }
   }
 
   @override
@@ -498,13 +519,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
         children: [
           _buildHeaderButton(
             Icons.arrow_back_ios_new,
-            () {
-               if (context.canPop()) {
-                context.pop();
-               } else {
-                context.go('/mail');
-               }
-            },
+            _handleBackNavigation,
             Theme.of(context),
             isTablet,
           ),
@@ -530,16 +545,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               ],
             ),
           ),
-          if (widget.isFromAi) ...[
-            _buildHeaderButton(
-              _isRecording ? Icons.stop_circle_outlined : Icons.auto_awesome,
-              _isRecording ? _stopAndRefine : _startVoiceRefinement,
-              Theme.of(context),
-              isTablet,
-              color: _isRecording ? Colors.red : Theme.of(context).colorScheme.primary,
-            ),
-            SizedBox(width: isTablet ? 12 : 8),
-          ],
+
           _buildHeaderButton(
             Icons.save_outlined,
             _saveDraft,
@@ -623,8 +629,54 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             _buildAttachmentsSection(isTablet, isLargeScreen),
           _buildCompactToolbar(isTablet, isLargeScreen),
           Expanded(child: _buildMessageField(isTablet, isLargeScreen)),
+          if (widget.editingMail?.quotedBody != null && !_quotedBodyExpanded)
+             _buildQuotedTextExpander(isTablet),
           _buildSendButton(isTablet, isLargeScreen),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuotedTextExpander(bool isTablet) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.05),
+      child: Center(
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _quotedBodyExpanded = true;
+              final quoted = widget.editingMail!.quotedBody!;
+              // Append to document
+              final docLength = _bodyController.document.length;
+              _bodyController.document.insert(docLength - 1, '\n\n$quoted');
+            });
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.originalMail,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: isTablet ? 13 : 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Icon(Icons.more_horiz, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1176,7 +1228,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       ),
       child: Row(
         children: [
-          Flexible(
+           Flexible(
             child: quill.QuillSimpleToolbar(
               controller: _bodyController,
               config: quill.QuillSimpleToolbarConfig(
@@ -1248,6 +1300,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               ),
             ),
           ),
+
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -1299,108 +1352,233 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   }
 
   Widget _buildSendButton(bool isTablet, bool isLargeScreen) {
+    // Only show Mic button if replying (editingMail is not null)
+    final bool showMic = widget.editingMail != null;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-           onPressed: _isSending ? null : _sendMail,
-           icon: _isSending 
-             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-             : const Icon(Icons.send),
-           label: Text(_isSending ? AppLocalizations.of(context)!.sending : AppLocalizations.of(context)!.send),
-        ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: (_refinementAttempts >= 2) || _isAiGenerating ? null : _performAutoRefinement,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              icon: _isRefining
+                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimaryContainer))
+                  : const Icon(Icons.autorenew_rounded, size: 18),
+              label: Text(AppLocalizations.of(context)!.refine),
+            ),
+          ),
+          if (showMic) ...[
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: (_refinementAttempts >= 2) || _isAiGenerating || _hasUsedMic ? null : _toggleListening,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isListening ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.secondaryContainer,
+                  foregroundColor: _isListening ? Colors.white : Theme.of(context).colorScheme.onSecondaryContainer,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                icon: _isAiGenerating
+                    ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _isListening ? Colors.white : Theme.of(context).colorScheme.onSecondaryContainer))
+                    : Icon(_isListening ? Icons.mic : Icons.mic_none_rounded, size: 18),
+                label: Text(AppLocalizations.of(context)!.mic),
+              ),
+            ),
+          ],
+          const SizedBox(width: 8),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _isSending ? null : _sendMail,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              icon: _isSending
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.send, size: 18),
+              label: Text(_isSending ? AppLocalizations.of(context)!.sending : AppLocalizations.of(context)!.send),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   // AI Refinement Methods
-  Future<void> _startVoiceRefinement() async {
+  Future<void> _performAutoRefinement() async {
     if (_refinementAttempts >= 2) {
       _showFeedback(AppLocalizations.of(context)!.voiceRefinementLimit, isError: true);
       return;
     }
 
-    try {
-      setState(() => _isRecording = true);
-      await _transcriptionService.startRecording(
-        onSilenceDetected: () async {
-          await _stopAndRefine();
-        },
-      );
-      _showFeedback(AppLocalizations.of(context)!.listeningTapStop);
-    } catch (e) {
-      setState(() => _isRecording = false);
-      _showFeedback('Failed to start recording: $e', isError: true);
-    }
-  }
+    final currentSubject = _subjectController.text.trim();
+    final currentBody = _bodyController.document.toPlainText().trim();
 
-  Future<void> _stopAndRefine() async {
-    if (!_isRecording) return;
-    
-    try {
-      final path = await _transcriptionService.stopRecording();
-      setState(() => _isRecording = false);
-      
-      if (path != null) {
-        _showFeedback(AppLocalizations.of(context)!.transcribing, isError: false);
-        final instruction = await _transcriptionService.transcribe(path);
-        if (instruction != null && instruction.isNotEmpty) {
-           _refineWithInstruction(instruction);
-        } else {
-           _showFeedback(AppLocalizations.of(context)!.noVoiceDetected, isError: true);
-        }
-      }
-    } catch (e) {
-      setState(() => _isRecording = false);
-      _showFeedback('${AppLocalizations.of(context)!.refinementFailed}: $e', isError: true);
+    if (currentSubject.isEmpty && currentBody.isEmpty) {
+      _showFeedback(AppLocalizations.of(context)!.contentCannotBeEmpty, isError: true);
+      return;
     }
-  }
-  
-  Future<void> _refineWithInstruction(String instruction) async {
+
     setState(() {
       _isRefining = true;
       _refinementAttempts++;
     });
 
     try {
-       // Get current content
-       final currentSubject = _subjectController.text;
-       final currentBody = _bodyController.document.toPlainText();
-       
        final provider = context.read<MailProvider>();
-       final result = await provider.refineEmail(currentSubject, currentBody, instruction);
+       final result = await provider.refineEmail(currentSubject, currentBody, "");
        
        if (result != null && !result.containsKey('error')) {
           final newSubject = result['subject'];
           final newBodyHtml = result['body']; 
           
-          // Update Subject
-          if (newSubject != null) {
-             _subjectController.text = newSubject;
-          }
+          setState(() {
+            if (newSubject != null) {
+               _subjectController.text = newSubject;
+            }
+            
+            if (newBodyHtml != null) {
+               String plainText = newBodyHtml
+                  .replaceAll(RegExp(r'<br\s*/?>'), '\n')
+                  .replaceAll(RegExp(r'</p>'), '\n\n')
+                  .replaceAll(RegExp(r'<[^>]*>'), '')
+                  .trim();
+                  
+               _bodyController.clear();
+               _bodyController.document.insert(0, plainText);
+            }
+          });
           
-          // Update Body - Strip HTML for Quill (Basic approach)
-          if (newBodyHtml != null) {
-             String plainText = newBodyHtml
-                .replaceAll(RegExp(r'<br\s*/?>'), '\n')
-                .replaceAll(RegExp(r'</p>'), '\n\n')
-                .replaceAll(RegExp(r'<[^>]*>'), '')
-                .trim();
-                
-             _bodyController.clear();
-             _bodyController.document.insert(0, plainText);
-          }
-          
-          _showFeedback('Email refined by AI');
+          _showFeedback(AppLocalizations.of(context)!.emailRefined);
        } else {
-          _showFeedback(result?['error'] ?? 'Refinement failed', isError: true);
+          _showFeedback(result?['error'] ?? AppLocalizations.of(context)!.refinementFailed, isError: true);
        }
     } catch (e) {
-       _showFeedback('Error during refinement: $e', isError: true);
+       _showFeedback('${AppLocalizations.of(context)!.refinementFailed}: $e', isError: true);
     } finally {
        if (mounted) {
          setState(() => _isRefining = false);
+       }
+    }
+  }
+
+  Future<void> _toggleListening() async {
+    if (_isAiGenerating) return;
+
+    setState(() => _isListening = !_isListening);
+    
+    if (_isListening) {
+      try {
+        await _transcriptionService.startRecording(
+          onSilenceDetected: () {
+            if (mounted) {
+               _toggleListening();
+            }
+          },
+        );
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isListening = false);
+          _showFeedback('Could not access microphone: $e', isError: true);
+        }
+      }
+    } else {
+      try {
+        final path = await _transcriptionService.stopRecording();
+        if (path != null && mounted) {
+           _processAudio(path);
+        }
+      } catch (e) {
+        print('Error stopping recording: $e');
+      }
+    }
+  }
+
+  Future<void> _processAudio(String path) async {
+    setState(() => _isAiGenerating = true);
+    try {
+      final text = await _transcriptionService.transcribe(path);
+      if (text != null && text.isNotEmpty) {
+         await _generateAiReply(text);
+      } else {
+         if (mounted) {
+            setState(() => _isAiGenerating = false);
+            _showFeedback('Could not understand audio', isError: true);
+         }
+      }
+    } catch (e) {
+      if (mounted) {
+         setState(() => _isAiGenerating = false);
+         _showFeedback('Error: $e', isError: true);
+      }
+    }
+  }
+
+  void _handleAiReply() {
+    // Deprecated dialog - kept for safe keeping or removed. 
+    // Logic moved to _toggleListening for direct mic use.
+    _toggleListening();
+  }
+
+  Future<void> _generateAiReply(String instructions) async {
+    if (instructions.isEmpty) return;
+    
+    // Check Mic limit (single use) instead of Refinement limit
+    if (_hasUsedMic) {
+       return;
+    }
+
+    setState(() => _isAiGenerating = true);
+    
+    try {
+       final provider = context.read<MailProvider>();
+       
+       // Call refineEmail instead of generateReply
+       // We pass current content + instructions.
+       // Even if body is empty, instructions should guide the generation.
+       final result = await provider.refineEmail(
+          _subjectController.text, 
+          _bodyController.document.toPlainText(), 
+          instructions
+       );
+       
+        if (result != null && !result.containsKey('error')) {
+          final newSubject = result['subject'];
+          final newBodyHtml = result['body']; 
+          
+            setState(() {
+            // Do NOT increment _refinementAttempts here. Mic usage is separate.
+            _hasUsedAiReply = true; 
+            _hasUsedMic = true; // Mark mic as used successfully
+
+            if (newSubject != null) {
+               _subjectController.text = newSubject;
+            }
+            
+            if (newBodyHtml != null) {
+               String plainText = newBodyHtml
+                  .replaceAll(RegExp(r'<br\s*/?>'), '\n')
+                  .replaceAll(RegExp(r'</p>'), '\n\n')
+                  .replaceAll(RegExp(r'<[^>]*>'), '')
+                  .trim();
+                   
+               _bodyController.clear();
+               _bodyController.document.insert(0, plainText);
+            }
+          });
+          _showFeedback(AppLocalizations.of(context)!.emailRefined);
+       } else {
+          _showFeedback(result?['error'] ?? AppLocalizations.of(context)!.refinementFailed, isError: true);
+       }
+    } catch (e) {
+       _showFeedback('Error generating reply: $e', isError: true);
+    } finally {
+       if (mounted) {
+         setState(() => _isAiGenerating = false);
        }
     }
   }
@@ -1430,6 +1608,9 @@ class MailItem {
   final MailPriority priority;
   final String? cc;
   final String? bcc;
+  final String? quotedBody;
+  final String? originalMessageId;
+
   MailItem({
     required this.sender,
     required this.subject,
@@ -1439,6 +1620,8 @@ class MailItem {
     required this.priority,
     this.cc,
     this.bcc,
+    this.quotedBody,
+    this.originalMessageId,
   });
 }
 

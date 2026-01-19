@@ -28,6 +28,12 @@ class MailProvider extends ChangeNotifier {
   
   // Track last fetch time per filter
   final Map<String, DateTime> _lastFetchTimes = {};
+
+  // Track active search queries per filter
+  final Map<String, String?> _activeQueries = {};
+  
+  // Track if the current active list is a search result
+  final Map<String, bool> _isShowingSearchResults = {};
   
   // Cache validity duration (e.g., 5 minutes)
   static const Duration _cacheValidity = Duration(minutes: 5);
@@ -61,6 +67,8 @@ class MailProvider extends ChangeNotifier {
       _activeEmails.clear();
       _cachedEmails.clear(); 
       _nextPageTokens.clear();
+      _activeQueries.clear();
+      _isShowingSearchResults.clear();
        // Note: we might want to keep separate caches per provider in the future
        // But for now, clearing active ensures we load fresh data for the new provider.
       
@@ -89,11 +97,29 @@ class MailProvider extends ChangeNotifier {
   }
 
   /// Main method to load emails for a filter
-  Future<void> loadEmails({required String filter, bool forceRefresh = false}) async {
+  Future<void> loadEmails({required String filter, bool forceRefresh = false, String? query}) async {
     final filterKey = filter.toLowerCase();
     
+    // Update active query
+    if (query != null && query.isNotEmpty) {
+      _activeQueries[filterKey] = query;
+    } else {
+      _activeQueries.remove(filterKey);
+    }
+    
+    final isSearching = _activeQueries[filterKey] != null;
+
+    // If we are NOT searching, but the current active list IS search results,
+    // we must clear the active list so it reloads from cache/disk/api.
+    if (!isSearching && (_isShowingSearchResults[filterKey] ?? false)) {
+       _activeEmails[filterKey] = [];
+       _isShowingSearchResults[filterKey] = false;
+       // We intentionally don't return here, we proceed to load logic
+    }
+
     // 1. If we have active data and not forcing refresh, check if we need to reload
-    if (!forceRefresh && (_activeEmails[filterKey]?.isNotEmpty ?? false)) {
+    // Skip this check if searching, as we always want to fetch results for the new query
+    if (!isSearching && !forceRefresh && (_activeEmails[filterKey]?.isNotEmpty ?? false)) {
       if (_isCacheValid(filterKey)) {
         debugPrint('✅ [MailProvider] Using valid memory cache for $filterKey');
         return;
@@ -106,12 +132,16 @@ class MailProvider extends ChangeNotifier {
 
     try {
       // 2. Load from disk first if memory is empty
-      if ((_activeEmails[filterKey]?.isEmpty ?? true) && !forceRefresh) {
+      // Skip disk load if searching
+      if (!isSearching && (_activeEmails[filterKey]?.isEmpty ?? true) && !forceRefresh) {
         await _loadFromDisk(filterKey);
         
         // If we found data on disk, populate active list
         if (_cachedEmails[filterKey]?.isNotEmpty ?? false) {
+           // Only use disk cache if it's NOT a search result (sanity check, disk shouldn't have search results)
            _activeEmails[filterKey] = List.from(_cachedEmails[filterKey]!);
+           _isShowingSearchResults[filterKey] = false;
+
            debugPrint('✅ [MailProvider] Loaded disk cache for $filterKey (${_cachedEmails[filterKey]!.length} items)');
            notifyListeners();
            
@@ -127,18 +157,24 @@ class MailProvider extends ChangeNotifier {
       }
 
       // 3. Fetch from API
-      debugPrint('🔄 [MailProvider] Fetching from API for $filterKey (Provider: $_currentProvider)...');
+      debugPrint('🔄 [MailProvider] Fetching from API for $filterKey (Provider: $_currentProvider) Query: $query...');
       
       Map<String, dynamic>? response;
       
       if (_currentProvider == 'gmail') {
         await _mailService.initialize();
         final apiType = _getBackendType(filter);
-        response = await _mailService.listMails(type: apiType, maxResults: 20);
+        response = await _mailService.listMails(type: apiType, maxResults: 20, query: query);
       } else {
         await _outlookService.initialize();
-        final apiType = _getBackendType(filter); // Assuming same types map works or we adjust
-        response = await _outlookService.listMails(type: apiType, maxResults: 20);
+        var apiType = _getBackendType(filter); 
+        // Fallback: Outlook might not support 'priority' type endpoint yet, map to 'important' or 'inbox' if needed.
+        if (apiType == 'priority') {
+            apiType = 'important'; 
+        }
+        
+        // Outlook service doesn't support query yet in this interface, might need update if required
+        response = await _outlookService.listMails(type: apiType, maxResults: 20, query: query);
       }
       
       debugPrint('📧 [MailProvider] Raw response: $response');
@@ -152,24 +188,54 @@ class MailProvider extends ChangeNotifier {
         var newEmails = messagesList.map((data) => _parseApiMessage(data as Map<String, dynamic>)).toList();
         
         // Applying requested primary filtering: only for Gmail (Outlook doesn't use labels)
-        if (filterKey == 'primary' && _currentProvider == 'gmail') {
+        // Skip label filtering if searching, as search results might not contain specific labels
+        if (!isSearching && filterKey == 'primary' && _currentProvider == 'gmail') {
           newEmails = newEmails.where((e) => e.labelIds.contains('INBOX')).toList();
         }
 
+        // If searching, prioritize name and email matches
+        if (isSearching && query != null && query.isNotEmpty) {
+           final qLower = query.toLowerCase();
+           newEmails.sort((a, b) {
+              // Scoring function: higher is better
+              int score(EmailMessage e) {
+                 if (e.senderEmail.toLowerCase() == qLower) return 100;
+                 if (e.senderEmail.toLowerCase().contains(qLower)) return 80;
+                 if (e.sender.toLowerCase().contains(qLower)) return 60;
+                 if (e.subject.toLowerCase().contains(qLower)) return 40;
+                 return 0; // Body/snippet match
+              }
+              
+              return score(b).compareTo(score(a)); // Descending
+           });
+        }
+
         // Update caches
-        _cachedEmails[filterKey] = newEmails;
-        _activeEmails[filterKey] = List.from(newEmails); // Reset active list to new first page
-        _nextPageTokens[filterKey] = response['nextPageToken'] as String?;
-        _lastFetchTimes[filterKey] = DateTime.now();
+        // Only update disk cache if NOT searching
+        if (!isSearching) {
+          _cachedEmails[filterKey] = newEmails;
+          _saveToDisk(filterKey);
+        }
         
-        // Save to disk
-        await _saveToDisk(filterKey);
+        _activeEmails[filterKey] = List.from(newEmails); // Reset active list to new first page
+        _isShowingSearchResults[filterKey] = isSearching;
+
+        _nextPageTokens[filterKey] = response['nextPageToken'] as String?;
+        
+        // Only update last fetch time if NOT searching, to prevent search results from validating the "cache" time for the filter
+        if (!isSearching) {
+            _lastFetchTimes[filterKey] = DateTime.now();
+        }
         
         debugPrint('✅ [MailProvider] Fetched ${_activeEmails[filterKey]!.length} items for $filterKey');
       } else {
          // Empty response or error
-         _cachedEmails[filterKey] = [];
+         // If searching, this just means no results found
+         if (!isSearching) {
+           _cachedEmails[filterKey] = [];
+         }
          _activeEmails[filterKey] = [];
+         _isShowingSearchResults[filterKey] = isSearching;
          _nextPageTokens[filterKey] = null;
       }
 
@@ -178,8 +244,10 @@ class MailProvider extends ChangeNotifier {
       _error = e.toString();
       
       // If offline or error, ensure we at least show what we have in cache
-      if (_activeEmails[filterKey] == null && _cachedEmails[filterKey] != null) {
+      // Only fallback to cache if NOT searching
+      if (!isSearching && _activeEmails[filterKey] == null && _cachedEmails[filterKey] != null) {
         _activeEmails[filterKey] = List.from(_cachedEmails[filterKey]!);
+        _isShowingSearchResults[filterKey] = false;
       }
       
     } finally {
@@ -191,6 +259,7 @@ class MailProvider extends ChangeNotifier {
   /// Load more emails (Pagination) - DOES NOT persist to disk
   Future<void> loadMore({required String filter}) async {
     final filterKey = filter.toLowerCase();
+    final query = _activeQueries[filterKey];
     
     if (_isLoading || _nextPageTokens[filterKey] == null) return;
     
@@ -208,7 +277,8 @@ class MailProvider extends ChangeNotifier {
          response = await _mailService.listMails(
           type: apiType, 
           maxResults: 20, 
-          pageToken: pageToken
+          pageToken: pageToken,
+          query: query
         );
       } else {
          response = await _outlookService.listMails(
@@ -352,6 +422,7 @@ class MailProvider extends ChangeNotifier {
   String _getBackendType(String filter) {
     switch (filter.toLowerCase()) {
       case 'primary': return 'primary';
+      case 'priority': return 'priority';
       case 'sent': return 'sent';
       case 'drafts': return 'drafts';
       case 'important': return 'important';
@@ -399,17 +470,25 @@ class MailProvider extends ChangeNotifier {
     final isUnread = data['isUnread'] as bool? ?? labelIds.contains('UNREAD');
     final isImportant = data['isImportant'] as bool? ?? labelIds.contains('IMPORTANT');
     final isSpam = data['isSpam'] as bool? ?? labelIds.contains('SPAM');
-    final hasAttachments = data['hasAttachments'] == true;
     
     final summary = data['summary'] as String?;
 
-    // Create EmailHeaders object
     final emailHeaders = EmailHeaders(
       subject: headers['subject'] as String?,
       from: headers['from'] as String?,
       to: headers['to'] as String?,
       date: headers['date'] as String?,
     );
+
+    List<EmailAttachment>? attachments;
+    final attachmentsData = data['attachments'] as List<dynamic>?;
+    if (attachmentsData != null && attachmentsData.isNotEmpty) {
+      attachments = attachmentsData
+          .map((a) => EmailAttachment.fromJson(a as Map<String, dynamic>))
+          .toList();
+    }
+
+    final hasAttachments = attachments != null && attachments.isNotEmpty;
 
     return EmailMessage(
       id: data['id'] as String? ?? '',
@@ -426,7 +505,7 @@ class MailProvider extends ChangeNotifier {
       isSpam: isSpam,
       labelIds: labelIds.map((e) => e.toString()).toList(),
       hasAttachments: hasAttachments,
-      attachments: null,
+      attachments: attachments,
       headers: emailHeaders,
       summary: summary,
     );
@@ -453,11 +532,7 @@ class MailProvider extends ChangeNotifier {
     if (_currentProvider == 'gmail') {
       success = await _mailService.markAsUnread(messageId);
     } else {
-       // Outlook unread might not be supported yet, fallback or implement if added
-       // For now assuming typical support if added to service, else just return false or fake it
-       // OutlookService I wrote didn't have markAsUnread. 
-       // I'll skip calling it for outlook or just assume false.
-       success = false; 
+       success = await _outlookService.markAsUnread(messageId);
     }
 
     if (success) {
@@ -501,9 +576,25 @@ class MailProvider extends ChangeNotifier {
     }
 
     if (result != null && result['summary'] != null) {
-      final summary = result['summary'] as String;
-      _updateMessageLocally(messageId, (msg) => msg.copyWith(summary: summary));
-      return summary;
+      String summaryText = '';
+      if (result['summary'] is Map) {
+        final summaryMap = result['summary'] as Map;
+        String? extracted = summaryMap['content']?.toString() ?? 
+                           summaryMap['text']?.toString() ?? 
+                           summaryMap['summary']?.toString();
+                           
+        if (extracted == null && summaryMap.values.isNotEmpty) {
+          extracted = summaryMap.values.first.toString();
+        }
+        summaryText = extracted ?? '';
+      } else {
+        summaryText = result['summary'].toString();
+      }
+
+      if (summaryText.isNotEmpty) {
+        _updateMessageLocally(messageId, (msg) => msg.copyWith(summary: summaryText));
+        return summaryText;
+      }
     }
     return null;
   }
@@ -515,6 +606,21 @@ class MailProvider extends ChangeNotifier {
     } else {
       await _outlookService.initialize();
       return await _outlookService.getEmailDetails(id);
+    }
+  }
+
+  Future<Map<String, dynamic>?> createDraft(
+    String to,
+    String subject,
+    String body,
+    List<Map<String, dynamic>>? attachments, {
+    String? cc,
+    String? bcc,
+  }) async {
+    if (_currentProvider == 'gmail') {
+      return await _mailService.createDraft(to, subject, body, attachments, cc: cc, bcc: bcc);
+    } else {
+      return await _outlookService.createDraft(to, subject, body, attachments, cc: cc, bcc: bcc);
     }
   }
 
@@ -563,8 +669,32 @@ class MailProvider extends ChangeNotifier {
     String currentBody,
     String instruction,
   ) async {
-    // Only Gmail supports this for now, or both if generic.
-    // Assuming backend handles it generically or via Gmail service logic.
-    return await _mailService.refineEmail(currentSubject, currentBody, instruction);
+    if (_currentProvider == 'gmail') {
+      return await _mailService.refineEmail(currentSubject, currentBody, instruction);
+    } else {
+      return await _outlookService.refineEmail(currentSubject, currentBody, instruction);
+    }
+  }
+
+  Future<void> downloadAttachment(
+    String messageId,
+    String attachmentId,
+    String filename,
+  ) async {
+    if (_currentProvider == 'gmail') {
+      await _mailService.downloadAttachment(messageId, attachmentId, filename);
+    } else {
+      await _outlookService.downloadAttachment(messageId, attachmentId, filename);
+    }
+  }
+
+  Future<String?> getGmailAccessToken() async {
+    await _mailService.initialize();
+    return _mailService.accessToken;
+  }
+
+  Future<Map<String, dynamic>?> getGmailTokens() async {
+    await _mailService.initialize();
+    return await _mailService.checkTokens();
   }
 }

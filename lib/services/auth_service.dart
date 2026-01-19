@@ -44,18 +44,22 @@ class AuthService {
     String lastName, {
     String phone = "+212622107249",
     String birthday = "2003-01-01",
+    Map<String, String>? fcmData,
   }) async {
     try {
+      final data = {
+        'email': email,
+        'password': password,
+        'firstName': firstName,
+        'lastName': lastName,
+        'phone': phone,
+        'birthday': birthday,
+        if (fcmData != null) ...fcmData,
+      };
+
       final response = await _dio.post(
         '/api/auth/register',
-        data: {
-          'email': email,
-          'password': password,
-          'firstName': firstName,
-          'lastName': lastName,
-          'phone': phone,
-          'birthday': birthday,
-        },
+        data: data,
       );
       return response;
     } on DioException catch (e) {
@@ -129,6 +133,15 @@ class AuthService {
   Future<dynamic> getMe() async {
     try {
       final response = await _dio.get('/api/auth/me');
+      return response;
+    } on DioException catch (e) {
+      return e.response;
+    }
+  }
+
+  Future<dynamic> getUserProfile() async {
+    try {
+      final response = await _dio.get('/api/users/profile');
       return response;
     } on DioException catch (e) {
       return e.response;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -32,6 +33,42 @@ class _SignupScreenState extends State<SignupScreen> {
     {'name': 'Japan', 'code': '+81', 'flag': '🇯🇵'},
     {'name': 'Australia', 'code': '+61', 'flag': '🇦🇺'},
   ];
+
+  final FocusNode _passwordFocusNode = FocusNode();
+  bool _isPasswordFocused = false;
+  
+  // Password validation state
+  bool _hasMinLength = false;
+  bool _hasUppercase = false;
+  bool _hasLowercase = false;
+  bool _hasNumber = false;
+  bool _hasSpecialChar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordFocusNode.addListener(() {
+      setState(() {
+        _isPasswordFocused = _passwordFocusNode.hasFocus;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _passwordFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _checkPassword(String value) {
+    setState(() {
+      _hasMinLength = value.length >= 9;
+      _hasUppercase = value.contains(RegExp(r'[A-Z]'));
+      _hasLowercase = value.contains(RegExp(r'[a-z]'));
+      _hasNumber = value.contains(RegExp(r'[0-9]'));
+      _hasSpecialChar = value.contains(RegExp(r'[!@#\$&*~^%_+=(){}\[\]:;<>?\/|,-]'));
+    });
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -175,7 +212,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 isDark,
                               ),
                             ),
-                            SizedBox(height: isSmallScreen ? 30 : 40),
+                            SizedBox(height: isSmallScreen ? 60 : 80),
                           ],
                         ),
                       ),
@@ -367,6 +404,8 @@ class _SignupScreenState extends State<SignupScreen> {
             hintText: AppLocalizations.of(context)!.enterPassword,
             isPassword: true,
             obscureText: _obscurePassword,
+            focusNode: _passwordFocusNode,
+            onChanged: (value) => _checkPassword(value ?? ''),
             onToggleVisibility:
                 () => setState(() => _obscurePassword = !_obscurePassword),
             isDark: isDark,
@@ -388,6 +427,10 @@ class _SignupScreenState extends State<SignupScreen> {
               },
             ],
           ),
+          if (_isPasswordFocused) ...[
+            const SizedBox(height: 8),
+            _buildPasswordRequirements(isDark, fontSize),
+          ],
           const SizedBox(height: 16),
           _buildTextField(
             name: 'confirm_password',
@@ -464,10 +507,14 @@ class _SignupScreenState extends State<SignupScreen> {
     bool isPassword = false,
     bool obscureText = false,
     VoidCallback? onToggleVisibility,
+    FocusNode? focusNode,
+    void Function(String?)? onChanged,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return FormBuilderTextField(
       name: name,
+      focusNode: focusNode,
+      onChanged: onChanged,
       keyboardType: keyboardType,
       obscureText: obscureText,
       textInputAction: TextInputAction.next,
@@ -798,6 +845,63 @@ class _SignupScreenState extends State<SignupScreen> {
       ],
     );
   }
+
+  Widget _buildPasswordRequirements(bool isDark, double fontSize) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF141D2E) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context)!.passwordRequirements,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: fontSize - 1,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildRequirementItem(context, "9+ Characters", _hasMinLength, fontSize),
+          _buildRequirementItem(context, "Uppercase Letter", _hasUppercase, fontSize),
+          _buildRequirementItem(context, "Lowercase Letter", _hasLowercase, fontSize),
+          _buildRequirementItem(context, "Number", _hasNumber, fontSize),
+          _buildRequirementItem(context, "Special Character", _hasSpecialChar, fontSize),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRequirementItem(BuildContext context, String text, bool isMet, double fontSize) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Icon(
+            isMet ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+            size: 16,
+            color: isMet ? Colors.green : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text, // Using hardcoded text for now as specific keys might be missing, normally use AppLocalizations
+            style: TextStyle(
+              fontSize: fontSize - 2,
+              color: isMet 
+                  ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9)
+                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   Widget _buildSocialButtons(
     BuildContext context,
     bool isSmallScreen,
@@ -858,6 +962,7 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
         const SizedBox(height: 12),
+        if (!Platform.isAndroid)
         SizedBox(
           width: double.infinity,
           height: buttonHeight,

@@ -40,6 +40,7 @@ import '../ui/screens/settings/terms_screen.dart';
 import '../ui/screens/settings/privacy_policy_screen.dart';
 import '../ui/screens/settings/general_conditions_screen.dart';
 import '../ui/screens/settings/support_screen.dart';
+import '../ui/screens/welcome/access_gate_screen.dart';
 
 class AppRoutes {
   static final AppRoutes _instance = AppRoutes._internal();
@@ -68,6 +69,7 @@ class AppRoutes {
   static const String terms = '/terms';
   static const String privacy = '/privacy';
   static const String generalConditions = '/generalConditions';
+  static const String accessGate = '/accessGate';
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   static late SharedPreferences pref;
   bool firstOpen = true;
@@ -99,6 +101,11 @@ class AppRoutes {
           path: onboarding,
           name: 'onboarding',
           builder: (context, state) => const OnboardingScreen(),
+        ),
+        GoRoute(
+          path: accessGate,
+          name: 'accessGate',
+          builder: (context, state) => const AccessGateScreen(),
         ),
         GoRoute(
           path: login,

@@ -435,6 +435,10 @@ class AppLocalizations {
   String get imagesAdded => _localizedValues[locale.languageCode]!['imagesAdded']!;
   String get errorPickingFiles => _localizedValues[locale.languageCode]!['errorPickingFiles']!;
   String get errorPickingImages => _localizedValues[locale.languageCode]!['errorPickingImages']!;
+  String get contentCannotBeEmpty => _localizedValues[locale.languageCode]!['contentCannotBeEmpty']!;
+  String get refineVoiceAction => _localizedValues[locale.languageCode]!['refineVoiceAction']!;
+  String get refinementLimitReached => _localizedValues[locale.languageCode]!['refinementLimitReached']!;
+  String get autoRefine => _localizedValues[locale.languageCode]!['autoRefine']!;
 
   String get errorSendingEmail => _localizedValues[locale.languageCode]!['errorSendingEmail']!;
   String get errorSavingDraft => _localizedValues[locale.languageCode]!['errorSavingDraft']!;
@@ -445,6 +449,10 @@ class AppLocalizations {
   String get wrote => _localizedValues[locale.languageCode]!['wrote']!;
   String get forwardedMessage => _localizedValues[locale.languageCode]!['forwardedMessage']!;
   String get from => _localizedValues[locale.languageCode]!['from']!;
+  String get hideDetails => _localizedValues[locale.languageCode]!['hideDetails']!;
+  String get refine => _localizedValues[locale.languageCode]!['refine']!;
+  String get mic => _localizedValues[locale.languageCode]!['mic']!;
+  String get originalMail => _localizedValues[locale.languageCode]!['originalMail']!;
   
   // Calendar
   String get meetingAddedSuccess => _localizedValues[locale.languageCode]!['meetingAddedSuccess']!;
@@ -468,6 +476,7 @@ class AppLocalizations {
   String get addSchedule => _localizedValues[locale.languageCode]!['addSchedule']!;
   String get updateMeeting => _localizedValues[locale.languageCode]!['updateMeeting']!;
   String get pleaseEnterTitle => _localizedValues[locale.languageCode]!['pleaseEnterTitle']!;
+  String get endTimeMustBeAfterStart => _localizedValues[locale.languageCode]!['endTimeMustBeAfterStart']!;
   
   // Priority Emails
   String get priorityEmails => _localizedValues[locale.languageCode]!['priorityEmails']!;
@@ -482,6 +491,8 @@ class AppLocalizations {
   String get noVipEmails => _localizedValues[locale.languageCode]!['noVipEmails']!;
   String get quota => _localizedValues[locale.languageCode]!['quota']!;
   String get used => _localizedValues[locale.languageCode]!['used']!;
+  String get manageVipSenders => _localizedValues[locale.languageCode]!['manageVipSenders']!;
+  String get manage => _localizedValues[locale.languageCode]!['manage']!;
   
   // Security
   String get secure => _localizedValues[locale.languageCode]!['secure']!;
@@ -543,6 +554,7 @@ class AppLocalizations {
   String get upgradeExperience => _localizedValues[locale.languageCode]!['upgradeExperience']!;
   String get monthly => _localizedValues[locale.languageCode]!['monthly']!;
   String get annual => _localizedValues[locale.languageCode]!['annual']!;
+  String get renewsOn => _localizedValues[locale.languageCode]!['renewsOn']!;
   String get save20 => _localizedValues[locale.languageCode]!['save20']!;
   String get essential => _localizedValues[locale.languageCode]!['essential']!;
   String get premium => _localizedValues[locale.languageCode]!['premium']!;
@@ -592,6 +604,7 @@ class AppLocalizations {
   String get lastName => _localizedValues[locale.languageCode]!['lastName']!;
   String get changePassword => _localizedValues[locale.languageCode]!['changePassword']!;
   String get enter => _localizedValues[locale.languageCode]!['enter']!;
+  String get jobTitle => _localizedValues[locale.languageCode]!['jobTitle']!;
   String get takePhoto => _localizedValues[locale.languageCode]!['takePhoto']!;
   String get chooseFromGallery => _localizedValues[locale.languageCode]!['chooseFromGallery']!;
   String get removePhoto => _localizedValues[locale.languageCode]!['removePhoto']!;
@@ -606,17 +619,105 @@ class AppLocalizations {
   String get workEmailUpdatedGmailDisconnected => _localizedValues[locale.languageCode]!['workEmailUpdatedGmailDisconnected']!;
   String get profileSaved => _localizedValues[locale.languageCode]!['profileSaved']!;
   String get errorSavingProfile => _localizedValues[locale.languageCode]!['errorSavingProfile']!;
+  String get voiceCommandsPerDay => _localizedValues[locale.languageCode]!['voiceCommandsPerDay']!;
+  String get tasksLimit => _localizedValues[locale.languageCode]!['tasksLimit']!;
+  String get meetingsLimit => _localizedValues[locale.languageCode]!['meetingsLimit']!;
+  String get emailsStoTLimit => _localizedValues[locale.languageCode]!['emailsStoTLimit']!;
+  String get createEmailsVoice => _localizedValues[locale.languageCode]!['createEmailsVoice']!;
+  String get smartSummariesEmail => _localizedValues[locale.languageCode]!['smartSummariesEmail']!;
+  String get priorityEmailHeader => _localizedValues[locale.languageCode]!['priorityEmailHeader']!;
+  String get priorityEmailStoT => _localizedValues[locale.languageCode]!['priorityEmailStoT']!;
+  String get realTimeNotifications => _localizedValues[locale.languageCode]!['realTimeNotifications']!;
+  String get aiPoweredSummaries => _localizedValues[locale.languageCode]!['aiPoweredSummaries']!;
+  String get voiceEmailReader => _localizedValues[locale.languageCode]!['voiceEmailReader']!;
+  String get aiVoiceReply => _localizedValues[locale.languageCode]!['aiVoiceReply']!;
+  String get commandPerDay => _localizedValues[locale.languageCode]!['commandPerDay']!;
+  String get priorityEmailManaged => _localizedValues[locale.languageCode]!['priorityEmailManaged']!;
   String get failedToUpdateProfile => _localizedValues[locale.languageCode]!['failedToUpdateProfile']!;
+
   String get currentPassword => _localizedValues[locale.languageCode]!['currentPassword']!;
   String get newPassword => _localizedValues[locale.languageCode]!['newPassword']!;
   String get passwordUpdated => _localizedValues[locale.languageCode]!['passwordUpdated']!;
   String get update => _localizedValues[locale.languageCode]!['update']!;
+  String get current => _localizedValues[locale.languageCode]!['current']!;
   String get signOutConfirmation => _localizedValues[locale.languageCode]!['signOutConfirmation']!;
+  String get confirmCompleteTask => _localizedValues[locale.languageCode]!['confirmCompleteTask']!;
+  String get completedTasksCannotBeEdited => _localizedValues[locale.languageCode]!['completedTasksCannotBeEdited']!;
+  String get dateAndTime => _localizedValues[locale.languageCode]!['dateAndTime']!;
+  String get editName => _localizedValues[locale.languageCode]!['editName']!;
+  String get enterName => _localizedValues[locale.languageCode]!['enterName']!;
+  String get editWorkEmailTitle => _localizedValues[locale.languageCode]!['editWorkEmailTitle']!;
+  String get enterWorkEmail => _localizedValues[locale.languageCode]!['enterWorkEmail']!;
+  String get workEmailUpdatedReconnect => _localizedValues[locale.languageCode]!['workEmailUpdatedReconnect']!;
+  
+  // App Updates & Rating
+  String get ok => _localizedValues[locale.languageCode]!['ok']!;
+  String get appUpdates => _localizedValues[locale.languageCode]!['appUpdates']!;
+  String get appUpdatesLatest => _localizedValues[locale.languageCode]!['appUpdatesLatest']!;
+  String get rateOurApp => _localizedValues[locale.languageCode]!['rateOurApp']!;
+  String get rateOurAppFeedback => _localizedValues[locale.languageCode]!['rateOurAppFeedback']!;
+  String get maybeLater => _localizedValues[locale.languageCode]!['maybeLater']!;
+  
+  // Dashboard missing getters
+  String get micAccessError => _localizedValues[locale.languageCode]!['micAccessError']!;
+  String get audioNotUnderstood => _localizedValues[locale.languageCode]!['audioNotUnderstood']!;
+  String get taskDeleted => _localizedValues[locale.languageCode]!['taskDeleted']!;
+  String get taskProcessed => _localizedValues[locale.languageCode]!['taskProcessed']!;
+  String get meetingDeleted => _localizedValues[locale.languageCode]!['meetingDeleted']!;
+  String get emailDrafted => _localizedValues[locale.languageCode]!['emailDrafted']!;
+  String get openingTasks => _localizedValues[locale.languageCode]!['openingTasks']!;
+  String get openingCalendar => _localizedValues[locale.languageCode]!['openingCalendar']!;
+  String get quotaExceeded => _localizedValues[locale.languageCode]!['quotaExceeded']!;
+  String get aiRequestFailed => _localizedValues[locale.languageCode]!['aiRequestFailed']!;
+  String get beta => _localizedValues[locale.languageCode]!['beta']!;
+  String get summarizeWithAI => _localizedValues[locale.languageCode]!['summarizeWithAI']!;
+  String get aiSummary => _localizedValues[locale.languageCode]!['aiSummary']!;
+  String get generatingSummary => _localizedValues[locale.languageCode]!['generatingSummary']!;
+  
+  // Access Gate
+  String get accountInactive => _localizedValues[locale.languageCode]!['accountInactive']!;
+  String get freeTrialEnded => _localizedValues[locale.languageCode]!['freeTrialEnded']!;
+  String get inactiveAccountDesc => _localizedValues[locale.languageCode]!['inactiveAccountDesc']!;
+  String get trialEndedDesc => _localizedValues[locale.languageCode]!['trialEndedDesc']!;
+  String get activateSubscribe => _localizedValues[locale.languageCode]!['activateSubscribe']!;
+  String get subscribeContinue => _localizedValues[locale.languageCode]!['subscribeContinue']!;
+  String get deleteAccountLeave => _localizedValues[locale.languageCode]!['deleteAccountLeave']!;
+  String get deleteAccountTitle => _localizedValues[locale.languageCode]!['deleteAccountTitle']!;
+  String get deleteAccountDesc => _localizedValues[locale.languageCode]!['deleteAccountDesc']!;
+  String get deleteAndLogout => _localizedValues[locale.languageCode]!['deleteAndLogout']!;
+
+  // Subscription Screen
+  String get sixMonths => _localizedValues[locale.languageCode]!['sixMonths']!;
+  String get proBusinessIntl => _localizedValues[locale.languageCode]!['proBusinessIntl']!;
+  String get premiumIntl => _localizedValues[locale.languageCode]!['premiumIntl']!;
+  String get popular => _localizedValues[locale.languageCode]!['popular']!;
+  String get perYear => _localizedValues[locale.languageCode]!['perYear']!;
+  String get per6Months => _localizedValues[locale.languageCode]!['per6Months']!;
+  String get usdYear => _localizedValues[locale.languageCode]!['usdYear']!;
+  String get usdSixMonths => _localizedValues[locale.languageCode]!['usdSixMonths']!;
+  String get activePlan => _localizedValues[locale.languageCode]!['activePlan']!;
+  String get startPlan => _localizedValues[locale.languageCode]!['startPlan']!;
+  String get currentPlanAction => _localizedValues[locale.languageCode]!['currentPlanAction']!;
+  String get yourCurrentPlan => _localizedValues[locale.languageCode]!['yourCurrentPlan']!;
+  String get cancelSubscription => _localizedValues[locale.languageCode]!['cancelSubscription']!;
+  String get cancelsAtPeriodEnd => _localizedValues[locale.languageCode]!['cancelsAtPeriodEnd']!;
+  String get keepSubscription => _localizedValues[locale.languageCode]!['keepSubscription']!;
+  String get yesCancel => _localizedValues[locale.languageCode]!['yesCancel']!;
+  String get confirmCancelTitle => _localizedValues[locale.languageCode]!['confirmCancelTitle']!;
+  String get confirmCancelDesc => _localizedValues[locale.languageCode]!['confirmCancelDesc']!;
+  String get subscriptionWillBeCanceled => _localizedValues[locale.languageCode]!['subscriptionWillBeCanceled']!;
+  String get failedToCancelSubscription => _localizedValues[locale.languageCode]!['failedToCancelSubscription']!;
 
 
+
+
+
+
+  // Dashboard / Feedback removed - duplicates
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
+      'current': 'Current',
       'retry': 'Retry',
       'emails': 'Emails',
       'errorLoadingAnalytics': 'Error loading analytics',
@@ -722,7 +823,13 @@ class AppLocalizations {
       'theme': 'Theme',
       'light': 'Light',
       'dark': 'Dark',
+      'autoRefine': 'Auto Refinement',
+      'hideDetails': 'Hide Details',
+      'refine': 'Refine',
+      'mic': 'Mic',
+      'originalMail': 'Original Mail',
       'system': 'System',
+      'current': 'Current',
       'english': 'English',
       'french': 'French',
       'voice': 'Voice',
@@ -757,6 +864,9 @@ class AppLocalizations {
       'october': 'October',
       'november': 'November',
       'december': 'December',
+      'refineVoiceAction': 'Voice Refine/Reply',
+      'refinementLimitReached': 'Refinement limit reached',
+      'autoRefine': 'Auto-Refine',
       'readyToAssistYou': 'Ready to assist you',
       'emailManagement': 'Email Management',
       'registrationEmail': 'Registration Email',
@@ -804,6 +914,15 @@ class AppLocalizations {
       'other': 'Other',
       'updateTask': 'Update Task',
       'createTask': 'Create Task',
+      
+      // App Updates & Rating
+      'ok': 'OK',
+      'appUpdates': 'App Updates',
+      'appUpdatesLatest': 'You are using the latest version of the app. No updates available.',
+      'rateOurApp': 'Rate Our App',
+      'rateOurAppFeedback': 'We would love to hear your feedback! How would you rate our app?',
+      'maybeLater': 'Maybe Later',
+
       'legal_privacy_policy': 'This Privacy Policy describes Our policies and procedures on the collection, use and disclosure of Your information when You use the Service...',
       'legal_terms_of_service': 'Please read these terms and conditions carefully before using Our Service...',
       'howCanWeHelp': 'How can we help?',
@@ -861,6 +980,7 @@ class AppLocalizations {
       'passwordLengthError': 'Password must be at least 9 characters',
       'passwordRequired': 'Password is required',
       'enterPassword': 'Enter your password',
+      'passwordRequirements': 'Min 9 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char',
       'getStartedNow': 'Get Started now',
       'loginSubtitle': 'Create an account or log in to explore about our app',
       'and': 'and',
@@ -985,6 +1105,7 @@ class AppLocalizations {
       'errorPickingImages': 'Error picking images',
       'errorSendingEmail': 'Error sending email',
       'errorSavingDraft': 'Error saving draft',
+      'contentCannotBeEmpty': 'Content cannot be empty',
 
       'errorSummarizing': 'Error summarizing',
       'confirmDeleteEmailPermanent': 'Are you sure you want to delete this email? This action cannot be undone.',
@@ -993,6 +1114,7 @@ class AppLocalizations {
       'wrote': 'wrote',
       'forwardedMessage': 'Forwarded message',
       'from': 'From',
+      'hideDetails': 'Hide details',
       'date': 'Date',
       'reply': 'Reply',
       'replyAll': 'Reply All',
@@ -1024,6 +1146,7 @@ class AppLocalizations {
       'addSchedule': 'Add Schedule',
       'updateMeeting': 'Update Meeting',
       'pleaseEnterTitle': 'Please enter a title',
+      'endTimeMustBeAfterStart': 'End time must be after start time',
       
       // Priority Emails
       'priorityEmails': 'Priority Emails',
@@ -1040,6 +1163,8 @@ class AppLocalizations {
       'removedFromVIP': 'Removed',
       'quota': 'Quota',
       'used': 'used',
+      'manageVipSenders': 'Manage VIP senders',
+      'manage': 'Manage',
       
       // Security
       'security': 'Security',
@@ -1101,6 +1226,44 @@ class AppLocalizations {
       'chooseYourPlan': 'Choose Your Plan',
       'upgradeExperience': 'Upgrade your voice productivity experience',
       'monthly': 'Monthly',
+      
+      // Dashboard / Feedback
+      'micAccessError': 'Could not access microphone: ',
+      'audioNotUnderstood': 'Could not understand audio',
+      'taskDeleted': 'Task deleted. ',
+      'taskProcessed': 'Task processed. ',
+      'meetingDeleted': 'Meeting deleted. ',
+      'meetingScheduled': 'Meeting scheduled. ',
+      'emailDrafted': 'Email drafted. ',
+      'openingTasks': 'Opening tasks... ',
+      'openingCalendar': 'Opening calendar... ',
+      'quotaExceeded': 'Quota exceeded',
+      'aiRequestFailed': 'AI request failed',
+      'readyToAssistYou': 'Ready to assist you',
+      'goodMorning': 'Good morning',
+      'goodAfternoon': 'Good afternoon',
+      'goodEvening': 'Good evening',
+      'savedTo': 'Saved to',
+      'failToGenerate': 'Failed to generate report',
+      'shareAnalyticsMessage': 'Check out my productivity analytics!',
+      'failedToGenerateShare': 'Failed to generate report for sharing',
+      'meetingAddedSuccess': 'Meeting added successfully',
+      'meetingAddFailed': 'Failed to add meeting',
+      'meetingUpdatedSuccess': 'Meeting updated successfully',
+      'meetingUpdateFailed': 'Failed to update meeting',
+      'meetingDeletedSuccess': 'Meeting deleted successfully',
+      'meetingDeleteFailed': 'Failed to delete meeting',
+      'deleteMeeting': 'Delete Meeting',
+      'confirmDeleteMeeting': 'Are you sure you want to delete this meeting?',
+      'startTime': 'Start Time',
+      'endTime': 'End Time',
+      'attendees': 'Attendees',
+      'online': 'Online',
+      'onsite': 'Onsite',
+      'beta': 'BETA',
+      'summarizeWithAI': 'Summarize with AI',
+      'aiSummary': 'AI Summary',
+      'generatingSummary': 'Generating summary...',
       'annual': 'Annual',
       'save20': 'Save 20%',
       'essential': 'Essential',
@@ -1137,6 +1300,21 @@ class AppLocalizations {
       'prioritySupport': 'Priority customer support',
       'customVoiceTraining': 'Custom voice command training',
       'productivityIntegration': 'Integration with productivity tools',
+      'voiceCommandsPerDay': 'Voice Commands (per day)',
+      'tasksLimit': 'tasks',
+      'meetingsLimit': 'meetings',
+      'emailsStoTLimit': 'emails S-to-T',
+      'createEmailsVoice': 'Create emails using voice commands',
+      'smartSummariesEmail': 'Smart summaries inside each email texte',
+      'priorityEmailHeader': 'Priority Email',
+      'priorityEmailStoT': 'priority email addresses S-to-T et T-to-S',
+      'realTimeNotifications': 'Real-time notifications',
+      'aiPoweredSummaries': 'AI-powered email summaries',
+      'voiceEmailReader': 'Voice email reader (listen instead of read)',
+      'aiVoiceReply': 'AI voice reply suggestions by AIXY',
+      'commandPerDay': 'Commande / days',
+      'priorityEmailManaged': 'priority email addresses managed by AIXY S-to-T et T-to-S',
+
       
       // Current Plan
       'currentPlan': 'Current Plan',
@@ -1151,6 +1329,7 @@ class AppLocalizations {
       'firstName': 'First Name',
       'lastName': 'Last Name',
       'changePassword': 'Change Password',
+      'jobTitle': 'Job Title',
       'enter': 'Enter',
       'takePhoto': 'Take Photo',
       'chooseFromGallery': 'Choose from Gallery',
@@ -1171,10 +1350,80 @@ class AppLocalizations {
       'newPassword': 'New Password',
       'passwordUpdated': 'Password updated successfully!',
       'update': 'Update',
+      'shareAnalyticsMessage': 'Here is my analytics report from Aixy.',
+      'failedToGenerateShare': 'Failed to generate report for sharing',
+      'confirmCompleteTask': 'Are you sure you want to mark this task as completed?',
+      'completedTasksCannotBeEdited': 'Completed tasks cannot be edited',
+      'dateAndTime': 'Date & Time',
+      'editName': 'Edit Name',
+      'enterName': 'Enter your name',
+      'editWorkEmailTitle': 'Edit Work Email',
+      'enterWorkEmail': 'Enter your work email',
+      'workEmailUpdatedReconnect': 'Work email updated. Please reconnect your email account.',
+      'version': 'Version',
       // MARKER
+
+      'appPreferences': 'App Preferences',
+      'supportFeedback': 'Support & Feedback',
+      'rateUs': 'Rate Us',
+      'loveTheApp': 'Love the app? Leave us a review',
+      'shareApp': 'Share App',
+      'tellYourFriends': 'Tell your friends about this app',
+      'helpSupport': 'Help & Support',
+      'getHelp': 'Get help and support',
+      'legalDocuments': 'Legal Documents',
+      'legalInformation': 'Legal Information',
+      'privacyPolicy': 'Privacy Policy',
+      'howWeProtectYourData': 'How we protect your data',
+      'termsOfService': 'Terms of Service',
+      'generalConditions': 'General Conditions',
+      'termsAndConditions': 'Terms & Conditions',
+      'appVersion': 'App Version',
+      'version123': 'Version 1.0.0',
+
+      // Access Gate
+      'accountInactive': 'Account Inactive',
+      'freeTrialEnded': 'Free Trial Ended',
+      'inactiveAccountDesc': 'Your account is currently inactive. To continue using AIXY, please activate your account and subscribe.',
+      'trialEndedDesc': 'We hope you enjoyed your free trial of AIXY! To continue accessing premium features, please upgrade your plan.',
+      'activateSubscribe': 'Activate & Subscribe',
+      'subscribeContinue': 'Subscribe & Continue',
+      'deleteAccountLeave': 'Delete Account & Leave',
+      'deleteAccountTitle': 'Delete Account?',
+      'deleteAccountDesc': 'Are you sure you want to leave? This action cannot be undone and your data will be permanently deleted.',
+      'deleteAndLogout': 'Delete & Logout',
+
+      // Subscription Screen
+      'sixMonths': '6 Months',
+      'proBusinessIntl': 'Pro Business\nInternational',
+      'premiumIntl': 'Premium\nInternational',
+      'popular': 'POPULAR',
+      'perYear': '/ year',
+      'per6Months': '/ 6 mo',
+      'usdYear': 'USD / year',
+      'usdSixMonths': 'USD / 6 mo',
+      'activePlan': 'ACTIVE PLAN',
+      'startPlan': 'Start',
+      'currentPlanAction': 'Current Plan',
+      'cancelSubscription': 'Cancel Subscription',
+      'cancelsAtPeriodEnd': 'Cancels at period end',
+      'keepSubscription': 'No, Keep it',
+      'yesCancel': 'Yes, Cancel',
+      'confirmCancelTitle': 'Cancel Subscription',
+      'confirmCancelDesc': 'Are you sure you want to cancel? Your subscription will remain active until the end of the billing period.',
+      'subscriptionWillBeCanceled': 'Subscription will be canceled at period end',
+      'failedToCancelSubscription': 'Failed to cancel subscription',
+
+
 
     },
     'fr': {
+      'autoRefine': 'Auto-raffinement',
+      'hideDetails': 'Masquer les détails',
+      'refine': 'Affiner',
+      'mic': 'Micro',
+      'originalMail': 'Mail orginal',
+      'current': 'Actuel',
       'offlineMessage': 'Vous êtes hors ligne. Les modifications manuelles seront synchronisées une fois en ligne.',
       'retry': 'Réessayer',
       'emails': 'Emails',
@@ -1373,6 +1622,7 @@ class AppLocalizations {
       'firstName': 'Prénom',
       'lastName': 'Nom',
       'changePassword': 'Changer le mot de passe',
+      'jobTitle': 'Poste',
       'enter': 'Entrer',
       'takePhoto': 'Prendre une photo',
       'chooseFromGallery': 'Choisir dans la galerie',
@@ -1404,11 +1654,55 @@ class AppLocalizations {
       'other': 'Autre',
       'updateTask': 'Mettre à jour la tâche',
       'createTask': 'Créer la tâche',
+      
+      // App Updates & Rating
+      'ok': 'OK',
+      'appUpdates': 'Mises à jour',
+      'appUpdatesLatest': 'Vous utilisez la dernière version de l\'application. Aucune mise à jour disponible.',
+      'rateOurApp': 'Noter notre application',
+      'rateOurAppFeedback': 'Nous aimerions avoir votre avis ! Comment évalueriez-vous notre application ?',
+      'maybeLater': 'Peut-être plus tard',
+
       'legal_privacy_policy': 'Cette Politique de Confidentialité décrit nos politiques et procédures sur la collecte, l\'utilisation et la divulgation de vos informations lorsque vous utilisez le Service...',
       'legal_terms_of_service': 'Veuillez lire attentivement ces termes et conditions avant d\'utiliser notre Service...',
       'howCanWeHelp': 'Comment pouvons-nous vous aider ?',
       'supportDescription': 'Pour toute question, retour ou problème,\nveuillez contacter notre équipe de développement directement.',
       'emailUs': 'Envoyez-nous un email',
+
+      // Access Gate
+      'accountInactive': 'Compte Inactif',
+      'freeTrialEnded': 'Essai Gratuit Terminé',
+      'inactiveAccountDesc': 'Votre compte est actuellement inactif. Pour continuer à utiliser AIXY, veuillez activer votre compte et vous abonner.',
+      'trialEndedDesc': 'Nous espérons que vous avez apprécié votre essai gratuit d\'AIXY ! Pour continuer à accéder aux fonctionnalités premium, veuillez mettre à niveau votre plan.',
+      'activateSubscribe': 'Activer & S\'abonner',
+      'subscribeContinue': 'S\'abonner & Continuer',
+      'deleteAccountLeave': 'Supprimer le compte & Partir',
+      'deleteAccountTitle': 'Supprimer le compte ?',
+      'deleteAccountDesc': 'Êtes-vous sûr de vouloir partir ? Cette action est irréversible et vos données seront définitivement supprimées.',
+      'deleteAndLogout': 'Supprimer & Se déconnecter',
+
+      // Subscription Screen
+      'sixMonths': '6 Mois',
+      'proBusinessIntl': 'Pro Business\nInternational',
+      'premiumIntl': 'Premium\nInternational',
+      'popular': 'POPULAIRE',
+      'perYear': '/ an',
+      'per6Months': '/ 6 mois',
+      'usdYear': 'USD / an',
+      'usdSixMonths': 'USD / 6 mois',
+      'activePlan': 'PLAN ACTIF',
+      'startPlan': 'Démarrer',
+      'currentPlanAction': 'Plan Actuel',
+      'cancelSubscription': 'Annuler l\'abonnement',
+      'cancelsAtPeriodEnd': 'S\'annule à la fin de la période',
+      'keepSubscription': 'Non, le garder',
+      'yesCancel': 'Oui, Annuler',
+      'confirmCancelTitle': 'Annuler l\'abonnement',
+      'confirmCancelDesc': 'Êtes-vous sûr de vouloir annuler ? Votre abonnement restera actif jusqu\'à la fin de la période de facturation.',
+      'subscriptionWillBeCanceled': 'L\'abonnement sera annulé à la fin de la période',
+      'failedToCancelSubscription': 'Échec de l\'annulation de l\'abonnement',
+
+
 
       // Notifications
       'markAllAsRead': 'Tout marquer comme lu',
@@ -1438,8 +1732,24 @@ class AppLocalizations {
       'continueWithGoogle': 'Continuer avec Google',
       'continueWithApple': 'Continuer avec Apple',
       'createAccount': 'Créer un compte',
+      'productivityIntegration': 'Intégration avec des outils de productivité', 
       'joinUs': 'Rejoignez-nous et commencez votre voyage de productivité',
       'dateOfBirth': 'Date de naissance',
+      'voiceCommandsPerDay': 'Commandes Vocales (par jour)',
+      'tasksLimit': 'tâches',
+      'meetingsLimit': 'réunions',
+      'emailsStoTLimit': 'emails S-to-T',
+      'createEmailsVoice': 'Créer des emails par commandes vocales',
+      'smartSummariesEmail': 'Résumés intelligents dans chaque texte d\'email',
+      'priorityEmailHeader': 'Email Prioritaire',
+      'priorityEmailStoT': 'adresses email prioritaires S-to-T et T-to-S',
+      'realTimeNotifications': 'Notifications en temps réel',
+      'aiPoweredSummaries': 'Résumés d\'email par IA',
+      'voiceEmailReader': 'Lecteur d\'email vocal (écouter au lieu de lire)',
+      'aiVoiceReply': 'Suggestions de réponse vocale IA par AIXY',
+      'commandPerDay': 'Commande / jours',
+      'priorityEmailManaged': 'adresses email prioritaires gérées par AIXY S-to-T et T-to-S',
+
       'confirmPassword': 'Confirmer le mot de passe',
       'agreeToTerms': 'J\'accepte les ',
       'enterEmail': 'Entrez votre adresse email',
@@ -1461,6 +1771,7 @@ class AppLocalizations {
       'passwordLengthError': 'Le mot de passe doit contenir au moins 9 caractères',
       'passwordRequired': 'Le mot de passe est requis',
       'enterPassword': 'Entrez votre mot de passe',
+      'passwordRequirements': 'Min 9 caractères, 1 majuscule, 1 minuscule, 1 chiffre, 1 caractère spécial',
       'getStartedNow': 'Commencer maintenant',
       'loginSubtitle': 'Créez un compte ou connectez-vous pour explorer notre application',
       'and': 'et',
@@ -1494,6 +1805,7 @@ class AppLocalizations {
       'score': 'Score',
       'savedTo': 'Enregistré dans',
       'failedToGenerate': 'Échec de la génération du rapport',
+      'open': 'OUVRIR',
 
       // Email
       'inbox': 'Boîte de réception',
@@ -1509,6 +1821,10 @@ class AppLocalizations {
       'emptyDrafts': 'Aucun brouillon',
       'emptySent': 'Aucun message envoyé',
       'emptyTrash': 'La corbeille est vide',
+      'emptySpam': 'Aucun message indésirable',
+      'emptyImportant': 'Aucun message important',
+      'emptyOther': 'Aucun autre message',
+      'emptyPrimary': 'Votre boîte de réception principale est vide',
       'connectGmail': 'Connecter Gmail',
       'connectDescription': 'Connectez votre compte Gmail pour gérer vos emails et obtenir des résumés IA.',
       'deleteEmail': 'Supprimer l\'email',
@@ -1532,54 +1848,26 @@ class AppLocalizations {
       'other': 'Autre',
       'total': 'Total',
       'emailDeletedSuccess': 'Email supprimé avec succès',
-
-      // Calendar
-      'calendar': 'Calendrier',
-      'meetingAddedSuccess': 'Réunion ajoutée avec succès !',
-      'meetingAddFailed': 'Échec de l\'ajout de la réunion',
-      'meetingUpdatedSuccess': 'Réunion mise à jour avec succès !',
-      'meetingUpdateFailed': 'Échec de la mise à jour de la réunion',
-      'meetingDeletedSuccess': 'Réunion supprimée avec succès !',
-      'meetingDeleteFailed': 'Échec de la suppression de la réunion',
-      'confirmDeleteMeeting': 'Êtes-vous sûr de vouloir supprimer cette réunion ?',
-      'online': 'En ligne',
-      'onsite': 'Sur place',
-      'newSchedule': 'Nouvelle planification',
-      'editMeeting': 'Modifier la réunion',
-      'meetingTitle': 'TITRE DE LA RÉUNION',
-      'meetingTitleHint': 'De quoi parle cette réunion ?',
-      'meetingDescriptionHint': 'Ordre du jour ou détails (facultatif)',
-      'attendees': 'PARTICIPANTS',
-      'addAttendee': 'Ajouter un participant',
-      'attendeesHint': 'Entrez les adresses emails séparées par des virgules',
-      'dateTime': 'DATE ET HEURE',
-      'startTime': 'Début',
-      'endTime': 'Fin',
-      'meetingType': 'TYPE DE RÉUNION',
-      'addSchedule': 'Ajouter planification',
-      'updateMeeting': 'Mettre à jour la réunion',
-      'pleaseEnterTitle': 'Veuillez entrer un titre',
       
-      // Priority Emails
-      'priorityEmails': 'Emails prioritaires',
-      'addVipEmail': 'Ajouter email VIP',
-      'vipEmailDescription': 'Les emails de ces expéditeurs déclencheront des résumés vocaux.',
+      // E-mails prioritaires
+      'priorityEmails': 'E-mails prioritaires',
+      'addVipEmail': 'Ajouter un e-mail VIP',
+      'vipEmailDescription': 'Les e-mails de ces expéditeurs déclencheront des résumés vocaux.',
       'emailPlaceholder': 'partenaire@exemple.com',
-      'pleaseEnterEmail': 'Veuillez entrer un email',
-      'invalidEmailAddress': 'Adresse email invalide',
-      'failedToAddEmail': 'Échec de l\'ajout de l\'email',
+      'pleaseEnterEmail': 'Veuillez saisir un e-mail',
+      'invalidEmailAddress': 'Adresse e-mail invalide',
+      'failedToAddEmail': 'Échec de l\'ajout de l\'e-mail',
       'unexpectedError': 'Une erreur inattendue s\'est produite',
-      'failedToRemoveEmail': 'Échec de la suppression de l\'email',
-      'noVipEmails': 'Aucun email VIP pour l\'instant',
+      'failedToRemoveEmail': 'Échec de la suppression de l\'e-mail',
+      'noVipEmails': 'Aucun e-mail VIP pour le moment',
       'addedToVIP': 'Ajouté',
-      'removedFromVIP': 'Retiré',
+      'removedFromVIP': 'Supprimé',
       'quota': 'Quota',
       'used': 'utilisé',
-      
-      // Security
+      'manageVipSenders': 'Gérer les expéditeurs VIP',
+      'manage': 'Gérer',
 
-      'secure': 'Sécurisé',
-      'accountSecure': 'Votre compte est sécurisé',
+      // Security
       'lastSecurityCheck': 'Dernière vérification : Aujourd\'hui à 15h24',
       'authentication': 'Authentification',
       'privacyLock': 'Confidentialité et verrouillage',
@@ -1633,11 +1921,13 @@ class AppLocalizations {
       'upgradeExperience': 'Améliorez votre expérience de productivité vocale',
       'monthly': 'Mensuel',
       'annual': 'Annuel',
-      'save20': 'Économisez 20%',
+      'save20': '-15%',
       'essential': 'Essentiel',
       'premium': 'Premium',
       'billedAnnually': 'Facturé annuellement',
       'whatsIncluded': 'Ce qui est inclus :',
+      'yourCurrentPlan': 'Votre abonnement actuel',
+      'renewsOn': 'Renouvelé le',
       'subscriptionActive': 'L\'abonnement est actif !',
       'paymentInitError': 'Impossible d\'initialiser le paiement. Veuillez réessayer.',
       'subscriptionFailed': 'L\'abonnement a échoué',
@@ -1670,7 +1960,13 @@ class AppLocalizations {
       'productivityIntegration': 'Intégration avec outils de productivité',
       
       // Current Plan
-      'currentPlan': 'Forfait actuel',
+      // 'yourCurrentPlan' and 'currentPlan' removed here as they are covered above or in specific sections to avoid duplication if merging maps, but here it is a single map per locale. 
+      // Actually, looking at file structure, this is the FR map. I should add 'renewsOn' to the FR map above (done).
+      // I will just remove the duplicate lines I added in previous turn if they exist, or leave them if they are unique keys.
+      // Wait, I saw 'yourCurrentPlan': 'Your Current Plan' in the FR section in line 1961 of previous view! This is wrong. It should be French.
+      // The previous view showed lines 1961: 'yourCurrentPlan': 'Your Current Plan'. This is inside the 'fr' map (implied by context).
+      // I will fix the French translation for yourCurrentPlan here if needed, but I already added it correctly in the 'Subscription' section in block 2.
+      // So I will remove these English-looking entries from the FR map.
       'essentialPlan': 'Forfait essentiel',
       'premiumPlan': 'Forfait premium',
       'essentialPlanDesc': 'Vous avez accès aux fonctionnalités vocales essentielles et aux outils de productivité de base.',
@@ -1710,6 +2006,7 @@ class AppLocalizations {
       'errorPickingImages': 'Erreur lors de la sélection des images',
       'errorSendingEmail': 'Erreur lors de l\'envoi de l\'email',
       'errorSavingDraft': 'Erreur lors de l\'enregistrement du brouillon',
+      'contentCannotBeEmpty': 'Le contenu fourni ne peut pas être vide',
 
       'errorSummarizing': 'Erreur lors du résumé',
       'confirmDeleteEmailPermanent': 'Êtes-vous sûr de vouloir supprimer cet email ? Cette action est irréversible.',
@@ -1718,11 +2015,57 @@ class AppLocalizations {
       'wrote': 'a écrit',
       'forwardedMessage': 'Message transféré',
       'from': 'De',
+      'shareAnalyticsMessage': 'Voici mon rapport d\'analyse de Aixy.',
+      'failedToGenerateShare': 'Échec de la génération du rapport pour le partage',
+      'confirmCompleteTask': 'Êtes-vous sûr de vouloir marquer cette tâche comme terminée ?',
+      'completedTasksCannotBeEdited': 'Les tâches terminées ne peuvent pas être modifiées',
+      'dateAndTime': 'Date et Heure',
+      'editName': 'Modifier le nom',
+      'enterName': 'Entrez votre nom',
+      'editWorkEmailTitle': 'Modifier l\'email professionnel',
+      'enterWorkEmail': 'Entrez votre email professionnel',
+      'workEmailUpdatedReconnect': 'Email professionnel mis à jour. Veuillez reconnecter votre compte email.',
+      'version': 'Version',
+      'endTimeMustBeAfterStart': 'L\'heure de fin doit être après l\'heure de début',
+      'newSchedule': 'Nouveau programme',
+      'meetingAddedSuccess': 'Réunion ajoutée avec succès !',
+      'meetingAddFailed': 'Échec de l\'ajout de la réunion',
+      'meetingUpdatedSuccess': 'Réunion mise à jour avec succès !',
+      'meetingUpdateFailed': 'Échec de la mise à jour de la réunion',
+      'meetingDeletedSuccess': 'Réunion supprimée avec succès !',
+      'meetingDeleteFailed': 'Échec de la suppression de la réunion',
+      'confirmDeleteMeeting': 'Êtes-vous sûr de vouloir supprimer cette réunion ?',
+      'online': 'En ligne',
+      'onsite': 'Sur place',
+      'meetingTitle': 'TITRE DE LA RÉUNION',
+      'meetingTitleHint': 'De quoi s\'agit-il ?',
+      'meetingDescriptionHint': 'Ordre du jour ou détails (optionnel)',
+      'attendeesHint': 'Entrez les adresses email séparées par des virgules',
+      'dateTime': 'DATE ET HEURE',
+      'startTime': 'Début',
+      'endTime': 'Fin',
+      'meetingType': 'TYPE DE RÉUNION',
+      'addSchedule': 'Ajouter au programme',
+      'updateMeeting': 'Mettre à jour la réunion',
+      'pleaseEnterTitle': 'Veuillez entrer un titre',
+      
 
 
 
 
+
+      'summarizeWithAI': 'Résumer avec l\'IA',
+      'aiSummary': 'Résumé IA',
+      'generatingSummary': 'Génération du résumé...',
+      'refineVoiceAction': 'Affinage/Réponse vocale',
+      'refinementLimitReached': 'Limite d\'affinage atteinte',
+      'autoRefine': 'Auto-raffinement',
+      'hideDetails': 'Masquer les détails',
+      'refine': 'Affiner',
+      'mic': 'Micro',
+      'originalMail': 'Mail orginal',
     },
+
   };
 }
 

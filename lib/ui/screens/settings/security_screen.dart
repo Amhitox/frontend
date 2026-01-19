@@ -824,7 +824,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                 borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
               ),
               child: Text(
-                'Current',
+                AppLocalizations.of(context)!.current,
                 style: TextStyle(
                   color: Colors.green,
                   fontSize: isTablet ? 11 : 10,

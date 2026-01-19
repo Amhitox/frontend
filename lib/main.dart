@@ -33,6 +33,7 @@ import 'services/notification_service.dart';
 import 'providers/mail_provider.dart';
 import 'package:frontend/providers/audio_provider.dart';
 import 'firebase_options.dart';
+import 'package:frontend/ui/widgets/vpn_blocker_wrapper.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -180,6 +181,39 @@ class _MainAppState extends State<MainApp> {
             });
           }
         },
+        onMailtoLink: (Uri uri) {
+           print('📨 Handling mailto link: $uri');
+           if (mounted && context.mounted) {
+             final to = uri.path;
+             final subject = uri.queryParameters['subject'] ?? '';
+             final body = uri.queryParameters['body'] ?? '';
+             
+             final draft = EmailMessage(
+               id: '',
+               threadId: '',
+               sender: '',
+               senderEmail: '',
+               subject: subject,
+               snippet: body,
+               body: body,
+               date: DateTime.now(),
+               isUnread: false,
+               hasAttachments: false,
+               labelIds: [],
+               headers: EmailHeaders(
+                 to: to,
+                 subject: subject,
+               ),
+             );
+
+             Future.delayed(const Duration(milliseconds: 100), () {
+                final navContext = AppRoutes.navigatorKey.currentContext;
+                if (navContext != null) {
+                  GoRouter.of(navContext).push(AppRoutes.composemail, extra: draft);
+                }
+             });
+           }
+        },
       );
 
       setState(() {
@@ -230,9 +264,9 @@ class _MainAppState extends State<MainApp> {
          final stubEmail = EmailMessage(
             id: emailId, 
             threadId: '', 
-            sender: data['title'] ?? 'Loading...', 
+            sender: data['title'] ?? AppLocalizations.of(context).loading, 
             senderEmail: '', 
-            subject: data['body']?.toString().split('\n').first ?? 'Loading...', 
+            subject: data['body']?.toString().split('\n').first ?? AppLocalizations.of(context).loading, 
             snippet: '', 
             body: '', 
             date: DateTime.now(), 
@@ -296,6 +330,9 @@ class _MainAppState extends State<MainApp> {
       themeMode: themeProvider.themeMode,
       locale: languageProvider.locale,
       routerConfig: router,
+      builder: (context, child) {
+        return VpnBlockerWrapper(child: child!);
+      },
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         AppLocalizations.delegate,

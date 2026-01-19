@@ -41,6 +41,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
   EmailMessage? _fullEmail;
   bool _isLoadingDetails = false;
 
+  bool _isDetailsExpanded = false;
   bool _isSummarizing = false;
 
   // WebView controller for email body
@@ -249,18 +250,9 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
         '',
       );
 
-      // Get theme for background color (safe to access after mounted check)
-      final theme = Theme.of(context);
-
-      // Get theme colors
-      final bgColor = theme.colorScheme.surface.value
-          .toRadixString(16)
-          .padLeft(8, '0')
-          .substring(2);
-      final textColor = theme.colorScheme.onSurface.value
-          .toRadixString(16)
-          .padLeft(8, '0')
-          .substring(2);
+      // Force white background and black text for standard email rendering
+      const bgColor = 'ffffff';
+      const textColor = '000000';
 
       // Wrap HTML with proper mobile viewport and styling
       final htmlContent = '''
@@ -273,64 +265,57 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       body { 
         margin: 0; 
         padding: 16px; 
-        /* Bottom padding for action sheet */
-        padding-bottom: 120px; 
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        padding-bottom: 80px; 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background-color: #$bgColor;
         color: #$textColor;
         overflow-x: hidden;
         word-wrap: break-word;
         -webkit-text-size-adjust: 100%;
+        line-height: 1.6;
+        font-size: 16px;
         /* Enable text selection */
         user-select: text;
         -webkit-user-select: text;
-        -webkit-touch-callout: default;
-        /* Performance optimizations for smoother scrolling */
-        -webkit-overflow-scrolling: touch;
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
-        will-change: scroll-position;
-        will-change: scroll-position;
-        line-height: 1.6; /* Fresher look */
-        font-size: 16px; /* Readability */
-        color: #$textColor;
       }
-      a { color: #2196F3; text-decoration: none; }
+      a { 
+        color: #1a73e8; 
+        text-decoration: none; 
+      }
       p { margin-bottom: 1.5em; }
       img { 
         max-width: 100% !important; 
         height: auto !important; 
         display: block;
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
+        border-radius: 8px;
+      }
+      blockquote {
+        margin: 16px 0;
+        padding-left: 16px;
+        border-left: 4px solid #e0e0e0;
+        color: #666;
+      }
+      pre, code {
+        background-color: #f5f5f5;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.9em;
+      }
+      pre {
+        padding: 12px;
+        overflow-x: auto;
       }
       table {
         max-width: 100% !important;
         width: 100% !important;
         border-collapse: collapse;
-        table-layout: auto;
       }
       td, th {
         word-wrap: break-word;
-        overflow-wrap: break-word;
       }
-      iframe {
-        max-width: 100% !important;
-      }
-      video {
-        max-width: 100% !important;
-        height: auto !important;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      /* Hide scrollbars inside webview so it looks like part of the page */
+      /* Hide scrollbars */
       ::-webkit-scrollbar { display: none; }
-      /* Performance optimization: Enable hardware acceleration for scrolling */
-      html {
-        -webkit-overflow-scrolling: touch;
-        overflow-scrolling: touch;
-      }
     </style>
   </head>
   <body>$content</body>
@@ -563,20 +548,17 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
   }) {
     final email = _fullEmail ?? widget.email;
     String subject = email.subject;
-    String bodyPrefix = '';
     String to = '';
     String cc = '';
-    String bcc = '';
-
     final dateStr = email.date.toString();
-    // Start with empty lines so user can type their message at the top
-    String userWriteSpace = '\n\n\n\n'; // Space for user to write their message
+
+    // Construct quoted body
+    String quotedBody = '';
     
     if (type == 'forward') {
       subject = 'Fwd: $subject';
       to = '';
-      // Add user write space at the top, then the forwarded message header
-      bodyPrefix = '$userWriteSpace---------- ${AppLocalizations.of(context)!.forwardedMessage} ---------\n'
+      quotedBody = '---------- ${AppLocalizations.of(context)!.forwardedMessage} ---------\n'
           '${AppLocalizations.of(context)!.from}: ${email.sender} <${email.senderEmail}>\n'
           '${AppLocalizations.of(context)!.date}: $dateStr\n'
           '${AppLocalizations.of(context)!.subject}: ${email.subject}\n'
@@ -591,46 +573,38 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       to = email.senderEmail;
       
       if (type == 'replyAll') {
-        // Add original recipients (To) to 'To', excluding current user if known (simplified here)
-        // Note: Real implementation should filter out the user's own email
         final originalTo = email.headers?.to;
         if (originalTo != null && originalTo.isNotEmpty) {
-           // Combine, avoiding duplicates vaguely (better logic requires parsing email lists)
            if (!originalTo.contains(to)) {
              to = '$to, $originalTo';
            } else {
-             to = originalTo; // If sender is in To list
+             to = originalTo; 
            }
         }
-        
-        // Add original CC to 'CC'
         cc = email.headers?.cc ?? '';
       }
 
-      // Add user write space at the top, then the quoted message header
-      bodyPrefix = '${userWriteSpace}On $dateStr, ${email.sender} ${AppLocalizations.of(context)!.wrote}:\n';
+      quotedBody = 'On $dateStr, ${email.sender} ${AppLocalizations.of(context)!.wrote}:\n';
     }
 
     // Append original body (stripping HTML tags and decoding entities)
     final originalBody = _cleanHtml(email.body).trim();
     if (originalBody.isNotEmpty) {
-      bodyPrefix += '$originalBody\n';
+      quotedBody += '$originalBody\n';
     } else {
-       bodyPrefix += '${_cleanHtml(email.snippet)}\n';
+       quotedBody += '${_cleanHtml(email.snippet)}\n';
     }
 
-    // We need to construct a "MailItem" to pass to ComposeMailScreen
-    // Constructing specific data object for Compose screen
-    // Note: ComposeMailScreen expects MailItem which has specific fields. 
-    // We map our EmailMessage data to that legacy model for compatibility.
-    
     final mailItem = MailItem(
       sender: to, // Compose screen uses 'sender' field as the 'To' field initial value
       subject: subject,
-      preview: bodyPrefix, // Compose screen uses 'preview' as the body initial content
+      preview: '', // Empty body initially
       time: '', // Not used for composing
       isUnread: false,
       priority: MailPriority.normal,
+      cc: cc, // Pass CC if available
+      quotedBody: quotedBody,
+      originalMessageId: email.id,
     );
 
     context.push('/composemail', extra: mailItem);
@@ -818,35 +792,29 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     // Extract other fields
     final snippet = data['snippet'] as String? ?? '';
 
-    // Try multiple possible locations for body content
     String body = '';
     bool isHtml = false;
 
-    // Check direct body field first (most common case based on API response)
     if (data['body'] != null) {
       final bodyData = data['body'];
       if (bodyData is String && bodyData.isNotEmpty) {
         body = bodyData;
-        // Check if it's HTML using improved detection
         isHtml = _isHtmlContent(body);
       }
     } else if (data['textBody'] != null &&
         data['textBody'].toString().isNotEmpty) {
       body = data['textBody'].toString();
-      // Check if textBody is actually HTML
       isHtml = _isHtmlContent(body);
     } else if (data['htmlBody'] != null &&
         data['htmlBody'].toString().isNotEmpty) {
       body = data['htmlBody'].toString();
       isHtml = true; // Explicitly marked as HTML
     } else if (data['payload'] != null) {
-      // Gmail API sometimes nests body in payload
       final payload = data['payload'] as Map<String, dynamic>?;
       if (payload != null) {
         if (payload['body'] != null) {
           final payloadBody = payload['body'] as Map<String, dynamic>?;
           if (payloadBody != null && payloadBody['data'] != null) {
-            // Base64url decoded body (Gmail API uses base64url)
             try {
               final encoded = payloadBody['data'] as String;
               // Convert base64url to base64
@@ -860,7 +828,6 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
             }
           }
         }
-        // Check parts for multipart messages
         if (body.isEmpty && payload['parts'] != null) {
           final parts = payload['parts'] as List<dynamic>?;
           if (parts != null) {
@@ -914,25 +881,11 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       isHtml = _isHtmlContent(body);
     }
 
-    // Keep HTML as-is - we'll render it properly in the UI
-    // Remove script tags and dangerous attributes for security
-    // Keep style tags and CSS for proper email rendering
     if (isHtml && body.isNotEmpty) {
       // Remove script tags for security (but keep the HTML structure)
       body = body.replaceAll(
         RegExp(
           r'<script[^>]*>.*?</script>',
-          caseSensitive: false,
-          dotAll: true,
-        ),
-        '',
-      );
-      // Keep style tags and CSS for proper email rendering
-      // Only script tags are removed for security
-      // Also remove potentially dangerous event handlers
-      body = body.replaceAll(
-        RegExp(
-          r'\s*on\w+\s*=\s*["\x27].*?["\x27]',
           caseSensitive: false,
           dotAll: true,
         ),
@@ -1002,15 +955,12 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     // Logic: Is the email HUGE?
     bool isContentHuge = _contentHeight > _maxSafeHeight;
 
-    // Logic: Calculate render height
-    // If Huge: cap it to screen height (internal scroll).
-    // If Normal: expand to full content height (native scroll).
-    double renderHeight =
-        _contentHeight > 0
-            ? (isContentHuge
-                ? MediaQuery.of(context).size.height
-                : _contentHeight)
-            : 400; // default loading height
+    // Logic: Calculate render height (removed duplicate checks)
+    double renderHeight = _contentHeight > 0
+        ? (isContentHuge
+            ? MediaQuery.of(context).size.height
+            : _contentHeight)
+        : 400;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -1054,7 +1004,6 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
         ),
       ),
       drawer: const SideMenu(),
-      // Switched to CustomScrollView for unified scrolling with conditional gesture handling
       body: CustomScrollView(
         slivers: [
           // AppBar with header info
@@ -1159,7 +1108,6 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                 }
               ),
               const SizedBox(width: 4),
-              // Removed Important Tag Here
               /*
               if (widget.email.labelIds.contains('IMPORTANT'))
                 Container(
@@ -1220,12 +1168,6 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
           // Summary Section (Button or Card)
           SliverToBoxAdapter(child: _buildSummarySection(theme, isTablet)),
 
-          // Attachments Section (if any)
-          if (widget.email.hasAttachments && widget.email.attachments != null)
-            SliverToBoxAdapter(
-              child: _buildAttachmentsSection(theme, isTablet),
-            ),
-
           // The Email Body with conditional gesture handling
           SliverToBoxAdapter(
             child: SizedBox(
@@ -1233,6 +1175,12 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
               child: _buildEmailBody(theme, isTablet, isContentHuge),
             ),
           ),
+
+          // Attachments Section (at the end, after body)
+          if (widget.email.hasAttachments && widget.email.attachments != null)
+            SliverToBoxAdapter(
+              child: _buildAttachmentsSection(theme, isTablet),
+            ),
 
           // Add extra space at the bottom for safety
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -1598,9 +1546,6 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                   // Isolate repaints for better performance
                   child: WebViewWidget(
                     controller: _webViewController,
-                    // Gesture Logic:
-                    // If content is HUGE: Allow WebView to handle drag (internal scroll)
-                    // If content is NORMAL: Disallow WebView drag (pass to CustomScrollView)
                     gestureRecognizers:
                         isContentHuge
                             ? {
@@ -1608,7 +1553,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                                 () => VerticalDragGestureRecognizer(),
                               ),
                             }
-                            : {}, // Empty set lets clicks pass but scrolling go to parent
+                            : {},
                   ),
                 ),
       );
@@ -1767,13 +1712,38 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {
-              // TODO: Implement download functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Downloading ${attachment.filename}...'),
-                ),
-              );
+            onPressed: () async {
+              try {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Downloading ${attachment.filename}...'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+                
+                if (attachment.attachmentId == null) {
+                   ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Cannot download: Missing attachment ID')),
+                  );
+                  return;
+                }
+
+                final mailProvider = context.read<MailProvider>();
+                await mailProvider.downloadAttachment(
+                  widget.email.id,
+                  attachment.attachmentId!,
+                  attachment.filename,
+                );
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to download: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             icon: Icon(
               Icons.download_rounded,
@@ -1858,6 +1828,8 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     final sender = widget.email.sender;
     final email = widget.email.senderEmail;
     final date = widget.email.formattedTime;
+    final fullDate = widget.email.date.toString(); // Or format nicely
+    final to = widget.email.headers?.to ?? 'me';
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -1912,23 +1884,72 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                     ),
                   ],
                 ),
-                // Dropdown-like toggle (Visual only for now, can implement expansion later)
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        'to me',
-                        style: theme.textTheme.bodySmall?.copyWith(
+                const SizedBox(height: 2),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isDetailsExpanded = !_isDetailsExpanded;
+                    });
+                  },
+                  child: AnimatedCrossFade(
+                    duration: const Duration(milliseconds: 200),
+                    crossFadeState: _isDetailsExpanded
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
+                    firstChild: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'to me',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 16,
                           color: theme.colorScheme.onSurfaceVariant,
+                        )
+                      ],
+                    ),
+                    secondChild: Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(top: 4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.1),
                         ),
                       ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildDetailRow(context, AppLocalizations.of(context)!.from, '$sender <$email>', theme),
+                          const SizedBox(height: 4),
+                          _buildDetailRow(context, AppLocalizations.of(context)!.to, to, theme),
+                          const SizedBox(height: 4),
+                          _buildDetailRow(context, AppLocalizations.of(context)!.date, fullDate, theme),
+                          const SizedBox(height: 8),
+                           Row(
+                             mainAxisAlignment: MainAxisAlignment.end,
+                             children: [
+                               Text(
+                                  AppLocalizations.of(context)!.hideDetails,
+                                  style: TextStyle(
+                                     fontSize: 12,
+                                     color: theme.colorScheme.primary,
+                                     fontWeight: FontWeight.w500
+                                  ),
+                               ),
+                               Icon(Icons.keyboard_arrow_up_rounded, size: 16, color: theme.colorScheme.primary),
+                             ],
+                           )
+                        ],
+                      ),
                     ),
-                    Icon(
-                      Icons.keyboard_arrow_down_rounded, 
-                      size: 16, 
-                      color: theme.colorScheme.onSurfaceVariant
-                    )
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -1937,6 +1958,36 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       ),
     );
   }
+
+  Widget _buildDetailRow(BuildContext context, String label, String value, ThemeData theme) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 50,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Expanded(
+          child: SelectableText(
+            value,
+            style: TextStyle(
+              fontSize: 13,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+
 
   Widget _buildSummarySection(ThemeData theme, bool isTablet) {
     final summary = _fullEmail?.summary ?? widget.email.summary;
@@ -1953,8 +2004,8 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
            alignment: Alignment.centerLeft,
            child: OutlinedButton.icon(
              onPressed: _summarizeEmail,
-             icon: Icon(Icons.auto_awesome, size: 18),
-             label: Text('Summarize with AI'),
+              icon: Icon(Icons.auto_awesome, size: 18),
+              label: Text(AppLocalizations.of(context)!.summarizeWithAI),
              style: OutlinedButton.styleFrom(
                foregroundColor: theme.colorScheme.primary,
                side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
@@ -1992,8 +2043,9 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
             children: [
               Icon(Icons.auto_awesome, size: 20, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
-                'AI Summary',
+                AppLocalizations.of(context)!.aiSummary,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -2010,7 +2062,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
           const SizedBox(height: 12),
           if (_isSummarizing && !hasSummary)
             Text(
-               'Generating summary...',
+               AppLocalizations.of(context)!.generatingSummary,
                style: TextStyle(
                  fontStyle: FontStyle.italic,
                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),

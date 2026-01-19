@@ -5,12 +5,16 @@ import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:frontend/models/email_message.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 
 class MailService {
   final Dio _dio;
   String? _accessToken;
 
   MailService({required Dio dio}) : _dio = dio;
+
+  String? get accessToken => _accessToken;
 
   Future<bool> initialize() async {
     try {
@@ -74,6 +78,7 @@ class MailService {
     String type = 'inbox',
     int maxResults = 20,
     String? pageToken,
+    String? query,
   }) async {
     if (_accessToken == null) {
       print('⚠️ No access token, attempting to initialize...');
@@ -91,6 +96,7 @@ class MailService {
           'type': type,
           'maxResults': maxResults,
           if (pageToken != null) 'pageToken': pageToken,
+          if (query != null && query.isNotEmpty) 'q': query,
         },
         options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
       );
@@ -105,6 +111,10 @@ class MailService {
       print('Message: ${e.message}');
 
       if (e.response?.statusCode == 401) {
+        final errorData = e.response?.data;
+        if (errorData is Map && errorData['error'] == 'Refresh token not found') {
+          return {'error': 'Refresh token not found'};
+        }
         print('⚠️ Token expired, attempting to refresh...');
         final refreshed = await initialize();
 
@@ -117,6 +127,7 @@ class MailService {
                 'type': type,
                 'maxResults': maxResults,
                 if (pageToken != null) 'pageToken': pageToken,
+                if (query != null && query.isNotEmpty) 'q': query,
               },
               options: Options(
                 headers: {'Authorization': 'Bearer $_accessToken'},
@@ -125,12 +136,16 @@ class MailService {
             return retryResponse.data;
           } catch (retryError) {
             print('❌ Retry failed: $retryError');
-            return null;
+            return {'error': 'Failed to fetch emails'};
           }
         }
       }
+      
+      if (e.response?.statusCode == 500) {
+        return {'error': 'Failed to fetch emails'};
+      }
 
-      return null;
+      return {'error': e.response?.data?['error'] ?? 'Failed to fetch emails'};
     }
   }
 
@@ -186,8 +201,6 @@ class MailService {
     String? cc,
     String? bcc,
   }) async {
-    // Backend uses cookie-based authentication - no Authorization header needed
-    // Cookies are automatically handled by Dio's CookieManager interceptor
     try {
       final formDataMap = {
         'to': to,
@@ -204,8 +217,6 @@ class MailService {
 
       final formData = FormData.fromMap(formDataMap);
 
-      // Backend expects attachments as File objects in FormData
-      // Convert bytes to MultipartFile which Dio will send as File
       if (attachments != null && attachments.isNotEmpty) {
         for (var attachment in attachments) {
           final name = attachment['name'] as String;
@@ -220,7 +231,6 @@ class MailService {
               ),
             );
           } else if (path != null && path.isNotEmpty) {
-             // Fallback to path if bytes are not available (e.g. large files or just prefer path)
              formData.files.add(
               MapEntry(
                 'attachments',
@@ -243,23 +253,11 @@ class MailService {
         options: options,
       );
 
-      // Backend returns: { success: true, messageId, message: "..." }
       final responseData = response.data;
 
-      if (response.statusCode == 200) {
-        if (responseData is Map<String, dynamic>) {
-          if (responseData['success'] == true || responseData['messageId'] != null) {
-            print('✅ Email sent successfully. MessageId: ${responseData['messageId']}');
-            return responseData;
-          }
-        } else if (responseData is String) {
-           // Handle string response
-           print('⚠️ Email sent but returned string: $responseData');
-           return {'success': true, 'message': responseData};
-        }
-        
-        print('⚠️ Email send returned unexpected response: $responseData');
-        return responseData is Map<String, dynamic> ? responseData : {'error': responseData.toString()};
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        print('✅ Email sent successfully. MessageId: ${responseData['messageId']}');
+        return responseData;
       } else {
         print('⚠️ Email send failed with status ${response.statusCode}: $responseData');
         return responseData is Map<String, dynamic> ? responseData : {'error': responseData.toString()};
@@ -267,6 +265,29 @@ class MailService {
     } on DioException catch (e) {
       print('❌ Error sending email: ${e.response?.data}');
       final errorData = e.response?.data;
+      final statusCode = e.response?.statusCode;
+      
+      if (statusCode == 400) {
+        if (errorData is Map) {
+          return {'error': errorData['error'] ?? 'Missing required fields'};
+        }
+        return {'error': 'Gmail not connected or missing required fields'};
+      }
+      
+      if (statusCode == 401) {
+        if (errorData is Map) {
+          return {'error': errorData['error'] ?? 'Failed to refresh Gmail tokens', 'details': errorData['details']};
+        }
+        return {'error': 'Failed to refresh Gmail tokens'};
+      }
+      
+      if (statusCode == 500) {
+        if (errorData is Map) {
+          return {'error': 'Failed to send email', 'details': errorData['details']};
+        }
+        return {'error': 'Failed to send email'};
+      }
+      
       if (errorData is Map<String, dynamic>) {
         return errorData;
       }
@@ -577,6 +598,10 @@ class MailService {
           'instruction': instruction,
         },
         options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
+          },
           validateStatus: (status) => status! < 500,
         ),
       );
@@ -584,10 +609,43 @@ class MailService {
       if (response.statusCode == 200) {
         return response.data;
       }
-      return {'error': response.data['message'] ?? 'Failed to refine email'};
+      
+      return {'error': response.data['message'] ?? 'Refinement failed'};
     } on DioException catch (e) {
-      print('❌ Refine email error: $e');
-      return {'error': e.response?.data['message'] ?? e.message};
+      if (e.response?.statusCode == 500) {
+        return {'error': 'Refinement failed', 'details': e.response?.data?['details']};
+      }
+      return {'error': e.response?.data['error'] ?? e.response?.data['message'] ?? e.message};
+    }
+  }
+
+
+  Future<void> downloadAttachment(
+    String messageId,
+    String attachmentId,
+    String filename,
+  ) async {
+    if (_accessToken == null) {
+      await initialize();
+    }
+
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final filePath = '${dir.path}/$filename';
+
+      await _dio.download(
+        '/api/email/gmail/$messageId/attachments/$attachmentId',
+        filePath,
+        options: Options(headers: {'Authorization': 'Bearer $_accessToken'}),
+      );
+
+      final result = await OpenFilex.open(filePath);
+      if (result.type != ResultType.done) {
+        throw Exception(result.message);
+      }
+    } catch (e) {
+      print('❌ Error downloading attachment: $e');
+      rethrow;
     }
   }
 }
@@ -617,14 +675,15 @@ class DeepLinkService {
   Future<void> initDeepLinks({
     required Function(bool success, String? error, String? email)
     onGmailConnected,
+    Function(Uri uri)? onMailtoLink,
   }) async {
     print('🔗 Initializing deep link service...');
 
-    await _handleInitialLink(onGmailConnected);
+    await _handleInitialLink(onGmailConnected, onMailtoLink);
 
     _sub = _appLinks.uriLinkStream.listen(
       (Uri uri) {
-        _handleDeepLink(uri, onGmailConnected);
+        _handleDeepLink(uri, onGmailConnected, onMailtoLink);
       },
       onError: (err) {
         print('❌ Deep link error: $err');
@@ -638,12 +697,13 @@ class DeepLinkService {
 
   Future<void> _handleInitialLink(
     Function(bool success, String? error, String? email) onGmailConnected,
+    Function(Uri uri)? onMailtoLink,
   ) async {
     try {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
         print('🔗 Initial deep link detected: $initialUri');
-        _handleDeepLink(initialUri, onGmailConnected);
+        _handleDeepLink(initialUri, onGmailConnected, onMailtoLink);
       }
     } catch (e) {
       print('❌ Error getting initial link: $e');
@@ -663,6 +723,7 @@ class DeepLinkService {
   void _handleDeepLink(
     Uri uri,
     Function(bool success, String? error, String? email) onGmailConnected,
+    Function(Uri uri)? onMailtoLink,
   ) {
     print('🔗 Received deep link: $uri');
 
@@ -684,6 +745,11 @@ class DeepLinkService {
         print('❌ Backend error: $errorMsg');
         _storePendingData(false, errorMsg, null);
         onGmailConnected(false, errorMsg, null);
+      }
+    } else if (uri.scheme == 'mailto') {
+      print('📧 Mailto link detected: $uri');
+      if (onMailtoLink != null) {
+        onMailtoLink(uri);
       }
     } else {
       print('⚠️ Unhandled deep link format: $uri');

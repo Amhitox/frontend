@@ -78,14 +78,17 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
 
   TimeOfDay _parseTimeString(String timeStr) {
     try {
-      final parts = timeStr.split(' ');
+      final parts = timeStr.trim().split(' ');
       final timeParts = parts[0].split(':');
       int hour = int.parse(timeParts[0]);
       int minute = int.parse(timeParts[1]);
-      if (parts[1].toUpperCase() == 'PM' && hour != 12) {
-        hour += 12;
-      } else if (parts[1].toUpperCase() == 'AM' && hour == 12) {
-        hour = 0;
+      
+      if (parts.length > 1) {
+        if (parts[1].toUpperCase() == 'PM' && hour != 12) {
+          hour += 12;
+        } else if (parts[1].toUpperCase() == 'AM' && hour == 12) {
+          hour = 0;
+        }
       }
       return TimeOfDay(hour: hour, minute: minute);
     } catch (e) {
@@ -152,23 +155,11 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
       return;
     }
 
-    final now = DateTime.now();
-    final startDateTime = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-      _startTime.hour,
-      _startTime.minute,
-    );
-
-    if (startDateTime.isBefore(now)) {
-       _showFeedback("Start time must be in the future", isError: true);
-       return;
-    }
-    
-    if (startDateTime.difference(now).inMinutes < 10) {
-       _showFeedback("Start time must be at least 10 minutes from now", isError: true);
-       return;
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+    if (endMinutes <= startMinutes) {
+      _showFeedback(AppLocalizations.of(context).endTimeMustBeAfterStart, isError: true);
+      return;
     }
 
     setState(() => _isSaving = true);
@@ -858,7 +849,16 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
           child: _buildTimePicker(
             AppLocalizations.of(context).startTime,
             _startTime,
-            (t) => setState(() => _startTime = t),
+            (t) {
+              setState(() {
+                _startTime = t;
+                final startMinutes = t.hour * 60 + t.minute;
+                final endMinutes = _endTime.hour * 60 + _endTime.minute;
+                if (endMinutes <= startMinutes) {
+                  _endTime = TimeOfDay(hour: (t.hour + 1) % 24, minute: t.minute);
+                }
+              });
+            },
             theme,
             isTablet,
             isLargeScreen,
@@ -952,7 +952,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
               ),
               SizedBox(height: isTablet ? 8 : 6),
               Text(
-                time.format(context),
+                '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface,
                   fontSize:
@@ -1003,7 +1003,7 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
                 return Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+                  borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
                     onTap: () {
                       setState(() => _selectedType = type);
                       HapticFeedback.selectionClick();

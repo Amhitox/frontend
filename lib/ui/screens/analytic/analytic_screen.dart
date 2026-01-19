@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:frontend/models/analytic_data.dart';
 import 'package:frontend/providers/analytic_provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
+import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_filex/open_filex.dart';
@@ -80,7 +82,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     final double verticalSpacing = _getVerticalSpacing(screenWidth);
     final double contentMaxWidth = _getContentMaxWidth(screenWidth);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        context.go('/');
+      },
+      child: Scaffold(
       drawer: const SideMenu(),
       body: Container(
         decoration: BoxDecoration(
@@ -94,7 +102,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ],
           ),
         ),
-        child: SafeArea(
+        child: Stack(
+          children: [
+            SafeArea(
           child: Column(
             children: [
                _buildHeader(context, screenWidth),
@@ -164,8 +174,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                ),
             ],
           ),
+            ),
+            const DraggableMenu(),
+          ],
         ),
       ),
+    ),
     );
   }
 
@@ -236,7 +250,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             Expanded(flex: 2, child: _buildChartCard(context, screenWidth, data)),
           ],
         ),
-        SizedBox(height: spacing * 1.5),
+        SizedBox(height: spacing * 4.0),
       ],
     );
   }
@@ -276,7 +290,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
           ],
         ),
-        SizedBox(height: spacing * 1.5),
+        SizedBox(height: spacing * 4.0),
       ],
     );
   }
@@ -303,7 +317,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         ),
         SizedBox(height: spacing),
         _buildInsightsCard(context, screenWidth, data),
-        SizedBox(height: spacing * 1.5),
+        SizedBox(height: spacing * 4.0),
       ],
     );
   }
@@ -324,7 +338,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         _buildChartCard(context, screenWidth, data),
         SizedBox(height: spacing),
         _buildInsightsCard(context, screenWidth, data),
-        SizedBox(height: spacing * 1.5),
+        SizedBox(height: spacing * 4.0),
       ],
     );
   }
@@ -479,7 +493,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
                          } catch (e) {
                            scaffoldMessenger.showSnackBar(
-                              SnackBar(content: Text('${AppLocalizations.of(context)!.savedTo}: $path')),
+                              SnackBar(
+                                content: Text('${AppLocalizations.of(context)!.savedTo}: $path'),
+                                action: SnackBarAction(
+                                  label: AppLocalizations.of(context)!.open,
+                                  onPressed: () {
+                                    OpenFilex.open(path);
+                                  },
+                                ),
+                              ),
                            );
                          }
                        } else {

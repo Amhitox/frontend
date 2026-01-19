@@ -170,7 +170,7 @@ class TaskProvider extends ChangeNotifier {
           timezoneOffset,
         );
 
-        if (response.statusCode == 201) {
+        if (response.statusCode == 201 && response.data['success'] == true) {
           final data = response.data;
           if (data is Map && data.containsKey('data')) {
             taskId = data['data']['taskId'];
@@ -194,8 +194,12 @@ class TaskProvider extends ChangeNotifier {
           );
 
           await _taskManager.addOrUpdateTask(newTask, isSynced: true);
-          
-          // Note: Quota refresh should be handled by the caller or a global observer
+        } else if (response.statusCode == 400) {
+          final error = response.data['error'] ?? 'Bad request';
+          throw Exception(error);
+        } else if (response.statusCode == 500) {
+          final error = response.data['error'] ?? 'Internal server error';
+          throw Exception(error);
         } else {
           throw Exception('Server returned status: ${response.statusCode}');
         }
@@ -315,8 +319,7 @@ class TaskProvider extends ChangeNotifier {
 
       print('TaskProvider: Response status: ${response.statusCode}');
 
-      if (response.statusCode == 200) {
-        
+      if (response.statusCode == 200 && response.data['success'] == true) {
         List<dynamic> jsonList = [];
         final responseData = response.data;
 
@@ -343,6 +346,10 @@ class TaskProvider extends ChangeNotifier {
         } else {
              print('TaskProvider: No tasks found in response.data["data"] list.');
         }
+      } else if (response.statusCode == 401) {
+        print('TaskProvider: Unauthorized - ${response.data['error']}');
+      } else if (response.statusCode == 500) {
+        print('TaskProvider: Server error - ${response.data['error']}');
       }
     } catch (e, stackTrace) {
       print('TaskProvider: Error in syncAllFromServer: $e');

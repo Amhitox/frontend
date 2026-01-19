@@ -116,4 +116,14 @@ class TaskManager {
     if (!isInitialized) return;
     await addOrUpdateTask(task, isSynced: true);
   }
+
+  Future<void> logout() async {
+    if (_box != null && _box!.isOpen) await _box!.close();
+    if (_syncBox != null && _syncBox!.isOpen) await _syncBox!.close();
+    if (_deletedBox != null && _deletedBox!.isOpen) await _deletedBox!.close();
+    
+    _box = null;
+    _syncBox = null;
+    _deletedBox = null;
+  }
 }

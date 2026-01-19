@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 
 class OutlookService {
   final Dio _dio;
@@ -241,6 +243,131 @@ class OutlookService {
     } on DioException catch (e) {
       print('❌ Error sending Outlook email: ${e.response?.data}');
       return e.response?.data;
+    }
+  }
+
+  // --- Drafts ---
+
+  Future<Map<String, dynamic>?> createDraft(
+    String to,
+    String subject,
+    String body,
+    List<Map<String, dynamic>>? attachments, {
+    String? cc,
+    String? bcc,
+  }) async {
+    try {
+      final formDataMap = <String, dynamic>{};
+      
+      if (to.isNotEmpty) formDataMap['to'] = to;
+      if (subject.isNotEmpty) formDataMap['subject'] = subject;
+      if (body.isNotEmpty) formDataMap['body'] = body;
+
+      if (cc != null && cc.isNotEmpty) {
+        formDataMap['cc'] = cc;
+      }
+      if (bcc != null && bcc.isNotEmpty) {
+        formDataMap['bcc'] = bcc;
+      }
+
+      final formData = FormData.fromMap(formDataMap);
+
+      if (attachments != null && attachments.isNotEmpty) {
+        for (var attachment in attachments) {
+          final name = attachment['name'] as String;
+          final bytes = attachment['bytes'] as List<int>?;
+          final path = attachment['path'] as String?;
+
+          if (bytes != null && bytes.isNotEmpty) {
+            formData.files.add(
+              MapEntry(
+                'attachments',
+                MultipartFile.fromBytes(bytes, filename: name),
+              ),
+            );
+          } else if (path != null && path.isNotEmpty) {
+             formData.files.add(
+              MapEntry(
+                'attachments',
+                await MultipartFile.fromFile(path, filename: name),
+              ),
+            );
+          }
+        }
+      }
+
+      final response = await _dio.post(
+        '/api/email/outlook/draft', 
+        data: formData,
+      );
+
+      return response.data;
+      
+    } on DioException catch (e) {
+      print('❌ Error creating Outlook draft: ${e.response?.data}');
+      return e.response?.data ?? {'error': e.message};
+    }
+  }
+
+  // --- Other Actions ---
+
+  Future<bool> markAsUnread(String messageId) async {
+    try {
+      final response = await _dio.patch(
+        '/api/email/outlook/$messageId/unread',
+      );
+      return response.statusCode == 200;
+    } on DioException catch (e) {
+      print('❌ Error marking Outlook email as unread: ${e.message}');
+      return false;
+    }
+  }
+
+  Future<void> downloadAttachment(
+    String messageId,
+    String attachmentId,
+    String filename,
+  ) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final filePath = '${dir.path}/$filename';
+
+      await _dio.download(
+        '/api/email/outlook/$messageId/attachments/$attachmentId',
+        filePath,
+      );
+
+      final result = await OpenFilex.open(filePath);
+      if (result.type != ResultType.done) {
+        throw Exception(result.message);
+      }
+    } catch (e) {
+      print('❌ Error downloading Outlook attachment: $e');
+      rethrow;
+    }
+  }
+  
+  Future<Map<String, dynamic>?> refineEmail(
+    String currentSubject,
+    String currentBody,
+    String instruction,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/api/ai/refine-email',
+        data: {
+          'currentSubject': currentSubject,
+          'currentBody': currentBody,
+          'instruction': instruction,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return response.data;
+      }
+      return {'error': response.data['message'] ?? 'Refinement failed'};
+    } on DioException catch (e) {
+      return {'error': e.response?.data['error'] ?? e.message};
     }
   }
 }

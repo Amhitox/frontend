@@ -31,6 +31,23 @@ class AuthProvider extends ChangeNotifier {
   User? get user => _user;
   bool get isLoggedIn => _user != null;
   String? get errorMessage => _errorMessage;
+  bool get canAccessApp {
+    if (_user?.status == 'inactive') return false;
+    
+    // Per new logic: Trust the backend.
+    // If SHOULD_PAY -> Block access (show paywall).
+    if (_user?.subscriptionTier == 'SHOULD_PAY') return false;
+
+    // Otherwise (ESSENTIAL, PREMIUM, FREE/etc), allow access.
+    return true; 
+  }
+
+  bool get isPremium {
+    final tier = _user?.subscriptionTier;
+    // Simple check: Is the tier one of the paid tiers?
+    return tier == 'PREMIUM' || tier == 'PRO_BUSINESS' || tier == 'ESSENTIAL' || tier == 'DAILY_TEST';
+  }
+
   Future<void> init() async {
     final dir = await getApplicationDocumentsDirectory();
     _cookieJar = PersistCookieJar(storage: FileStorage('${dir.path}/cookies/'));
@@ -38,18 +55,31 @@ class AuthProvider extends ChangeNotifier {
     _dio.interceptors.add(CookieManager(_cookieJar));
     _authService = AuthService(dio: _dio);
     final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('user');
-    if (userJson != null) {
-      _user = User.fromJson(jsonDecode(userJson));
-      await TaskManager().init(_user!.id ?? 'default_user');
-      await CalendarManager().init(_user!.id ?? 'default_user');
-      notifyListeners();
-    }
+
     final cookies = await _cookieJar.loadForRequest(
       Uri.parse(AppConstants.baseUrl),
     );
     if (cookies.isNotEmpty) {
       _dio.interceptors.add(CookieManager(_cookieJar));
+      try {
+        await refreshUserProfile();
+      } catch (e) {
+        debugPrint('Failed to refresh user data on init: $e');
+      }
+    }
+    notifyListeners();
+  }
+
+  Future<void> refreshUserProfile() async {
+    final response = await _authService.getUserProfile();
+    if (response != null && response.data != null && response.data["user"] != null) {
+      final serverUser = User.fromJson(response.data["user"]);
+      _user = serverUser;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user', jsonEncode(_user!.toJson()));
+      await TaskManager().init(_user!.id ?? 'default_user');
+      await CalendarManager().init(_user!.id ?? 'default_user');
+      notifyListeners();
     }
   }
 
@@ -58,7 +88,6 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
-      // Get FCM token and device info
       final fcmData = await _getFcmTokenAndDeviceInfo();
 
       final response = await _authService.loginWithFcm(
@@ -66,26 +95,42 @@ class AuthProvider extends ChangeNotifier {
         password,
         fcmData,
       );
-      if (response.statusCode == 200) {
-        _user = User.fromJson(response.data["user"]);
+      
+      if (response == null) {
+        _errorMessage = "Network error. Please try again.";
+        return false;
+      }
+      
+      final data = response.data;
+      
+      if (response.statusCode == 200 && data["success"] == true) {
+        _user = User.fromJson(data["user"]);
         final prefs = await SharedPreferences.getInstance();
         prefs.setString('user', jsonEncode(_user!.toJson()));
         await TaskManager().init(_user!.id ?? 'default_user');
         await CalendarManager().init(_user!.id ?? 'default_user');
         await _cookieJar.loadForRequest(Uri.parse(AppConstants.baseUrl));
-        if (response.data["needsEmailVerification"] == true) {
-          _errorMessage =
-              "Email not verified. Please check your email for verification.";
-        }
         return true;
+      } else if (data["success"] == false && data["needsEmailVerification"] == true) {
+        _errorMessage = data["message"] ?? "Please verify your email before logging in.";
+        return false;
+      } else if (response.statusCode == 404) {
+        _errorMessage = data["message"] ?? "User not found.";
+        return false;
+      } else if (response.statusCode == 500) {
+        _errorMessage = data["message"] ?? "Login failed. Please try again.";
+        return false;
       } else {
-        _errorMessage =
-            response.data?["message"] ?? "Invalid email or password.";
+        _errorMessage = data["message"] ?? "Invalid email or password.";
         return false;
       }
     } on DioException catch (e) {
-      _errorMessage =
-          e.response?.data?["message"] ?? "Network error. Please try again.";
+      final data = e.response?.data;
+      if (data != null && data is Map) {
+        _errorMessage = data["message"] ?? "Network error. Please try again.";
+      } else {
+        _errorMessage = "Network error. Please try again.";
+      }
       return false;
     } finally {
       _isLoading = false;
@@ -105,6 +150,9 @@ class AuthProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
     try {
+      // Get FCM token and device info for Free Trial eligibility
+      final fcmData = await _getFcmTokenAndDeviceInfo();
+
       final response = await _authService.register(
         email,
         password,
@@ -112,39 +160,56 @@ class AuthProvider extends ChangeNotifier {
         lastName,
         phone: phone,
         birthday: birthday,
+        fcmData: fcmData,
       );
-      if (response.statusCode == 201) {
-        _errorMessage =
-            response.data["message"] ??
-            "Account created successfully! check your email for verification";
+      
+      if (response == null) {
+        _errorMessage = "Network error. Please try again.";
+        return false;
+      }
+      
+      final data = response.data;
+      
+      if (response.statusCode == 201 && data["success"] == true) {
+        _errorMessage = data["message"] ?? "Account created successfully! Check your email for verification.";
         return true;
-      } else {
-        final data = response.data;
-        if (data != null) {
-           if (data["error"] == "Validation failed" && data["details"] is List) {
-             _errorMessage = (data["details"] as List)
-                .map((e) => e["message"]?.toString() ?? e.toString())
-                .join("\n");
-           } else {
-             _errorMessage = data["error"] ?? data["message"] ?? "Registration failed. Please try again.";
-           }
+      } else if (response.statusCode == 409) {
+        _errorMessage = data["error"] ?? "Email already registered. Please use a different email or login.";
+        return false;
+      } else if (response.statusCode == 400) {
+        if (data["details"] != null && data["details"] is List) {
+          _errorMessage = (data["details"] as List)
+              .map((e) => e["message"]?.toString() ?? e.toString())
+              .join("\n");
         } else {
-           _errorMessage = "Registration failed. Please try again.";
+          _errorMessage = data["error"] ?? "Validation error. Please check your input.";
         }
+        return false;
+      } else if (response.statusCode == 500) {
+        _errorMessage = data["error"] ?? "Registration failed. Please try again later.";
+        return false;
+      } else {
+        _errorMessage = data["error"] ?? data["message"] ?? "Registration failed. Please try again.";
         return false;
       }
     } on DioException catch (e) {
       final data = e.response?.data;
-      if (data != null) {
-         if (data["error"] == "Validation failed" && data["details"] is List) {
-             _errorMessage = (data["details"] as List)
+      if (data != null && data is Map) {
+        if (e.response?.statusCode == 409) {
+          _errorMessage = data["error"] ?? "Email already registered.";
+        } else if (e.response?.statusCode == 400) {
+          if (data["details"] != null && data["details"] is List) {
+            _errorMessage = (data["details"] as List)
                 .map((item) => item["message"]?.toString() ?? item.toString())
                 .join("\n");
-         } else {
-             _errorMessage = data["error"] ?? data["message"] ?? e.message ?? "Network error. Please try again.";
-         }
+          } else {
+            _errorMessage = data["error"] ?? "Validation error.";
+          }
+        } else {
+          _errorMessage = data["error"] ?? data["message"] ?? "Network error. Please try again.";
+        }
       } else {
-         _errorMessage = e.message ?? "Network error. Please try again.";
+        _errorMessage = "Network error. Please try again.";
       }
       return false;
     } finally {
@@ -156,21 +221,22 @@ class AuthProvider extends ChangeNotifier {
   Future<dynamic> logout() async {
     try {
       if (_user != null) {
-        final response = await _authService.logout();
-        _user = null;
-        await _cookieJar.deleteAll();
-        await CalendarManager().logout();
-        final prefs = await SharedPreferences.getInstance();
-        prefs.remove('user');
-        FirebaseAuth.instance.signOut();
-        _googleSignIn.signOut();
-        notifyListeners();
-        return response.statusCode == 200;
+        await _authService.logout();
       }
-    } catch (e, stacktrace) {
+    } catch (e) {
       debugPrint("Logout error: $e");
-      debugPrintStack(stackTrace: stacktrace);
+    } finally {
+      _user = null;
+      await _cookieJar.deleteAll();
+      await CalendarManager().logout();
+      await TaskManager().logout();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user');
+      await FirebaseAuth.instance.signOut();
+      await _googleSignIn.signOut();
+      notifyListeners();
     }
+    return true;
   }
 
   Future<dynamic> signInWithGoogle() async {
@@ -202,11 +268,18 @@ class AuthProvider extends ChangeNotifier {
         fcmData,
       );
       if (googleResponse.statusCode == 200) {
-        final response = await _authService.getMe();
-        _user = User.fromJson(response.data["user"]);
+         // Use the user data directly from the login response if available
+         if (googleResponse.data["user"] != null) {
+            _user = User.fromJson(googleResponse.data["user"]);
+         } else {
+            // Fallback to getMe if not in response
+            final response = await _authService.getMe();
+            _user = User.fromJson(response.data["user"]);
+         }
+        
         _errorMessage = "nothing";
         final prefs = await SharedPreferences.getInstance();
-        prefs.setString('user', jsonEncode(_user!.toJson()));
+        await prefs.setString('user', jsonEncode(_user!.toJson()));
         await TaskManager().init(_user!.id ?? 'default_user');
         await CalendarManager().init(_user!.id ?? 'default_user');
         notifyListeners();

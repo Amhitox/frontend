@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:frontend/models/notification_model.dart';
 import 'package:frontend/services/notification_api_service.dart';
+import 'package:frontend/services/notification_service.dart';
+import 'dart:async';
 
 class NotificationProvider extends ChangeNotifier {
   final NotificationApiService _apiService;
@@ -17,9 +19,23 @@ class NotificationProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  StreamSubscription? _subscription;
+
   void init(String userId) {
     _userId = userId;
     fetchNotifications();
+    
+    _subscription?.cancel();
+    _subscription = NotificationService().messageStream.listen((message) {
+      // When a new notification arrives, refresh the list
+      fetchNotifications(forceRefresh: true);
+    });
+  }
+  
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
   }
 
   Future<void> fetchNotifications({String filter = 'all', bool forceRefresh = false}) async {

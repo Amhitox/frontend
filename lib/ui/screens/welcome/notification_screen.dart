@@ -90,41 +90,48 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     final provider = context.watch<NotificationProvider>();
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      drawer: const SideMenu(),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.scaffoldBackgroundColor,
-              theme.colorScheme.surface.withValues(alpha: 0.1),
-              theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
-            ],
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        context.go('/');
+      },
+      child: Scaffold(
+        drawer: const SideMenu(),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.scaffoldBackgroundColor,
+                theme.colorScheme.surface.withValues(alpha: 0.1),
+                theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
+              ],
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            SafeArea(
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: Column(
-                  children: [
-                    _buildHeader(isTablet, theme, provider),
-                    // _buildFilterTabs(isTablet, theme),
-                    _buildQuickStats(isTablet, theme, provider),
-                    Expanded(
-                      child: provider.isLoading && provider.notifications.isEmpty
-                          ? const Center(child: CircularProgressIndicator())
-                          : _buildNotificationsList(isTablet, theme, l10n),
-                    ),
-                  ],
+          child: Stack(
+            children: [
+              SafeArea(
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    children: [
+                      _buildHeader(isTablet, theme, provider),
+                      // _buildFilterTabs(isTablet, theme),
+                      _buildQuickStats(isTablet, theme, provider),
+                      Expanded(
+                        child: provider.isLoading && provider.notifications.isEmpty
+                            ? const Center(child: CircularProgressIndicator())
+                            : _buildNotificationsList(isTablet, theme, l10n),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const DraggableMenu(),
-          ],
+              const DraggableMenu(),
+            ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,7 @@ import 'package:frontend/models/user.dart';
 import 'package:frontend/providers/user_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
+import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/providers/theme_provider.dart';
 import 'package:frontend/providers/language_provider.dart';
 import 'package:provider/provider.dart';
@@ -92,7 +93,8 @@ class _SettingsScreenState extends State<SettingsScreen>
     var user = context.read<AuthProvider>().user;
     if (user != null) {
       user.lang = languageCode;
-      context.read<UserProvider>().updateUser(user.id, user);
+      await context.read<UserProvider>().updateUser(user.id, user);
+      await context.read<AuthProvider>().updateUserInSession(user);
     }
 
     setState(() {
@@ -105,14 +107,23 @@ class _SettingsScreenState extends State<SettingsScreen>
     // Ideally we would use the new localization but this is fine for feedback
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${l10n.language} ${l10n.changed} $displayLanguage'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    
+    // Use a robust way to show snackbar, checking if context is still valid for ScaffoldMessenger
+    try {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.clearSnackBars();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('${l10n.language} ${l10n.changed} $displayLanguage'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    } catch (e) {
+      // Ignore if ScaffoldMessenger cannot find a scaffold during rebuild
+      print('Failed to show language change snackbar: $e');
+    }
   }
 
   @override
@@ -124,21 +135,24 @@ class _SettingsScreenState extends State<SettingsScreen>
     final l10n = AppLocalizations.of(context);
     var user = context.watch<AuthProvider>().user ?? User();
 
-    // Initialize all selected values with localized strings
+
     if (_selectedVoice.isEmpty) {
-      _selectedVoice = l10n.female; // Default to female
+      _selectedVoice = user.voicePreferences?['defaultTtsVoiceId'] ?? 'nova';
+      if (_selectedVoice != 'onyx' && _selectedVoice != 'nova') {
+        _selectedVoice = 'nova';
+      }
     }
 
     if (_selectedLanguage.isEmpty) {
       _selectedLanguage = AppLocalizations.of(context).locale.languageCode;
     }
 
-    // We don't need this initialization block anymore as we use the provider or default
+
     if (_selectedTheme != themeProvider.themeMode) {
        _selectedTheme = themeProvider.themeMode;
     }
     
-    // Initialize work email and name from user object
+
     if (_workEmail == 'amhita.maroua@gmail.com' || _workEmail.isEmpty) {
       _workEmail = user.workEmail ?? user.email ?? '';
     }
@@ -146,9 +160,15 @@ class _SettingsScreenState extends State<SettingsScreen>
       _userName = '${user.firstName ?? ''} ${user.lastName ?? ''}'.trim();
       if (_userName.isEmpty) _userName = 'User';
     }
-    return Scaffold(
-      drawer: const SideMenu(),
-      body: Container(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        context.go('/');
+      },
+      child: Scaffold(
+        drawer: const SideMenu(),
+        body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -160,7 +180,9 @@ class _SettingsScreenState extends State<SettingsScreen>
             ],
           ),
         ),
-        child: SafeArea(
+        child: Stack(
+          children: [
+            SafeArea(
           child: SlideTransition(
             position: _slideAnimation,
             child: Column(
@@ -191,7 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           AppLocalizations.of(context).appPreferences,
                           Icons.tune_outlined,
                           [
-                            // _buildVoiceSelector(isTablet, theme),
+                            _buildVoiceSelector(isTablet, theme),
                             _buildLanguageSelector(isTablet, theme, user),
                             _buildThemeSelector(isTablet, theme),
                           ],
@@ -296,8 +318,12 @@ class _SettingsScreenState extends State<SettingsScreen>
               ],
             ),
           ),
+            ),
+            const DraggableMenu(),
+          ],
         ),
       ),
+    ),
     );
   }
 
@@ -339,7 +365,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             children: [
               
               GestureDetector(
-                onTap: () => _changeProfileImage(theme, isTablet),
+                onTap: () {},
+                // onTap: () => _changeProfileImage(theme, isTablet),
                 child: Container(
                   width: isTablet ? 72 : 64,
                   height: isTablet ? 72 : 64,
@@ -711,7 +738,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Priority Emails',
+                              AppLocalizations.of(context).priorityEmails,
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface,
                                 fontSize: isTablet ? 16 : 15,
@@ -720,7 +747,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             ),
                             SizedBox(height: isTablet ? 4 : 2),
                             Text(
-                              'Manage VIP senders',
+                              AppLocalizations.of(context).manageVipSenders,
                               style: TextStyle(
                                 color: theme.colorScheme.onSurface.withValues(
                                   alpha: 0.6,
@@ -745,7 +772,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                             ),
                           ),
                           child: Text(
-                            'Manage',
+                            AppLocalizations.of(context).manage,
                             style: TextStyle(
                               color: Colors.orange,
                               fontSize: isTablet ? 12 : 11,
@@ -1056,11 +1083,57 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
+  void _changeVoice(String voiceId) async {
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _selectedVoice = voiceId;
+    });
+
+    try {
+      await context.read<UserProvider>().updateVoicePreference(voiceId);
+      
+      var user = context.read<AuthProvider>().user;
+      if (user != null) {
+        user.voicePreferences = {'defaultTtsVoiceId': voiceId};
+        await context.read<AuthProvider>().updateUserInSession(user);
+      }
+
+      if (!mounted) return;
+      
+      try {
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.clearSnackBars();
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('${l10n.voice} ${l10n.changed}'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      } catch (e) {
+        print('Failed to show voice change snackbar: $e');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update voice preference'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } catch (_) {}
+    }
+  }
+
   Widget _buildVoiceSelector(bool isTablet, ThemeData theme) {
     final l10n = AppLocalizations.of(context);
+    String displayVoice = _selectedVoice == 'onyx' ? l10n.male : l10n.female;
+
     return _buildSettingItem(
       l10n.voice,
-      '${l10n.voice}: $_selectedVoice',
+      '${l10n.voice}: $displayVoice',
       Icons.record_voice_over_outlined,
       showArrow: false,
       trailing: Container(
@@ -1080,13 +1153,13 @@ class _SettingsScreenState extends State<SettingsScreen>
               color: theme.colorScheme.onSurface,
               fontSize: isTablet ? 13 : 12,
             ),
-            items:
-                [l10n.male, l10n.female].map((voice) {
-                  return DropdownMenuItem(value: voice, child: Text(voice));
-                }).toList(),
+            items: [
+               DropdownMenuItem(value: 'nova', child: Text(l10n.female)),
+               DropdownMenuItem(value: 'onyx', child: Text(l10n.male)),
+            ],
             onChanged: (value) {
               if (value != null) {
-                setState(() => _selectedVoice = value);
+                _changeVoice(value);
               }
             },
           ),
@@ -1209,7 +1282,11 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildSignOutButton(bool isTablet, ThemeData theme) {
     return GestureDetector(
-      onTap: () => _showSignOutDialog(theme, isTablet),
+      onTap: () async {
+        context.read<MailProvider>().clearCache();
+        context.read<AuthProvider>().logout();
+        context.go('/login');
+      },
       child: Container(
         width: double.infinity,
         margin: EdgeInsets.symmetric(horizontal: isTablet ? 20 : 16),
@@ -1269,77 +1346,122 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder:
-          (context) => AlertDialog(
-            backgroundColor: theme.colorScheme.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
-            ),
-            title: Text(
-              'Edit Name',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: isTablet ? 20 : 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            content: TextField(
-              controller: nameController,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: isTablet ? 16 : 14,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Enter your name',
-                hintStyle: TextStyle(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          (context) => StatefulBuilder(
+            builder: (dialogContext, setState) {
+              bool isLoading = false;
+              return AlertDialog(
+                backgroundColor: theme.colorScheme.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
                 ),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                title: Text(
+                  AppLocalizations.of(context).editName,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: isTablet ? 20 : 18,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: theme.colorScheme.primary),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'Cancel',
+                content: TextField(
+                  controller: nameController,
+                  enabled: !isLoading,
                   style: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: theme.colorScheme.onSurface,
                     fontSize: isTablet ? 16 : 14,
                   ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final newName = nameController.text.trim();
-                  if (newName.isNotEmpty) {
-                    final parts = newName.split(' ');
-                    user.firstName = parts[0];
-                    user.lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-                    
-                    await context.read<UserProvider>().updateUser(user.id, user);
-                    await context.read<AuthProvider>().updateUserInSession(user);
-                  }
-                  if (mounted) Navigator.of(context).pop();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                ),
-                child: Text(
-                  'Save',
-                  style: TextStyle(
-                    color: theme.colorScheme.onPrimary,
-                    fontSize: isTablet ? 16 : 14,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context).enterName,
+                    hintStyle: TextStyle(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: theme.colorScheme.primary),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                actions: [
+                  TextButton(
+                    onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
+                    child: Text(
+                      AppLocalizations.of(context).cancel,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        fontSize: isTablet ? 16 : 14,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            final newName = nameController.text.trim();
+                            if (newName.isNotEmpty) {
+                              setState(() {
+                                isLoading = true;
+                              });
+
+                              // Capture context/providers before async gap
+                              final userProvider = context.read<UserProvider>();
+                              final authProvider = context.read<AuthProvider>();
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              
+                              try {
+                                final parts = newName.split(' ');
+                                user.firstName = parts[0];
+                                user.lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+                                
+                                await userProvider.updateUser(user.id, user);
+                                await authProvider.updateUserInSession(user);
+
+                                // Check if the dialog is still mounted/active before popping
+                                if (dialogContext.mounted) {
+                                   Navigator.of(dialogContext).pop();
+                                }
+                              } catch (e) {
+                                if (dialogContext.mounted) {
+                                  setState(() {
+                                    isLoading = false;
+                                  });
+                                  scaffoldMessenger.showSnackBar(
+                                    SnackBar(content: Text('Error updating name: $e'), backgroundColor: Colors.red),
+                                  );
+                                }
+                              }
+                            } else {
+                              Navigator.of(dialogContext).pop();
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      disabledBackgroundColor: theme.colorScheme.primary.withOpacity(0.5),
+                    ),
+                    child: isLoading
+                        ? SizedBox(
+                            width: 20, 
+                            height: 20, 
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2, 
+                              color: theme.colorScheme.onPrimary
+                            )
+                          )
+                        : Text(
+                            AppLocalizations.of(context).save,
+                            style: TextStyle(
+                              color: theme.colorScheme.onPrimary,
+                              fontSize: isTablet ? 16 : 14,
+                            ),
+                          ),
+                  ),
+                ],
+              );
+            },
           ),
     );
   }
@@ -1350,104 +1472,140 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder:
-          (context) => AlertDialog(
-            backgroundColor: theme.colorScheme.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
-            ),
-            title: Text(
-              'Edit Work Email',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: isTablet ? 20 : 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            content: TextField(
-              controller: emailController,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: isTablet ? 16 : 14,
-              ),
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                hintText: 'Enter your work email',
-                hintStyle: TextStyle(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          (context) => StatefulBuilder(
+            builder: (dialogContext, setState) {
+              bool isLoading = false;
+              return AlertDialog(
+                backgroundColor: theme.colorScheme.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
                 ),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                title: Text(
+                  AppLocalizations.of(context).editWorkEmailTitle,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: isTablet ? 20 : 18,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: theme.colorScheme.primary),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(
-                  'Cancel',
+                content: TextField(
+                  controller: emailController,
+                  enabled: !isLoading,
                   style: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: theme.colorScheme.onSurface,
                     fontSize: isTablet ? 16 : 14,
                   ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final newEmail = emailController.text.trim();
-                  if (newEmail.isNotEmpty && newEmail != user.workEmail) {
-                    // Capture providers BEFORE async gap
-                    final userProvider = context.read<UserProvider>();
-                    final authProvider = context.read<AuthProvider>();
-                    final mailProvider = context.read<MailProvider>();
-                    final navigator = Navigator.of(context);
-                    final scaffoldMessenger = ScaffoldMessenger.of(context);
-                    
-                    // Update the user object with new work email
-                    user.workEmail = newEmail;
-                    
-                    // Update in backend and local storage
-                    await userProvider.updateUser(user.id, user);
-                    await authProvider.updateUserInSession(user);
-                    
-                    // Update local state
-                    setState(() {
-                      _workEmail = newEmail;
-                    });
-                    
-                    // Disconnect mail session since work email changed
-                    await mailProvider.disconnect();
-                    
-                    if (mounted) {
-                       navigator.pop();
-                       scaffoldMessenger.showSnackBar(
-                         SnackBar(
-                           content: Text('Work email updated. Please reconnect your email account.'),
-                           duration: Duration(seconds: 4),
-                         ),
-                       );
-                    }
-                  } else {
-                    Navigator.of(context).pop();
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                ),
-                child: Text(
-                  'Save',
-                  style: TextStyle(
-                    color: theme.colorScheme.onPrimary,
-                    fontSize: isTablet ? 16 : 14,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context).enterWorkEmail,
+                    hintStyle: TextStyle(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: theme.colorScheme.primary),
+                    ),
                   ),
                 ),
-              ),
-            ],
+                actions: [
+                  TextButton(
+                    onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
+                    child: Text(
+                      AppLocalizations.of(context).cancel,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        fontSize: isTablet ? 16 : 14,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            final newEmail = emailController.text.trim();
+                            if (newEmail.isNotEmpty && newEmail != user.workEmail) {
+                              setState(() {
+                                isLoading = true;
+                              });
+
+                              // Capture providers BEFORE async gap
+                              final userProvider = context.read<UserProvider>();
+                              final authProvider = context.read<AuthProvider>();
+                              final mailProvider = context.read<MailProvider>();
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              final appLocalizations = AppLocalizations.of(context);
+
+                              try {
+                                // Update the user object with new work email
+                                user.workEmail = newEmail;
+                                
+                                // Update in backend and local storage
+                                await userProvider.updateUser(user.id, user);
+                                await authProvider.updateUserInSession(user);
+                                
+                                // Update parent widget state if still mounted
+                                if (this.mounted) {
+                                  this.setState(() {
+                                    _workEmail = newEmail;
+                                  });
+                                }
+                                
+                                // Disconnect mail session since work email changed
+                                await mailProvider.disconnect();
+                                
+                                if (dialogContext.mounted) {
+                                   Navigator.of(dialogContext).pop();
+                                   scaffoldMessenger.showSnackBar(
+                                     SnackBar(
+                                       content: Text(appLocalizations.workEmailUpdatedReconnect),
+                                       duration: const Duration(seconds: 4),
+                                     ),
+                                   );
+                                }
+                              } catch (e) {
+                                if (dialogContext.mounted) {
+                                  setState(() {
+                                    isLoading = false;
+                                  });
+                                  scaffoldMessenger.showSnackBar(
+                                     SnackBar(content: Text('Error updating email: $e'), backgroundColor: Colors.red),
+                                  );
+                                }
+                              }
+                            } else {
+                              Navigator.of(dialogContext).pop();
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      disabledBackgroundColor: theme.colorScheme.primary.withOpacity(0.5),
+                    ),
+                    child: isLoading 
+                      ? SizedBox(
+                          width: 20, 
+                          height: 20, 
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2, 
+                            color: theme.colorScheme.onPrimary
+                          )
+                        )
+                      : Text(
+                          AppLocalizations.of(context).save,
+                          style: TextStyle(
+                            color: theme.colorScheme.onPrimary,
+                            fontSize: isTablet ? 16 : 14,
+                          ),
+                        ),
+                  ),
+                ],
+              );
+            },
           ),
     );
   }
@@ -1571,7 +1729,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
                 SizedBox(width: isTablet ? 16 : 12),
                 Text(
-                  'Rate Our App',
+                  AppLocalizations.of(context).rateOurApp,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface,
                     fontSize: isTablet ? 20 : 18,
@@ -1584,7 +1742,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'We would love to hear your feedback! How would you rate our app?',
+                  AppLocalizations.of(context).rateOurAppFeedback,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -1620,7 +1778,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  'Maybe Later',
+                  AppLocalizations.of(context).maybeLater,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -1677,10 +1835,10 @@ class _SettingsScreenState extends State<SettingsScreen>
       context: context,
       builder:
           (context) => _buildCustomDialog(
-            'App Updates',
-            'You are using the latest version of the app. No updates available.',
+            AppLocalizations.of(context).appUpdates,
+            AppLocalizations.of(context).appUpdatesLatest,
             Icons.system_update,
-            primaryAction: 'OK',
+            primaryAction: AppLocalizations.of(context).ok,
             primaryActionColor: Colors.green,
             theme: theme,
             isTablet: isTablet,

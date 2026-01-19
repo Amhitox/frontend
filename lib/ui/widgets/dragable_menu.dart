@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/utils/localization.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:math' as math;
 
 class DraggableMenu extends StatefulWidget {
   const DraggableMenu({super.key});
@@ -64,14 +65,7 @@ class _DraggableMenuState extends State<DraggableMenu>
   }
 
   void _navigateTo(String route) {
-    if (route == '/') {
-      context.go('/');
-    } else {
-      final String currentLocation = GoRouterState.of(context).uri.toString();
-      if (currentLocation != route) {
-        context.push(route);
-      }
-    }
+    context.go(route);
     _toggleMenu();
   }
 
@@ -113,43 +107,46 @@ class _DraggableMenuState extends State<DraggableMenu>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              AnimatedBuilder(
-                animation: _animation,
-                builder: (context, child) {
-                  return Column(
-                    children:
-                        _menuItems.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final item = entry.value;
-                          final delay = index * 0.05;
-                          final value = (_animation.value - delay).clamp(
-                            0.0,
-                            1.0,
-                          );
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, (1 - value) * 30),
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  bottom:
-                                      isLargeScreen
-                                          ? 18
-                                          : isTablet
-                                          ? 16
-                                          : 12,
-                                ),
-                                child: _buildMenuItem(
-                                  item,
-                                  isTablet,
-                                  isLargeScreen,
+              IgnorePointer(
+                ignoring: !_isMenuOpen,
+                child: AnimatedBuilder(
+                  animation: _animation,
+                  builder: (context, child) {
+                    return Column(
+                      children:
+                          _menuItems.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final item = entry.value;
+                            final delay = index * 0.05;
+                            final value = (_animation.value - delay).clamp(
+                              0.0,
+                              1.0,
+                            );
+                            return Opacity(
+                              opacity: value,
+                              child: Transform.translate(
+                                offset: Offset(0, (1 - value) * 30),
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom:
+                                        isLargeScreen
+                                            ? 18
+                                            : isTablet
+                                            ? 16
+                                            : 12,
+                                  ),
+                                  child: _buildMenuItem(
+                                    item,
+                                    isTablet,
+                                    isLargeScreen,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        }).toList(),
-                  );
-                },
+                            );
+                          }).toList(),
+                    );
+                  },
+                ),
               ),
               SizedBox(
                 height:
@@ -165,7 +162,7 @@ class _DraggableMenuState extends State<DraggableMenu>
                   animation: _iconRotationController,
                   builder: (context, child) {
                     return Transform.rotate(
-                      angle: _iconRotationController.value * 0.785,
+                      angle: _iconRotationController.value * math.pi,
                       child: Container(
                         width: buttonSize,
                         height: buttonSize,
@@ -188,15 +185,16 @@ class _DraggableMenuState extends State<DraggableMenu>
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.add_rounded,
-                          color: colors.onPrimary,
-                          size:
-                              isLargeScreen
-                                  ? 36
-                                  : isTablet
-                                  ? 32
-                                  : 28,
+                        child: Center(
+                          child: FractionallySizedBox(
+                            widthFactor: 0.5,
+                            heightFactor: 0.5,
+                            child: Image.asset(
+                              'assets/images/ic_notification.png',
+                              color: colors.onPrimary,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                         ),
                       ),
                     );

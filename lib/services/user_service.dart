@@ -30,6 +30,12 @@ class UserService {
       if (user.workEmail != null) {
         data['workEmail'] = user.workEmail;
       }
+      if (user.jobTitle != null) {
+        data['jobTitle'] = user.jobTitle;
+      }
+      if (user.status != null) {
+        data['status'] = user.status;
+      }
       final response = await _dio.put('/api/users/$id', data: data);
       return response;
     } on DioException {
@@ -37,11 +43,24 @@ class UserService {
     }
   }
 
-  Future<dynamic> changePassword(String id, String newPassword) async {
+  Future<dynamic> updateProfile(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.put(
-        '/api/users/$id/change-password',
-        data: {'password': newPassword, 'confirmPassword': newPassword},
+      final response = await _dio.patch('/api/users/profile', data: data);
+      return response;
+    } on DioException {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> changePassword(String oldPassword, String newPassword, String confirmPassword) async {
+    try {
+      final response = await _dio.patch(
+        '/api/users/profile/change-password',
+        data: {
+          'oldPassword': oldPassword,
+          'password': newPassword,
+          'confirmPassword': confirmPassword,
+        },
       );
       return response;
     } on DioException {

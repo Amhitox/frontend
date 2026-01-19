@@ -226,45 +226,52 @@ class _CalendarPageState extends State<CalendarPage>
     final theme = Theme.of(context);
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      drawer: const SideMenu(),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.scaffoldBackgroundColor,
-              theme.colorScheme.surface.withValues(alpha: 0.3),
-              theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        context.go('/');
+      },
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        drawer: const SideMenu(),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.scaffoldBackgroundColor,
+                theme.colorScheme.surface.withValues(alpha: 0.3),
+                theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
+              ],
+            ),
+          ),
+          child: Stack(
+            children: [
+              SafeArea(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child:
+                      _showingCalendarView
+                          ? _buildCalendarView()
+                          : FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: Column(
+                              key: const ValueKey('weekView'),
+                              children: [
+                                _buildCalendarHeader(theme, isTablet),
+                                _buildWeekNavigation(theme, isTablet),
+                                _buildWeekDaysHeader(theme, isTablet),
+                                Expanded(child: _buildWeekView(theme, isTablet)),
+                              ],
+                            ),
+                          ),
+                ),
+              ),
+              const DraggableMenu(),
             ],
           ),
-        ),
-        child: Stack(
-          children: [
-            SafeArea(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child:
-                    _showingCalendarView
-                        ? _buildCalendarView()
-                        : FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Column(
-                            key: const ValueKey('weekView'),
-                            children: [
-                              _buildCalendarHeader(theme, isTablet),
-                              _buildWeekNavigation(theme, isTablet),
-                              _buildWeekDaysHeader(theme, isTablet),
-                              Expanded(child: _buildWeekView(theme, isTablet)),
-                            ],
-                          ),
-                        ),
-              ),
-            ),
-            const DraggableMenu(),
-          ],
         ),
       ),
     );
@@ -906,7 +913,7 @@ class _CalendarPageState extends State<CalendarPage>
   }
 
   String _formatHour24(int hour) {
-    return DateFormat('hh a').format(DateTime(2022, 1, 1, hour));
+    return DateFormat('HH:mm').format(DateTime(2022, 1, 1, hour));
   }
 
   double _getInitialScrollOffset(double timeSlotHeight) {
@@ -1008,36 +1015,45 @@ class _CalendarPageState extends State<CalendarPage>
                     ],
                   ),
                   const SizedBox(height: 24),
-                if (meeting.description != null && meeting.description!.isNotEmpty) ...[
-                   _buildDetailRow(
-                    Icons.description_outlined,
-                    AppLocalizations.of(context).description,
-                    meeting.description!,
-                    theme,
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (meeting.description != null && meeting.description!.isNotEmpty) ...[
+                            _buildDetailRow(
+                              Icons.description_outlined,
+                              AppLocalizations.of(context).description,
+                              meeting.description!,
+                              theme,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          _buildDetailRow(
+                            Icons.play_circle_outline_rounded,
+                            AppLocalizations.of(context).startTime,
+                            '${DateFormat('EEEE d MMM, y', AppLocalizations.of(context).locale.toString()).format(DateTime.parse(meeting.date ?? DateTime.now().toIso8601String()))}   ${_formatTimeString(meeting.startTime)}',
+                            theme,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildDetailRow(
+                            Icons.stop_circle_outlined,
+                            AppLocalizations.of(context).endTime,
+                            '${DateFormat('EEEE d MMM, y', AppLocalizations.of(context).locale.toString()).format(DateTime.parse(meeting.date ?? DateTime.now().toIso8601String()))}   ${_formatTimeString(meeting.endTime)}',
+                            theme,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildDetailRow(
+                            Icons.people_outline_rounded,
+                            AppLocalizations.of(context).attendees,
+                            meeting.attendees?.join(', ') ?? '',
+                            theme,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
-                ],
-                _buildDetailRow(
-                  Icons.play_circle_outline_rounded,
-                  AppLocalizations.of(context).startTime,
-                  '${DateFormat('EEEE d MMM, y', AppLocalizations.of(context).locale.toString()).format(DateTime.parse(meeting.date ?? DateTime.now().toIso8601String()))}   ${_formatTimeString(meeting.startTime)}',
-                  theme,
-                ),
-                const SizedBox(height: 16),
-                _buildDetailRow(
-                  Icons.stop_circle_outlined,
-                  AppLocalizations.of(context).endTime,
-                  '${DateFormat('EEEE d MMM, y', AppLocalizations.of(context).locale.toString()).format(DateTime.parse(meeting.date ?? DateTime.now().toIso8601String()))}   ${_formatTimeString(meeting.endTime)}',
-                  theme,
-                ),
-                const SizedBox(height: 16),
-                  _buildDetailRow(
-                    Icons.people_outline_rounded,
-                    AppLocalizations.of(context).attendees,
-                    meeting.attendees?.join(', ') ?? '',
-                    theme,
-                  ),
-                  const Spacer(),
                   Row(
                     children: [
                       Expanded(
@@ -1297,7 +1313,7 @@ class _CalendarPageState extends State<CalendarPage>
     if (timeString.contains('T')) {
       try {
         final date = DateTime.parse(timeString).toLocal();
-        return DateFormat('hh:mm a').format(date);
+        return DateFormat('HH:mm').format(date);
       } catch (e) {
         return timeString;
       }
@@ -1307,12 +1323,12 @@ class _CalendarPageState extends State<CalendarPage>
   }
 
   String _formatTimeString(String? time) {
-    if (time == null || time.isEmpty) return '00:00 AM';
+    if (time == null || time.isEmpty) return '00:00';
     try {
       // If it looks like a full ISO string (e.g. 2025-12-14T09:00:00)
       if (time.contains('T')) {
          final dt = DateTime.parse(time);
-         return DateFormat('hh:mm a').format(dt);
+         return DateFormat('HH:mm').format(dt);
       }
       
       // If it looks like "14:30" or "09:00"
@@ -1322,7 +1338,7 @@ class _CalendarPageState extends State<CalendarPage>
         final minute = int.tryParse(parts[1]) ?? 0;
         // Construct a dummy date to use DateFormat
         final dt = DateTime(2022, 1, 1, hour, minute);
-        return DateFormat('hh:mm a').format(dt);
+        return DateFormat('HH:mm').format(dt);
       }
       
       return time;

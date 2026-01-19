@@ -71,11 +71,11 @@ class _SplashScreenState extends State<SplashScreen>
   void _startAnimations() async {
     _logoController.forward();
     _particleController.repeat();
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
       _breathingController.repeat(reverse: true);
     }
-    await Future.delayed(const Duration(milliseconds: 2500));
+    await Future.delayed(const Duration(milliseconds: 1000));
     if (mounted) {
       _fadeController.forward().then((_) {
         if (mounted) {
