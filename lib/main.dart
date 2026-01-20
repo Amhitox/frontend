@@ -73,7 +73,7 @@ Future<void> main() async {
 
   final authProvider = AuthProvider();
   await authProvider.init();
-  await AppRoutes().init();
+  await AppRoutes().init(authProvider);
   runApp(
     MultiProvider(
       providers: [

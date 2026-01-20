@@ -58,6 +58,8 @@
 	<string>We need access to your camera to take photos for email attachments.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need access to your microphone for voice commands, audio notes, and email transcription.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>We need access to speech recognition for transcribing your voice inputs.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

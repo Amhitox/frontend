@@ -9,9 +9,10 @@ class User {
   String? workEmail;
   DateTime? birthday;
   String? subscriptionStatus;
-  DateTime? trialEndDate;
+  DateTime? currentPeriodEnd;
   String? subscriptionTier;
-  String? subscriptionPeriod; // Added field
+  String? subscriptionPeriod;
+  DateTime? trialEndDate;
   String? jobTitle;
   Map<String, dynamic>? voicePreferences;
 
@@ -28,9 +29,10 @@ class User {
     this.subscriptionTier,
     this.subscriptionStatus,
     this.trialEndDate,
-    this.subscriptionPeriod, // Added
+    this.subscriptionPeriod,
     this.jobTitle,
     this.voicePreferences,
+    this.currentPeriodEnd,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -45,8 +47,9 @@ class User {
       workEmail: json['workEmail'] as String?,
       subscriptionTier: json['subscriptionTier'] as String?,
       subscriptionStatus: json['subscriptionStatus'] as String?,
-      subscriptionPeriod: json['subscriptionPeriod'] as String?, // Added
+      subscriptionPeriod: json['subscriptionPeriod'] as String?,
       trialEndDate: json['trialEndDate'] is String ? DateTime.parse(json['trialEndDate']) : null,
+      currentPeriodEnd: json['currentPeriodEnd'] is String ? DateTime.parse(json['currentPeriodEnd']) : null,
       jobTitle: json['jobTitle'] as String?,
       voicePreferences: json['voicePreferences'] as Map<String, dynamic>?,
     );
@@ -65,8 +68,9 @@ class User {
     }
     if (subscriptionTier != null) json['subscriptionTier'] = subscriptionTier;
     if (subscriptionStatus != null) json['subscriptionStatus'] = subscriptionStatus;
-    if (subscriptionPeriod != null) json['subscriptionPeriod'] = subscriptionPeriod; // Added
+    if (subscriptionPeriod != null) json['subscriptionPeriod'] = subscriptionPeriod;
     if (trialEndDate != null) json['trialEndDate'] = trialEndDate!.toIso8601String();
+    if (currentPeriodEnd != null) json['currentPeriodEnd'] = currentPeriodEnd!.toIso8601String();
     if (jobTitle != null) json['jobTitle'] = jobTitle;
     if (voicePreferences != null) json['voicePreferences'] = voicePreferences;
     return json;
@@ -83,8 +87,9 @@ class User {
     String? workEmail,
     String? subscriptionTier,
     String? subscriptionStatus,
-    String? subscriptionPeriod, // Added
+    String? subscriptionPeriod,
     DateTime? trialEndDate,
+    DateTime? currentPeriodEnd,
     String? jobTitle,
     Map<String, dynamic>? voicePreferences,
   }) {
@@ -99,8 +104,9 @@ class User {
       workEmail: workEmail ?? this.workEmail,
       subscriptionTier: subscriptionTier ?? this.subscriptionTier,
       subscriptionStatus: subscriptionStatus ?? this.subscriptionStatus,
-      subscriptionPeriod: subscriptionPeriod ?? this.subscriptionPeriod, // Added
+      subscriptionPeriod: subscriptionPeriod ?? this.subscriptionPeriod,
       trialEndDate: trialEndDate ?? this.trialEndDate,
+      currentPeriodEnd: currentPeriodEnd ?? this.currentPeriodEnd,
       jobTitle: jobTitle ?? this.jobTitle,
       voicePreferences: voicePreferences ?? this.voicePreferences,
     );

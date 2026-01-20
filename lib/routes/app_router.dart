@@ -77,7 +77,11 @@ class AppRoutes {
   bool firstOpen = true;
   List<Task> tasks = <Task>[];
   List<Meeting> meetings = <Meeting>[];
-  Future<void> init() async {
+  
+  AuthProvider? _authProvider;
+
+  Future<void> init(AuthProvider authProvider) async {
+    _authProvider = authProvider;
     pref = await SharedPreferences.getInstance();
     firstOpen = pref.getBool('firstOpen') ?? true;
   }
@@ -93,6 +97,46 @@ class AppRoutes {
     return GoRouter(
       navigatorKey: navigatorKey,
       initialLocation: splash,
+      refreshListenable: _authProvider,
+      redirect: (context, state) {
+        final auth = _authProvider;
+        if (auth == null) return null;
+
+        final isLoggedIn = auth.isLoggedIn;
+        final location = state.uri.toString();
+        
+        final isLoggingIn = location == login;
+        final isSigningUp = location == signup;
+        final isSplash = location == splash;
+        final isOnboarding = location == onboarding;
+        final isReset = location.startsWith('/__/auth/action') || location == forgetPassword;
+
+        if (!isLoggedIn) {
+          if (isLoggingIn || isSigningUp || isSplash || isOnboarding || isReset) {
+            return null;
+          }
+          return login;
+        }
+
+        final canAccess = auth.canAccessApp;
+        final isAccessGate = location == accessGate;
+        final isSubscription = location == subscription;
+        final isCallback = location == '/callback';
+
+        if (!canAccess) {
+             if (isAccessGate) return null;
+             if (isSubscription) return null;
+             if (isCallback) return null;
+             
+             return accessGate;
+        }
+
+        if (isAccessGate || isLoggingIn || isSplash) {
+          return home;
+        }
+
+        return null;
+      },
       routes: [
         GoRoute(
           path: splash,

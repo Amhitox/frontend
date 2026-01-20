@@ -35,16 +35,29 @@ class SubService {
 
   Future<Response> signCmiPayment({
     required double amount,
+    required String userId,
     required Map<String, dynamic> userInfo,
+    required String planTier,
+    required String planPeriod,
     String? transactionId,
   }) async {
     return await _dio.post(
       '/api/payment/cmi/sign',
       data: {
         'amount': amount,
+        'userId': userId,
         'userInfo': userInfo,
+        'planTier': planTier,
+        'planPeriod': planPeriod,
         if (transactionId != null) 'transactionId': transactionId,
       },
+    );
+  }
+
+  Future<Response> cancelSubscription(String userId) async {
+    return await _dio.post(
+      '/api/subscribe/cancel',
+      data: {'userId': userId},
     );
   }
 }

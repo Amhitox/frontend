@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:frontend/utils/app_theme.dart';
 
 class CmiPaymentScreen extends StatefulWidget {
   final String gatewayUrl;
@@ -19,6 +20,7 @@ class CmiPaymentScreen extends StatefulWidget {
 class _CmiPaymentScreenState extends State<CmiPaymentScreen> {
   late WebViewController _controller;
   bool _isLoading = true;
+  bool? _isSuccess;
 
   @override
   void initState() {
@@ -33,15 +35,12 @@ class _CmiPaymentScreenState extends State<CmiPaymentScreen> {
             });
           },
           onNavigationRequest: (NavigationRequest request) {
-            // Check for Success/Fail Redirects
-            if (request.url.contains("payment/success") || request.url.contains("okUrl")) { 
-               // Handle Success
-               if (mounted) Navigator.pop(context, true);
-               return NavigationDecision.prevent;
-            } else if (request.url.contains("payment/fail") || request.url.contains("failUrl")) { 
-               // Handle Failure
-               if (mounted) Navigator.pop(context, false);
-               return NavigationDecision.prevent;
+            if (request.url.contains("payment/cmi/success") || request.url.contains("okUrl")) {
+               _isSuccess = true;
+               return NavigationDecision.navigate;
+            } else if (request.url.contains("payment/cmi/fail") || request.url.contains("failUrl")) {
+               _isSuccess = false;
+               return NavigationDecision.navigate;
             }
             return NavigationDecision.navigate;
           },
@@ -74,20 +73,32 @@ class _CmiPaymentScreenState extends State<CmiPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Secure Payment"),
-        backgroundColor: const Color(0xFF1A1A2E),
-        foregroundColor: Colors.white,
-      ),
-      body: Stack(
-        children: [
-          WebViewWidget(controller: _controller),
-          if (_isLoading)
-            const Center(
-              child: CircularProgressIndicator(),
-            ),
-        ],
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        Navigator.pop(context, _isSuccess ?? false);
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.deepDark,
+        appBar: AppBar(
+          title: const Text("Secure Payment"),
+          backgroundColor: AppTheme.darkBlue,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context, _isSuccess ?? false),
+          ),
+        ),
+        body: Stack(
+            children: [
+              WebViewWidget(controller: _controller),
+              if (_isLoading)
+                const Center(
+                  child: CircularProgressIndicator(color: AppTheme.primaryBlue),
+                ),
+            ],
+          ),
       ),
     );
   }

@@ -97,14 +97,20 @@ class SubProvider extends ChangeNotifier {
 
   Future<Map<String, dynamic>?> initiateCmiPayment({
     required double amount,
+    required String userId,
     required Map<String, dynamic> userInfo,
+    required String planTier,
+    required String planPeriod,
   }) async {
     _isLoading = true;
     notifyListeners();
     try {
       final response = await subService.signCmiPayment(
         amount: amount,
+        userId: userId,
         userInfo: userInfo,
+        planTier: planTier,
+        planPeriod: planPeriod,
       );
       
       if (response.statusCode == 200) {
@@ -114,6 +120,24 @@ class SubProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error initiating CMI payment: $e');
       return null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> cancelSubscription(String userId) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final response = await subService.cancelSubscription(userId);
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Error cancelling subscription: $e');
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();

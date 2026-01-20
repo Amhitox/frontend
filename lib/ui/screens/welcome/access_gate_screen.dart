@@ -23,14 +23,10 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
     final isInactive = user?.status == 'inactive';
-
-    if (!authProvider.isLoggedIn) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.goNamed('login');
-      });
-      return const Scaffold(backgroundColor: AppTheme.deepDark);
-    }
-
+    final shouldPay = user?.subscriptionStatus == 'SHOULD_PAY';
+    
+    // Auto-redirect if access is allowed
+    // Note: AppRouter also handles this, but we keep this double-check for safety
     if (authProvider.canAccessApp && !isInactive) {
       if (ModalRoute.of(context)?.isCurrent ?? false) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -42,6 +38,29 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
     final loc = AppLocalizations.of(context)!;
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenHeight < 700;
+
+    String title;
+    String description;
+    String buttonText;
+    IconData icon;
+
+    if (isInactive) {
+      title = loc.accountInactive;
+      description = loc.inactiveAccountDesc;
+      buttonText = loc.activateSubscribe;
+      icon = Icons.lock_outline_rounded;
+    } else if (shouldPay) {
+      title = loc.subscriptionExpired;
+      description = loc.paymentRequiredDesc;
+      buttonText = loc.renewSubscription;
+      icon = Icons.credit_card_off_rounded;
+    } else {
+      // Default fail-safe: Free Trial Ended
+      title = loc.freeTrialEnded;
+      description = loc.trialEndedDesc;
+      buttonText = loc.subscribeContinue;
+      icon = Icons.hourglass_empty_rounded;
+    }
 
     return Scaffold(
       backgroundColor: AppTheme.deepDark,
@@ -84,18 +103,14 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
                               ],
                             ),
                             child: Icon(
-                              isInactive
-                                  ? Icons.lock_outline_rounded
-                                  : Icons.hourglass_empty_rounded,
+                              icon,
                               size: 48,
                               color: AppTheme.primaryBlue,
                             ),
                           ),
                           const SizedBox(height: 24),
                           Text(
-                            isInactive
-                                ? loc.accountInactive
-                                : loc.freeTrialEnded,
+                            title,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: isSmallScreen ? 22 : 26,
@@ -106,9 +121,7 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            isInactive
-                                ? loc.inactiveAccountDesc
-                                : loc.trialEndedDesc,
+                            description,
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.7),
                               fontSize: isSmallScreen ? 14 : 16,
@@ -146,9 +159,7 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
                                   elevation: 0,
                                 ),
                                 child: Text(
-                                  isInactive
-                                      ? loc.activateSubscribe
-                                      : loc.subscribeContinue,
+                                  buttonText,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,

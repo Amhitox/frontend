@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/utils/localization.dart';
 import 'package:frontend/providers/mail_provider.dart';
+import 'package:frontend/providers/sub_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -52,6 +53,8 @@ class _SettingsScreenState extends State<SettingsScreen>
     _slideController.dispose();
     super.dispose();
   }
+
+
 
 
 
@@ -201,6 +204,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+
                         _buildEmailSection(
                           isTablet,
                           isLargeScreen,
@@ -502,6 +506,9 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
+
+
+
 
 
   Widget _buildEmailSection(

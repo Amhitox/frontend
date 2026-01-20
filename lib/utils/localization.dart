@@ -683,8 +683,16 @@ class AppLocalizations {
   String get subscribeContinue => _localizedValues[locale.languageCode]!['subscribeContinue']!;
   String get deleteAccountLeave => _localizedValues[locale.languageCode]!['deleteAccountLeave']!;
   String get deleteAccountTitle => _localizedValues[locale.languageCode]!['deleteAccountTitle']!;
-  String get deleteAccountDesc => _localizedValues[locale.languageCode]!['deleteAccountDesc']!;
-  String get deleteAndLogout => _localizedValues[locale.languageCode]!['deleteAndLogout']!;
+  String get deleteAccountDesc =>
+       _localizedValues[locale.languageCode]!['deleteAccountDesc']!;
+  String get deleteAndLogout =>
+       _localizedValues[locale.languageCode]!['deleteAndLogout']!;
+  String get subscriptionExpired =>
+       _localizedValues[locale.languageCode]!['subscriptionExpired']!;
+  String get paymentRequiredDesc =>
+       _localizedValues[locale.languageCode]!['paymentRequiredDesc']!;
+  String get renewSubscription =>
+       _localizedValues[locale.languageCode]!['renewSubscription']!;
 
   // Subscription Screen
   String get sixMonths => _localizedValues[locale.languageCode]!['sixMonths']!;
@@ -713,7 +721,31 @@ class AppLocalizations {
 
 
 
-  // Dashboard / Feedback removed - duplicates
+  // Subscription Plans
+  String get premiumYear => _localizedValues[locale.languageCode]!['premiumYear']!;
+  String get premiumSixMonths => _localizedValues[locale.languageCode]!['premiumSixMonths']!;
+  String get proBusinessYear => _localizedValues[locale.languageCode]!['proBusinessYear']!;
+  String get proBusinessSixMonths => _localizedValues[locale.languageCode]!['proBusinessSixMonths']!;
+  String get annualSavings => _localizedValues[locale.languageCode]!['annualSavings']!;
+  String get bestValue => _localizedValues[locale.languageCode]!['bestValue']!;
+  String get unlimitedAIEmails => _localizedValues[locale.languageCode]!['unlimitedAIEmails']!;
+  String get calendarIntegration => _localizedValues[locale.languageCode]!['calendarIntegration']!;
+  String get teamCollaboration => _localizedValues[locale.languageCode]!['teamCollaboration']!;
+  String get advancedAnalytics => _localizedValues[locale.languageCode]!['advancedAnalytics']!;
+  String get allPremiumFeatures => _localizedValues[locale.languageCode]!['allPremiumFeatures']!;
+  String get phoneNumberRequired => _localizedValues[locale.languageCode]!['phoneNumberRequired']!;
+  String get pleaseLogInFirst => _localizedValues[locale.languageCode]!['pleaseLogInFirst']!;
+  String get paymentSuccessfulWelcome => _localizedValues[locale.languageCode]!['paymentSuccessfulWelcome']!;
+  String get paymentFailedOrCancelled => _localizedValues[locale.languageCode]!['paymentFailedOrCancelled']!;
+  String get failedToInitiatePayment => _localizedValues[locale.languageCode]!['failedToInitiatePayment']!;
+  String get subscribeNow => _localizedValues[locale.languageCode]!['subscribeNow']!;
+  String get cancelSubscriptionConfirmation => _localizedValues[locale.languageCode]!['cancelSubscriptionConfirmation']!;
+  String get confirmCancellation => _localizedValues[locale.languageCode]!['confirmCancellation']!;
+  String get subscriptionCancelled => _localizedValues[locale.languageCode]!['subscriptionCancelled']!;
+  String get errorCancellingSubscription => _localizedValues[locale.languageCode]!['errorCancellingSubscription']!;
+  String get subscription => _localizedValues[locale.languageCode]!['subscription']!;
+  String get renewals => _localizedValues[locale.languageCode]!['renewals']!;
+
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
@@ -1392,16 +1424,19 @@ class AppLocalizations {
       'deleteAccountTitle': 'Delete Account?',
       'deleteAccountDesc': 'Are you sure you want to leave? This action cannot be undone and your data will be permanently deleted.',
       'deleteAndLogout': 'Delete & Logout',
+      'subscriptionExpired': 'Subscription Expired',
+      'paymentRequiredDesc': 'Your subscription has expired. Please renew your plan to continue using AIXY.',
+      'renewSubscription': 'Renew Subscription',
 
       // Subscription Screen
       'sixMonths': '6 Months',
       'proBusinessIntl': 'Pro Business\nInternational',
       'premiumIntl': 'Premium\nInternational',
       'popular': 'POPULAR',
-      'perYear': '/ year',
-      'per6Months': '/ 6 mo',
-      'usdYear': 'USD / year',
-      'usdSixMonths': 'USD / 6 mo',
+      'perYear': '/ Year',
+      'per6Months': '/ 6 Months',
+      'usdYear': 'USD / Year',
+      'usdSixMonths': 'USD / 6 Months',
       'activePlan': 'ACTIVE PLAN',
       'startPlan': 'Start',
       'currentPlanAction': 'Current Plan',
@@ -1414,8 +1449,30 @@ class AppLocalizations {
       'subscriptionWillBeCanceled': 'Subscription will be canceled at period end',
       'failedToCancelSubscription': 'Failed to cancel subscription',
 
-
-
+      // New Plans
+      'premiumYear': 'Premium',
+      'premiumSixMonths': 'Premium',
+      'proBusinessYear': 'Pro Business',
+      'proBusinessSixMonths': 'Pro Business',
+      'annualSavings': 'Annual Savings',
+      'bestValue': 'Best Value',
+      'unlimitedAIEmails': 'Unlimited AI Emails',
+      'calendarIntegration': 'Calendar Integration',
+      'teamCollaboration': 'Team Collaboration',
+      'advancedAnalytics': 'Advanced Analytics',
+      'allPremiumFeatures': 'All Premium Features',
+      'phoneNumberRequired': 'Phone Number Required',
+      'pleaseLogInFirst': 'Please log in first',
+      'paymentSuccessfulWelcome': 'Payment Successful! Welcome to ',
+      'paymentFailedOrCancelled': 'Payment Failed or Cancelled',
+      'failedToInitiatePayment': 'Failed to initiate payment',
+      'subscribeNow': 'Subscribe Now',
+      'cancelSubscriptionConfirmation': 'Are you sure you want to cancel your subscription? You will lose access to premium features at the end of the current billing period.',
+      'confirmCancellation': 'Yes, Cancel Subscription',
+      'subscriptionCancelled': 'Subscription successfully cancelled.',
+      'errorCancellingSubscription': 'Failed to cancel subscription. Please try again.',
+      'subscription': 'Subscription',
+      'renewals': 'Renews',
     },
     'fr': {
       'autoRefine': 'Auto-raffinement',
@@ -1679,17 +1736,20 @@ class AppLocalizations {
       'deleteAccountLeave': 'Supprimer le compte & Partir',
       'deleteAccountTitle': 'Supprimer le compte ?',
       'deleteAccountDesc': 'Êtes-vous sûr de vouloir partir ? Cette action est irréversible et vos données seront définitivement supprimées.',
-      'deleteAndLogout': 'Supprimer & Se déconnecter',
+      'deleteAndLogout': 'Supprimer et se déconnecter',
+      'subscriptionExpired': 'Abonnement expiré',
+      'paymentRequiredDesc': 'Votre abonnement a expiré. Veuillez renouveler votre forfait pour continuer à utiliser AIXY.',
+      'renewSubscription': 'Renouveler l\'abonnement',
 
       // Subscription Screen
       'sixMonths': '6 Mois',
       'proBusinessIntl': 'Pro Business\nInternational',
       'premiumIntl': 'Premium\nInternational',
       'popular': 'POPULAIRE',
-      'perYear': '/ an',
-      'per6Months': '/ 6 mois',
-      'usdYear': 'USD / an',
-      'usdSixMonths': 'USD / 6 mois',
+      'perYear': '/ Année',
+      'per6Months': '/ 6 Mois',
+      'usdYear': 'USD / Année',
+      'usdSixMonths': 'USD / 6 Mois',
       'activePlan': 'PLAN ACTIF',
       'startPlan': 'Démarrer',
       'currentPlanAction': 'Plan Actuel',
@@ -1701,6 +1761,25 @@ class AppLocalizations {
       'confirmCancelDesc': 'Êtes-vous sûr de vouloir annuler ? Votre abonnement restera actif jusqu\'à la fin de la période de facturation.',
       'subscriptionWillBeCanceled': 'L\'abonnement sera annulé à la fin de la période',
       'failedToCancelSubscription': 'Échec de l\'annulation de l\'abonnement',
+
+      // New Plans
+      'premiumYear': 'Premium',
+      'premiumSixMonths': 'Premium',
+      'proBusinessYear': 'Pro Business',
+      'proBusinessSixMonths': 'Pro Business',
+      'annualSavings': 'Économies annuelles',
+      'bestValue': 'Meilleure valeur',
+      'unlimitedAIEmails': 'Emails IA illimités',
+      'calendarIntegration': 'Intégration Calendrier',
+      'teamCollaboration': 'Collaboration d\'équipe',
+      'advancedAnalytics': 'Analyses avancées',
+      'allPremiumFeatures': 'Toutes les fonctionnalités Premium',
+      'phoneNumberRequired': 'Numéro de téléphone requis',
+      'pleaseLogInFirst': 'Veuillez vous connecter d\'abord',
+      'paymentSuccessfulWelcome': 'Paiement réussi ! Bienvenue dans ',
+      'paymentFailedOrCancelled': 'Paiement échoué ou annulé',
+      'failedToInitiatePayment': 'Échec de l\'initialisation du paiement',
+      'subscribeNow': 'S\'abonner maintenant',
 
 
 
@@ -1860,8 +1939,6 @@ class AppLocalizations {
       'unexpectedError': 'Une erreur inattendue s\'est produite',
       'failedToRemoveEmail': 'Échec de la suppression de l\'e-mail',
       'noVipEmails': 'Aucun e-mail VIP pour le moment',
-      'addedToVIP': 'Ajouté',
-      'removedFromVIP': 'Supprimé',
       'quota': 'Quota',
       'used': 'utilisé',
       'manageVipSenders': 'Gérer les expéditeurs VIP',
@@ -2059,11 +2136,13 @@ class AppLocalizations {
       'generatingSummary': 'Génération du résumé...',
       'refineVoiceAction': 'Affinage/Réponse vocale',
       'refinementLimitReached': 'Limite d\'affinage atteinte',
-      'autoRefine': 'Auto-raffinement',
-      'hideDetails': 'Masquer les détails',
-      'refine': 'Affiner',
-      'mic': 'Micro',
-      'originalMail': 'Mail orginal',
+
+      'cancelSubscriptionConfirmation': 'Êtes-vous sûr de vouloir annuler votre abonnement ? Vous perdrez l\'accès aux fonctionnalités premium à la fin de la période de facturation en cours.',
+      'confirmCancellation': 'Oui, annuler l\'abonnement',
+      'subscriptionCancelled': 'Abonnement annulé avec succès.',
+      'errorCancellingSubscription': 'Échec de l\'annulation de l\'abonnement. Veuillez réessayer.',
+      'subscription': 'Abonnement',
+      'renewals': 'Renouvellement',
     },
 
   };

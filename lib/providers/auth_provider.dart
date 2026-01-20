@@ -33,13 +33,36 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get canAccessApp {
     if (_user?.status == 'inactive') return false;
-    
-    // Per new logic: Trust the backend.
-    // If SHOULD_PAY -> Block access (show paywall).
-    if (_user?.subscriptionTier == 'SHOULD_PAY') return false;
 
-    // Otherwise (ESSENTIAL, PREMIUM, FREE/etc), allow access.
-    return true; 
+    final status = _user?.subscriptionStatus;
+    final tier = _user?.subscriptionTier;
+    final now = DateTime.now();
+
+    if (status == 'SHOULD_PAY') return false;
+    if (status == 'CANCELLED' && tier == 'SHOULD_PAY') return false;
+
+    if (status == 'ACTIVE' || status == 'CANCELLED') {
+      if (tier == 'FREE_TRIAL') {
+         if (_user?.trialEndDate != null && now.isAfter(_user!.trialEndDate!)) {
+           return false;
+         }
+         return true;
+      }
+      
+      if (_user?.currentPeriodEnd != null && now.isAfter(_user!.currentPeriodEnd!)) {
+        return false;
+      }
+      return true;
+    }
+
+    if (status == 'FREE_TRIAL') {
+      if (_user?.trialEndDate != null && now.isAfter(_user!.trialEndDate!)) {
+        return false; 
+      }
+      return true;
+    }
+
+    return false;
   }
 
   bool get isPremium {
