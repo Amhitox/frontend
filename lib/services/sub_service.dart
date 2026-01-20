@@ -2,36 +2,7 @@ import 'package:dio/dio.dart';
 class SubService {
   final Dio _dio;
   SubService({required Dio dio}) : _dio = dio;
-  Future<dynamic> startSubscription(String priceId, {String? paymentMethod}) async {
-    try {
-      final data = {'price_id': priceId};
-      if (paymentMethod != null) {
-        data['payment_method'] = paymentMethod;
-      }
-      
-      final response = await _dio.post(
-        '/api/subscribe',
-        data: data,
-      );
-      return response;
-    } on DioException catch (e) {
-      return e.response;
-    }
-  }
-  Future<dynamic> confirmSubscription(
-    String subscriptionId,
-    String customerId,
-  ) async {
-    try {
-      final response = await _dio.post(
-        '/api/subscribe/confirm',
-        data: {'subscription_id': subscriptionId, 'customer_id': customerId},
-      );
-      return response;
-    } on DioException catch (e) {
-      return e.response;
-    }
-  }
+
 
   Future<Response> getQuotaStatus({String? timezoneOffset}) async {
     return await _dio.get(
@@ -61,24 +32,19 @@ class SubService {
     );
   }
 
-  Future<dynamic> getSubscription() async {
-    try {
-      final response = await _dio.get('/api/subscribe');
-      return response;
-    } on DioException catch (e) {
-      return e.response;
-    }
-  }
 
-  Future<dynamic> cancelSubscription(String subscriptionId) async {
-    try {
-      final response = await _dio.post(
-        '/api/subscribe/cancel',
-        data: {'subscription_id': subscriptionId},
-      );
-      return response;
-    } on DioException catch (e) {
-      return e.response;
-    }
+  Future<Response> signCmiPayment({
+    required double amount,
+    required Map<String, dynamic> userInfo,
+    String? transactionId,
+  }) async {
+    return await _dio.post(
+      '/api/payment/cmi/sign',
+      data: {
+        'amount': amount,
+        'userInfo': userInfo,
+        if (transactionId != null) 'transactionId': transactionId,
+      },
+    );
   }
 }

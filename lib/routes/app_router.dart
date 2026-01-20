@@ -23,8 +23,10 @@ import '../ui/screens/calendar/calendar_screen.dart';
 import '../ui/screens/task/task_screen.dart';
 import '../ui/screens/mail/mail_screen.dart';
 import '../ui/screens/mail/composemail_screen.dart' as compose;
-import '../ui/screens/welcome/subscription_screen.dart';
+
+
 import '../ui/screens/welcome/current_plan_screen.dart';
+import '../ui/screens/welcome/subscription_screen.dart';
 import '../ui/screens/calendar/addschedule_screen.dart';
 import '../ui/screens/task/addtask_screen.dart';
 import '../ui/screens/analytic/analytic_screen.dart';
@@ -336,15 +338,16 @@ class AppRoutes {
             );
           },
         ),
-        GoRoute(
-          path: subscription,
-          name: 'subscription',
-          builder: (context, state) => const SubscriptionPlansScreen(),
-        ),
+
         GoRoute(
           path: currentPlan,
           name: 'currentPlan',
           builder: (context, state) => const CurrentPlanScreen(),
+        ),
+        GoRoute(
+          path: subscription,
+          name: 'subscription',
+          builder: (context, state) => const SubscriptionPlansScreen(),
         ),
         GoRoute(
           path: addSchedule,

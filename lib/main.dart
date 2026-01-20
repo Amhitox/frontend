@@ -6,7 +6,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+
 import 'package:frontend/models/task.dart';
 import 'package:frontend/models/email_message.dart';
 import 'package:frontend/models/taskpriority.dart';
@@ -70,7 +70,7 @@ Future<void> main() async {
   Hive.registerAdapter(MeetingLocationAdapter());
   Hive.registerAdapter(AttendeeAdapter());
   await dotenv.load(fileName: '.env');
-  Stripe.publishableKey = dotenv.env['STRIPE_PUBLISHABLE_KEY']!;
+
   final authProvider = AuthProvider();
   await authProvider.init();
   await AppRoutes().init();
