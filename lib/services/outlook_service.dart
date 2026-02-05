@@ -46,7 +46,7 @@ class OutlookService {
       final response = await _dio.get('/api/email/outlook/check-tokens');
       print('✅ Outlook Token check response: ${response.data}');
       return response.data;
-    } on DioException catch (e) {
+    } on DioException {
       print('❌ Error checking Outlook tokens');
       return null;
     }

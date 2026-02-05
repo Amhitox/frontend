@@ -234,7 +234,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.resetPasswordTitle,
+          AppLocalizations.of(context).resetPasswordTitle,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -244,7 +244,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         ),
         const SizedBox(height: 4),
         Text(
-          AppLocalizations.of(context)!.createSecurePassword,
+          AppLocalizations.of(context).createSecurePassword,
           style: TextStyle(
             color: textColor.withValues(alpha: 0.9),
             fontSize: subtitleSize,
@@ -317,7 +317,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            AppLocalizations.of(context)!.createNewPassword,
+            AppLocalizations.of(context).createNewPassword,
             style: TextStyle(
               fontSize: titleSize,
               fontWeight: FontWeight.w600,
@@ -326,7 +326,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            AppLocalizations.of(context)!.passwordRequirements,
+            AppLocalizations.of(context).passwordRequirements,
             style: TextStyle(
               fontSize: fontSize,
               color: colorScheme.onSurface.withValues(alpha: 0.7),
@@ -339,8 +339,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             textInputAction: TextInputAction.next,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.newPassword,
-              hintText: AppLocalizations.of(context)!.newPasswordHint,
+              labelText: AppLocalizations.of(context).newPassword,
+              hintText: AppLocalizations.of(context).newPasswordHint,
               labelStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: fontSize,
@@ -400,10 +400,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return AppLocalizations.of(context)!.passwordRequired;
+                return AppLocalizations.of(context).passwordRequired;
               }
               if (value.length < 8) {
-                return AppLocalizations.of(context)!.passwordLengthError;
+                return AppLocalizations.of(context).passwordLengthError;
               }
               return null;
             },
@@ -415,8 +415,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             textInputAction: TextInputAction.done,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.confirmPassword,
-              hintText: AppLocalizations.of(context)!.confirmNewPasswordHint,
+              labelText: AppLocalizations.of(context).confirmPassword,
+              hintText: AppLocalizations.of(context).confirmNewPasswordHint,
               labelStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: fontSize,
@@ -478,10 +478,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return AppLocalizations.of(context)!.passwordRequired;
+                return AppLocalizations.of(context).passwordRequired;
               }
               if (value != _passwordController.text) {
-                return AppLocalizations.of(context)!.passwordMatchError;
+                return AppLocalizations.of(context).passwordMatchError;
               }
               return null;
             },
@@ -511,7 +511,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                         ),
                       )
                       : Text(
-                        AppLocalizations.of(context)!.resetPasswordTitle,
+                        AppLocalizations.of(context).resetPasswordTitle,
                         style: TextStyle(
                           fontSize: fontSize + 1,
                           fontWeight: FontWeight.w600,
@@ -538,7 +538,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    AppLocalizations.of(context)!.backToLogin,
+                    AppLocalizations.of(context).backToLogin,
                     style: TextStyle(
                       fontSize: fontSize,
                       fontWeight: FontWeight.w500,
@@ -558,7 +558,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       if (widget.token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.passwordResetFailed),
+            content: Text(AppLocalizations.of(context).passwordResetFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -572,7 +572,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       if (response && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.passwordResetSuccess),
+            content: Text(AppLocalizations.of(context).passwordResetSuccess),
             backgroundColor: const Color(0xFF28A745),
             behavior: SnackBarBehavior.floating,
           ),
@@ -585,7 +585,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.passwordResetFailed),
+            content: Text(AppLocalizations.of(context).passwordResetFailed),
             backgroundColor: Colors.red,
           ),
         );

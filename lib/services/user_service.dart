@@ -21,21 +21,14 @@ class UserService {
         );
     }
     try {
-      final data = {
-        'firstName': user.firstName,
-        'lastName': user.lastName,
-        'email': user.email,
-        'lang': user.lang,
-      };
-      if (user.workEmail != null) {
-        data['workEmail'] = user.workEmail;
-      }
-      if (user.jobTitle != null) {
-        data['jobTitle'] = user.jobTitle;
-      }
-      if (user.status != null) {
-        data['status'] = user.status;
-      }
+      final Map<String, dynamic> data = {};
+      if (user.firstName != null) data['firstName'] = user.firstName;
+      if (user.lastName != null) data['lastName'] = user.lastName;
+      if (user.email != null) data['email'] = user.email;
+      if (user.lang != null) data['lang'] = user.lang;
+      if (user.workEmail != null) data['workEmail'] = user.workEmail;
+      if (user.jobTitle != null) data['jobTitle'] = user.jobTitle;
+      if (user.status != null) data['status'] = user.status;
       final response = await _dio.put('/api/users/$id', data: data);
       return response;
     } on DioException {

@@ -6,15 +6,13 @@ import 'package:frontend/managers/calendar_manager.dart';
 import 'package:frontend/models/meeting.dart';
 import 'package:frontend/models/meeting_location.dart';
 import 'package:frontend/services/meeting_service.dart';
-import 'package:frontend/providers/sub_provider.dart';
-import 'package:provider/provider.dart' as provider;
 import 'package:frontend/models/attendee.dart';
 
 class MeetingProvider extends ChangeNotifier {
   final MeetingService meeting;
   final CalendarManager _calendarManager = CalendarManager();
 
-  bool _isLoading = false;
+  final bool _isLoading = false;
   bool _isOnline = true;
   bool _isSyncing = false;
   bool _syncInProgress = false;

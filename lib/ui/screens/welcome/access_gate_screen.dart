@@ -24,7 +24,7 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
     final user = authProvider.user;
     final isInactive = user?.status == 'inactive';
     final shouldPay = user?.subscriptionStatus == 'SHOULD_PAY';
-    
+
     // Auto-redirect if access is allowed
     // Note: AppRouter also handles this, but we keep this double-check for safety
     if (authProvider.canAccessApp && !isInactive) {
@@ -35,7 +35,7 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
       }
     }
 
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenHeight < 700;
 
@@ -69,135 +69,139 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              AppTheme.deepDark,
-              AppTheme.darkBlue,
-              Color(0xFF0F172A),
-            ],
+            colors: [AppTheme.deepDark, AppTheme.darkBlue, Color(0xFF0F172A)],
           ),
         ),
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Center(
-              child: _isLoading
-                  ? const CircularProgressIndicator(color: AppTheme.primaryBlue)
-                  : GlassCard(
-                      borderRadius: 24,
-                      opacity: 0.1,
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryBlue.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primaryBlue.withOpacity(0.2),
-                                  blurRadius: 20,
-                                  spreadRadius: 2,
-                                )
-                              ],
-                            ),
-                            child: Icon(
-                              icon,
-                              size: 48,
-                              color: AppTheme.primaryBlue,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            title,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: isSmallScreen ? 22 : 26,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            description,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: isSmallScreen ? 14 : 16,
-                              height: 1.5,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: isSmallScreen ? 24 : 32),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: Container(
+              child:
+                  _isLoading
+                      ? const CircularProgressIndicator(
+                        color: AppTheme.primaryBlue,
+                      )
+                      : GlassCard(
+                        borderRadius: 24,
+                        opacity: 0.1,
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
+                                color: AppTheme.primaryBlue.withOpacity(0.1),
+                                shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color:
-                                        AppTheme.primaryBlue.withOpacity(0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
+                                    color: AppTheme.primaryBlue.withOpacity(
+                                      0.2,
+                                    ),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
                                   ),
                                 ],
                               ),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  context.pushNamed('subscription');
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryBlue,
-                                  foregroundColor: Colors.white,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                              child: Icon(
+                                icon,
+                                size: 48,
+                                color: AppTheme.primaryBlue,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              title,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: isSmallScreen ? 22 : 26,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              description,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: isSmallScreen ? 14 : 16,
+                                height: 1.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: isSmallScreen ? 24 : 32),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppTheme.primaryBlue.withOpacity(
+                                        0.3,
+                                      ),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    context.pushNamed('subscription');
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryBlue,
+                                    foregroundColor: Colors.white,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    elevation: 0,
                                   ),
-                                  elevation: 0,
+                                  child: Text(
+                                    buttonText,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: isSmallScreen ? 12 : 16),
+                            if (!isInactive) ...[
+                              TextButton(
+                                onPressed: _handleDeleteAccount,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppTheme.errorRed,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                 ),
                                 child: Text(
-                                  buttonText,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                  ),
+                                  loc.deleteAccountLeave,
+                                  style: const TextStyle(fontSize: 14),
                                 ),
                               ),
-                            ),
-                          ),
-                          SizedBox(height: isSmallScreen ? 12 : 16),
-                          if (!isInactive) ...[
-                            TextButton(
-                              onPressed: _handleDeleteAccount,
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppTheme.errorRed,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
+                            ],
+                            if (isInactive) ...[
+                              TextButton(
+                                onPressed: () => authProvider.logout(),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white54,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                                child: Text(loc.logout),
                               ),
-                              child: Text(
-                                loc.deleteAccountLeave,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ),
+                            ],
                           ],
-                          if (isInactive) ...[
-                            TextButton(
-                              onPressed: () => authProvider.logout(),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.white54,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                              child: Text(loc.logout),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
-                    ),
             ),
           ),
         ),
@@ -206,30 +210,35 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
   }
 
   Future<void> _handleDeleteAccount() async {
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.darkBlue,
-        title: Text(loc.deleteAccountTitle,
-            style: const TextStyle(color: Colors.white)),
-        content: Text(
-          loc.deleteAccountDesc,
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(loc.cancel,
-                style: const TextStyle(color: AppTheme.primaryBlue)),
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: AppTheme.darkBlue,
+            title: Text(
+              loc.deleteAccountTitle,
+              style: const TextStyle(color: Colors.white),
+            ),
+            content: Text(
+              loc.deleteAccountDesc,
+              style: const TextStyle(color: Colors.white70),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  loc.cancel,
+                  style: const TextStyle(color: AppTheme.primaryBlue),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: AppTheme.errorRed),
+                child: Text(loc.deleteAndLogout),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.errorRed),
-            child: Text(loc.deleteAndLogout),
-          ),
-        ],
-      ),
     );
 
     if (confirm != true) return;
@@ -243,16 +252,7 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
 
       if (authProvider.user?.id != null) {
         final currentUser = authProvider.user!;
-        final inactiveUser = User(
-          id: currentUser.id,
-          email: currentUser.email,
-          firstName: currentUser.firstName,
-          lastName: currentUser.lastName,
-          lang: currentUser.lang,
-          status: 'inactive',
-          workEmail: currentUser.workEmail,
-          jobTitle: currentUser.jobTitle,
-        );
+        final inactiveUser = User(status: 'inactive');
 
         await userService.updateUser(authProvider.user!.id!, inactiveUser);
       }
@@ -263,8 +263,9 @@ class _AccessGateScreenState extends State<AccessGateScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('${loc.error}: $e'),
-              backgroundColor: AppTheme.errorRed),
+            content: Text('${loc.error}: $e'),
+            backgroundColor: AppTheme.errorRed,
+          ),
         );
       }
     } finally {

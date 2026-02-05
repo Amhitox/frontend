@@ -10,9 +10,9 @@ class _SecurityScreenState extends State<SecurityScreen>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
-  bool _twoFactorEnabled = false;
-  bool _biometricEnabled = true;
-  bool _autoLock = true;
+  final bool _twoFactorEnabled = false;
+  final bool _biometricEnabled = true;
+  final bool _autoLock = true;
   String _autoLockTime = '5 minutes';
   @override
   void initState() {
@@ -125,7 +125,7 @@ class _SecurityScreenState extends State<SecurityScreen>
           SizedBox(width: isTablet ? 20 : 16),
           Expanded(
             child: Text(
-              AppLocalizations.of(context)!.security,
+              AppLocalizations.of(context).security,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize:
@@ -161,7 +161,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                 ),
                 SizedBox(width: isTablet ? 8 : 6),
                 Text(
-                  AppLocalizations.of(context)!.secure,
+                  AppLocalizations.of(context).secure,
                   style: TextStyle(
                     color: Colors.green,
                     fontSize: isTablet ? 12 : 11,
@@ -215,7 +215,7 @@ class _SecurityScreenState extends State<SecurityScreen>
           ),
           SizedBox(height: isTablet ? 20 : 16),
           Text(
-            AppLocalizations.of(context)!.accountSecure,
+            AppLocalizations.of(context).accountSecure,
             style: TextStyle(
               color: theme.colorScheme.onSurface,
               fontSize:
@@ -230,7 +230,7 @@ class _SecurityScreenState extends State<SecurityScreen>
           ),
           SizedBox(height: isTablet ? 10 : 8),
           Text(
-            AppLocalizations.of(context)!.lastSecurityCheck,
+            AppLocalizations.of(context).lastSecurityCheck,
             style: TextStyle(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: isTablet ? 14 : 13,
@@ -246,12 +246,12 @@ class _SecurityScreenState extends State<SecurityScreen>
     ThemeData theme,
   ) {
     return _buildSection(
-      AppLocalizations.of(context)!.authentication,
+      AppLocalizations.of(context).authentication,
       Icons.lock_outline,
       [
         _buildSecurityItem(
-          AppLocalizations.of(context)!.changePassword,
-          AppLocalizations.of(context)!.updateAccountPassword,
+          AppLocalizations.of(context).changePassword,
+          AppLocalizations.of(context).updateAccountPassword,
           Icons.key,
           onTap: () => _changePassword(theme, isTablet),
           isTablet: isTablet,
@@ -269,12 +269,12 @@ class _SecurityScreenState extends State<SecurityScreen>
     ThemeData theme,
   ) {
     return _buildSection(
-      AppLocalizations.of(context)!.privacyLock,
+      AppLocalizations.of(context).privacyLock,
       Icons.privacy_tip_outlined,
       [
         _buildSecurityItem(
-          AppLocalizations.of(context)!.loginHistory,
-          AppLocalizations.of(context)!.viewLoginActivity,
+          AppLocalizations.of(context).loginHistory,
+          AppLocalizations.of(context).viewLoginActivity,
           Icons.history,
           onTap: () => _showLoginHistory(),
           isTablet: isTablet,
@@ -292,28 +292,28 @@ class _SecurityScreenState extends State<SecurityScreen>
     ThemeData theme,
   ) {
     return _buildSection(
-      AppLocalizations.of(context)!.securityActivity,
+      AppLocalizations.of(context).securityActivity,
       Icons.security,
       [
         _buildSecurityItem(
-          AppLocalizations.of(context)!.activeSessions,
-          AppLocalizations.of(context)!.manageActiveSessions,
+          AppLocalizations.of(context).activeSessions,
+          AppLocalizations.of(context).manageActiveSessions,
           Icons.devices,
           onTap: () => _showActiveSessions(theme, isTablet),
           isTablet: isTablet,
           theme: theme,
         ),
         _buildSecurityItem(
-          AppLocalizations.of(context)!.securityAlerts,
-          AppLocalizations.of(context)!.configureSecurityNotifications,
+          AppLocalizations.of(context).securityAlerts,
+          AppLocalizations.of(context).configureSecurityNotifications,
           Icons.notification_important,
           onTap: () => _configureSecurityAlerts(theme, isTablet),
           isTablet: isTablet,
           theme: theme,
         ),
         _buildSecurityItem(
-          AppLocalizations.of(context)!.dataExport,
-          AppLocalizations.of(context)!.downloadAccountData,
+          AppLocalizations.of(context).dataExport,
+          AppLocalizations.of(context).downloadAccountData,
           Icons.download,
           onTap: () => _exportData(theme, isTablet),
           isTablet: isTablet,
@@ -531,7 +531,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              AppLocalizations.of(context)!.changePassword,
+              AppLocalizations.of(context).changePassword,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -548,7 +548,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                     fontSize: isTablet ? 16 : 14,
                   ),
                   decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.currentPassword,
+                    labelText: AppLocalizations.of(context).currentPassword,
                     labelStyle: TextStyle(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -572,7 +572,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                     fontSize: isTablet ? 16 : 14,
                   ),
                   decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.newPassword,
+                    labelText: AppLocalizations.of(context).newPassword,
                     labelStyle: TextStyle(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -594,7 +594,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  AppLocalizations.of(context)!.cancel,
+                  AppLocalizations.of(context).cancel,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -606,7 +606,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(AppLocalizations.of(context)!.passwordUpdatedSuccess),
+                      content: Text(AppLocalizations.of(context).passwordUpdatedSuccess),
                       backgroundColor: Colors.green,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
@@ -622,7 +622,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   ),
                 ),
                 child: Text(
-                  AppLocalizations.of(context)!.update,
+                  AppLocalizations.of(context).update,
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
                     fontSize: isTablet ? 16 : 14,
@@ -643,7 +643,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              AppLocalizations.of(context)!.autoLockTimer,
+              AppLocalizations.of(context).autoLockTimer,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -653,7 +653,7 @@ class _SecurityScreenState extends State<SecurityScreen>
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children:
-                  ['1 ${AppLocalizations.of(context)!.minute}', '5 ${AppLocalizations.of(context)!.minutes}', '15 ${AppLocalizations.of(context)!.minutes}', '30 ${AppLocalizations.of(context)!.minutes}', AppLocalizations.of(context)!.never]
+                  ['1 ${AppLocalizations.of(context).minute}', '5 ${AppLocalizations.of(context).minutes}', '15 ${AppLocalizations.of(context).minutes}', '30 ${AppLocalizations.of(context).minutes}', AppLocalizations.of(context).never]
                       .map(
                         (time) => RadioListTile<String>(
                           title: Text(
@@ -690,7 +690,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              AppLocalizations.of(context)!.activeSessions,
+              AppLocalizations.of(context).activeSessions,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -702,21 +702,21 @@ class _SecurityScreenState extends State<SecurityScreen>
               children: [
                 _buildSessionItem(
                   'iPhone 13 Pro',
-                  AppLocalizations.of(context)!.currentDevice,
+                  AppLocalizations.of(context).currentDevice,
                   true,
                   theme,
                   isTablet,
                 ),
                 _buildSessionItem(
                   'MacBook Pro',
-                  '${AppLocalizations.of(context)!.lastActive} 2 hours ago',
+                  '${AppLocalizations.of(context).lastActive} 2 hours ago',
                   false,
                   theme,
                   isTablet,
                 ),
                 _buildSessionItem(
                   'iPad Air',
-                  '${AppLocalizations.of(context)!.lastActive} 1 day ago',
+                  '${AppLocalizations.of(context).lastActive} 1 day ago',
                   false,
                   theme,
                   isTablet,
@@ -727,7 +727,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  AppLocalizations.of(context)!.close,
+                  AppLocalizations.of(context).close,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -739,7 +739,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   Navigator.of(context).pop();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(AppLocalizations.of(context)!.allSessionsSignedOut),
+                      content: Text(AppLocalizations.of(context).allSessionsSignedOut),
                       backgroundColor: Colors.orange,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
@@ -755,7 +755,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   ),
                 ),
                 child: Text(
-                  AppLocalizations.of(context)!.signOutOthers,
+                  AppLocalizations.of(context).signOutOthers,
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
                     fontSize: isTablet ? 16 : 14,
@@ -824,7 +824,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                 borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
               ),
               child: Text(
-                AppLocalizations.of(context)!.current,
+                AppLocalizations.of(context).current,
                 style: TextStyle(
                   color: Colors.green,
                   fontSize: isTablet ? 11 : 10,
@@ -846,7 +846,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              AppLocalizations.of(context)!.securityAlerts,
+              AppLocalizations.of(context).securityAlerts,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -854,7 +854,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               ),
             ),
             content: Text(
-              AppLocalizations.of(context)!.configureSecurityDescription,
+              AppLocalizations.of(context).configureSecurityDescription,
               style: TextStyle(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: isTablet ? 16 : 14,
@@ -864,7 +864,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  AppLocalizations.of(context)!.cancel,
+                  AppLocalizations.of(context).cancel,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -880,7 +880,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   ),
                 ),
                 child: Text(
-                  AppLocalizations.of(context)!.configure,
+                  AppLocalizations.of(context).configure,
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
                     fontSize: isTablet ? 16 : 14,
@@ -901,7 +901,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
             ),
             title: Text(
-              AppLocalizations.of(context)!.dataExport,
+              AppLocalizations.of(context).dataExport,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: isTablet ? 20 : 18,
@@ -909,7 +909,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               ),
             ),
             content: Text(
-              AppLocalizations.of(context)!.downloadDataDescription,
+              AppLocalizations.of(context).downloadDataDescription,
               style: TextStyle(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: isTablet ? 16 : 14,
@@ -919,7 +919,7 @@ class _SecurityScreenState extends State<SecurityScreen>
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(
-                  AppLocalizations.of(context)!.cancel,
+                  AppLocalizations.of(context).cancel,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     fontSize: isTablet ? 16 : 14,
@@ -932,7 +932,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        AppLocalizations.of(context)!.dataExportStarted,
+                        AppLocalizations.of(context).dataExportStarted,
                       ),
                       backgroundColor: theme.colorScheme.primary,
                       behavior: SnackBarBehavior.floating,
@@ -949,7 +949,7 @@ class _SecurityScreenState extends State<SecurityScreen>
                   ),
                 ),
                 child: Text(
-                  AppLocalizations.of(context)!.export,
+                  AppLocalizations.of(context).export,
                   style: TextStyle(
                     color: theme.colorScheme.onPrimary,
                     fontSize: isTablet ? 16 : 14,

@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import '../../../models/meeting.dart';
 import 'package:frontend/utils/localization.dart';
-import 'package:intl/intl.dart';
 import '../../../models/meeting_location.dart';
 import '../../../models/attendee.dart';
 
@@ -482,8 +481,8 @@ class _AddScheduleScreenState extends State<AddScheduleScreen>
               },
               onSelected: (Attendee selection) {
                 emailController.text = selection.email;
-                if (selection.name != null && selection.name!.isNotEmpty) {
-                  nameController.text = selection.name!;
+                if (selection.name.isNotEmpty) {
+                  nameController.text = selection.name;
                 }
               },
               fieldViewBuilder: (context, fieldTextEditingController, focusNode, onFieldSubmitted) {

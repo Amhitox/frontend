@@ -12,6 +12,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/utils/localization.dart';
+import 'package:frontend/utils/legal_content.dart';
+import 'package:frontend/utils/legal_modal.dart';
+import 'package:frontend/utils/legal_helper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.token});
@@ -69,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               TextButton(
                 onPressed: () {
-                     SystemNavigator.pop();
+                  SystemNavigator.pop();
                 },
                 child: const Text("Exit App"),
               ),
@@ -270,7 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(width: 8),
         Text(
-          AppLocalizations.of(context)!.appTitle,
+          AppLocalizations.of(context).appTitle,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -304,7 +307,7 @@ class _LoginScreenState extends State<LoginScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          AppLocalizations.of(context)!.getStartedNow,
+          AppLocalizations.of(context).getStartedNow,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: textColor,
@@ -314,7 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          AppLocalizations.of(context)!.loginSubtitle,
+          AppLocalizations.of(context).loginSubtitle,
           style: TextStyle(
             color: textColor.withValues(alpha: 0.9),
             fontSize: subtitleSize,
@@ -366,8 +369,8 @@ class _LoginScreenState extends State<LoginScreen> {
             textInputAction: TextInputAction.next,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.email,
-              hintText: AppLocalizations.of(context)!.enterEmail,
+              labelText: AppLocalizations.of(context).email,
+              hintText: AppLocalizations.of(context).enterEmail,
               labelStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: fontSize,
@@ -409,8 +412,12 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             validator: FormBuilderValidators.compose([
-              FormBuilderValidators.required(errorText: AppLocalizations.of(context)!.emailRequired),
-              FormBuilderValidators.email(errorText: AppLocalizations.of(context)!.invalidEmail),
+              FormBuilderValidators.required(
+                errorText: AppLocalizations.of(context).emailRequired,
+              ),
+              FormBuilderValidators.email(
+                errorText: AppLocalizations.of(context).invalidEmail,
+              ),
             ]),
           ),
           const SizedBox(height: 16),
@@ -420,8 +427,8 @@ class _LoginScreenState extends State<LoginScreen> {
             textInputAction: TextInputAction.done,
             style: TextStyle(color: colorScheme.onSurface, fontSize: fontSize),
             decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.password,
-              hintText: AppLocalizations.of(context)!.enterPassword,
+              labelText: AppLocalizations.of(context).password,
+              hintText: AppLocalizations.of(context).enterPassword,
               labelStyle: TextStyle(
                 color: colorScheme.onSurface.withValues(alpha: 0.7),
                 fontSize: fontSize,
@@ -475,8 +482,13 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             validator: FormBuilderValidators.compose([
-              FormBuilderValidators.required(errorText: AppLocalizations.of(context)!.passwordRequired),
-              FormBuilderValidators.minLength(8, errorText: AppLocalizations.of(context)!.passwordLengthError),
+              FormBuilderValidators.required(
+                errorText: AppLocalizations.of(context).passwordRequired,
+              ),
+              FormBuilderValidators.minLength(
+                8,
+                errorText: AppLocalizations.of(context).passwordLengthError,
+              ),
             ]),
           ),
           const SizedBox(height: 16),
@@ -502,7 +514,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    AppLocalizations.of(context)!.rememberMe,
+                    AppLocalizations.of(context).rememberMe,
                     style: TextStyle(
                       fontSize: fontSize,
                       color: colorScheme.onSurface.withValues(alpha: 0.7),
@@ -520,7 +532,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  AppLocalizations.of(context)!.forgotPassword,
+                  AppLocalizations.of(context).forgotPassword,
                   style: TextStyle(
                     fontSize: fontSize,
                     color: const Color(0xFF3B77D8),
@@ -536,11 +548,11 @@ class _LoginScreenState extends State<LoginScreen> {
             child: ElevatedButton(
               onPressed: () async {
                 FocusScope.of(context).unfocus();
-                
+
                 final isVpnActive = await VpnService().isVpnActive();
                 if (isVpnActive && context.mounted) {
-                   _showVpnBlockedDialog();
-                   return;
+                  _showVpnBlockedDialog();
+                  return;
                 }
 
                 if (_formKey.currentState != null &&
@@ -575,7 +587,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       )
                       : Text(
-                        AppLocalizations.of(context)!.login,
+                        AppLocalizations.of(context).login,
                         style: TextStyle(
                           fontSize: fontSize + 1,
                           fontWeight: FontWeight.w600,
@@ -600,7 +612,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(width: 12),
         Text(
-          AppLocalizations.of(context)!.or,
+          AppLocalizations.of(context).or,
           style: TextStyle(
             color: colorScheme.onSurface.withValues(alpha: 0.6),
             fontSize: 14,
@@ -695,7 +707,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  AppLocalizations.of(context)!.continueWithGoogle,
+                  AppLocalizations.of(context).continueWithGoogle,
                   style: TextStyle(fontSize: fontSize),
                 ),
               ],
@@ -704,59 +716,59 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 12),
         if (!Platform.isAndroid)
-        SizedBox(
-          width: double.infinity,
-          height: buttonHeight,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isDark ? Colors.white : Colors.black,
-              foregroundColor: isDark ? Colors.black : Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          SizedBox(
+            width: double.infinity,
+            height: buttonHeight,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? Colors.white : Colors.black,
+                foregroundColor: isDark ? Colors.black : Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                final success =
+                    await context.read<AuthProvider>().signInWithApple();
+                if (success && context.mounted) {
+                  await TaskManager().init(
+                    context.read<AuthProvider>().user!.id!,
+                  );
+                  context.go('/');
+                } else if (context.mounted) {
+                  final errorMsg = context.read<AuthProvider>().errorMessage;
+                  if (errorMsg != null && errorMsg.isNotEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(errorMsg),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                }
+              },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.apple,
+                    color: isDark ? Colors.black : Colors.white,
+                    size: iconSize + 4,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context).continueWithApple,
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
-            onPressed: () async {
-              final success =
-                  await context.read<AuthProvider>().signInWithApple();
-              if (success && context.mounted) {
-                await TaskManager().init(
-                  context.read<AuthProvider>().user!.id!,
-                );
-                context.go('/');
-              } else if (context.mounted) {
-                final errorMsg = context.read<AuthProvider>().errorMessage;
-                if (errorMsg != null && errorMsg.isNotEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(errorMsg),
-                      backgroundColor: Colors.red,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              }
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.apple,
-                  color: isDark ? Colors.black : Colors.white,
-                  size: iconSize + 4,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  AppLocalizations.of(context)!.continueWithApple,
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
           ),
-        ),
       ],
     );
   }
@@ -790,12 +802,40 @@ class _LoginScreenState extends State<LoginScreen> {
             height: 1.4,
           ),
           children: [
-            TextSpan(text: AppLocalizations.of(context)!.bySigningUpAgreeTo),
+            TextSpan(text: AppLocalizations.of(context).bySigningUpAgreeTo),
+            // WidgetSpan(
+            //   child: GestureDetector(
+            //     onTap: () => showLegalModal(
+            //       context,
+            //       AppLocalizations.of(context)!.termsOfService,
+            //       LegalContent.terms
+            //     ),
+            //     child: Text(
+            //       AppLocalizations.of(context)!.termsOfService,
+            //       style: TextStyle(
+            //         color: const Color(0xFF3B77D8),
+            //         fontWeight: FontWeight.w600,
+            //         fontSize: fontSize,
+            //         decoration: TextDecoration.underline,
+            //         decorationColor: const Color(0xFF3B77D8),
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            TextSpan(text: ' '),
             WidgetSpan(
               child: GestureDetector(
-                onTap: () => context.push('/terms'),
+                onTap:
+                    () => showLegalModal(
+                      context,
+                      AppLocalizations.of(context).privacyPolicy,
+                      LegalHelper.getLocalizedContent(
+                        context,
+                        LegalContent.privacy,
+                      ),
+                    ),
                 child: Text(
-                  AppLocalizations.of(context)!.termsOfService,
+                  AppLocalizations.of(context).privacyPolicy,
                   style: TextStyle(
                     color: const Color(0xFF3B77D8),
                     fontWeight: FontWeight.w600,
@@ -806,12 +846,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            TextSpan(text: ' ${AppLocalizations.of(context)!.and} '),
+            TextSpan(text: ' ${AppLocalizations.of(context).and} '),
             WidgetSpan(
               child: GestureDetector(
-                onTap: () => context.push('/privacy'),
+                onTap:
+                    () => showLegalModal(
+                      context,
+                      AppLocalizations.of(context).generalConditions,
+                      LegalHelper.getLocalizedContent(
+                        context,
+                        LegalContent.generalConditions,
+                      ),
+                    ),
                 child: Text(
-                  AppLocalizations.of(context)!.privacyPolicy,
+                  AppLocalizations.of(context).generalConditions,
                   style: TextStyle(
                     color: const Color(0xFF3B77D8),
                     fontWeight: FontWeight.w600,

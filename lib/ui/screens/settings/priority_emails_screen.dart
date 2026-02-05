@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:frontend/providers/sub_provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/utils/quota_dialog.dart';
-import 'package:dio/dio.dart';
 import 'package:frontend/utils/localization.dart';
 
 class PriorityEmailsScreen extends StatefulWidget {
@@ -54,7 +53,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${AppLocalizations.of(context)!.addedToVIP} $email'),
+              content: Text('${AppLocalizations.of(context).addedToVIP} $email'),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
             ),
@@ -65,10 +64,10 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
           QuotaDialog.show(context, message: result['error']);
         }
       } else {
-         _showError(result['error'] ?? AppLocalizations.of(context)!.failedToAddEmail);
+         _showError(result['error'] ?? AppLocalizations.of(context).failedToAddEmail);
       }
     } catch (e) {
-      _showError(AppLocalizations.of(context)!.unexpectedError);
+      _showError(AppLocalizations.of(context).unexpectedError);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -98,7 +97,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${AppLocalizations.of(context)!.removedFromVIP} $email'),
+            content: Text('${AppLocalizations.of(context).removedFromVIP} $email'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -107,7 +106,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${AppLocalizations.of(context)!.failedToRemoveEmail}: $e'),
+            content: Text('${AppLocalizations.of(context).failedToRemoveEmail}: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -134,7 +133,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.priorityEmails),
+        title: Text(AppLocalizations.of(context).priorityEmails),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -176,7 +175,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                    Text(
-                   AppLocalizations.of(context)!.addVipEmail,
+                   AppLocalizations.of(context).addVipEmail,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -191,7 +190,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${AppLocalizations.of(context)!.quota}: ${quota.usage.priorityEmails} / ${quota.limits.priorityEmailsTotal} ${AppLocalizations.of(context)!.used}',
+                      '${AppLocalizations.of(context).quota}: ${quota.usage.priorityEmails} / ${quota.limits.priorityEmailsTotal} ${AppLocalizations.of(context).used}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -201,7 +200,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                     const SizedBox(height: 12),
                   ],
                   Text(
-                    AppLocalizations.of(context)!.vipEmailDescription,
+                    AppLocalizations.of(context).vipEmailDescription,
                     style: TextStyle(
                       fontSize: 13,
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -216,7 +215,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                           child: TextFormField(
                             controller: _emailController,
                             decoration: InputDecoration(
-                              hintText: AppLocalizations.of(context)!.emailPlaceholder,
+                              hintText: AppLocalizations.of(context).emailPlaceholder,
                               filled: true,
                               fillColor: theme.colorScheme.surface,
                               border: OutlineInputBorder(
@@ -230,10 +229,10 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
-                                return AppLocalizations.of(context)!.pleaseEnterEmail;
+                                return AppLocalizations.of(context).pleaseEnterEmail;
                               }
                               if (!value.contains('@')) {
-                                return AppLocalizations.of(context)!.invalidEmailAddress;
+                                return AppLocalizations.of(context).invalidEmailAddress;
                               }
                               return null;
                             },
@@ -281,7 +280,7 @@ class _PriorityEmailsScreenState extends State<PriorityEmailsScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            AppLocalizations.of(context)!.noVipEmails,
+                            AppLocalizations.of(context).noVipEmails,
                             style: TextStyle(
                               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                               fontSize: 16,

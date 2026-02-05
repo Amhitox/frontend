@@ -328,13 +328,13 @@ class MailProvider extends ChangeNotifier {
       final box = await Hive.openBox(_boxName);
       
       // Load timestamp
-      final timestamp = box.get('${_timestampKeyPrefix}$key');
+      final timestamp = box.get('$_timestampKeyPrefix$key');
       if (timestamp != null) {
         _lastFetchTimes[key] = DateTime.fromMillisecondsSinceEpoch(timestamp);
       }
 
       // Load data
-      final List<dynamic>? cachedList = box.get('${_dataKeyPrefix}$key');
+      final List<dynamic>? cachedList = box.get('$_dataKeyPrefix$key');
       
       if (cachedList != null) {
         _cachedEmails[key] = cachedList.map((e) {
@@ -360,12 +360,12 @@ class MailProvider extends ChangeNotifier {
       
       // Store timestamp
       if (_lastFetchTimes[key] != null) {
-        await box.put('${_timestampKeyPrefix}$key', _lastFetchTimes[key]!.millisecondsSinceEpoch);
+        await box.put('$_timestampKeyPrefix$key', _lastFetchTimes[key]!.millisecondsSinceEpoch);
       }
 
       // Store data
       final jsonList = listToSave.map((e) => e.toJson()).toList();
-      await box.put('${_dataKeyPrefix}$key', jsonList);
+      await box.put('$_dataKeyPrefix$key', jsonList);
       
     } catch (e) {
       debugPrint('⚠️ [MailProvider] Failed to save to disk: $e');

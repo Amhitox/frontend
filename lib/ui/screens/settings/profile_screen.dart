@@ -6,7 +6,6 @@ import 'package:frontend/providers/user_provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/providers/mail_provider.dart';
 import 'package:frontend/models/user.dart';
-import 'package:frontend/services/mail_service.dart';
 import 'package:frontend/utils/localization.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -14,6 +13,7 @@ class ProfileScreen extends StatefulWidget {
   @override
   _ProfileScreenState createState() => _ProfileScreenState();
 }
+
 class _ProfileScreenState extends State<ProfileScreen>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
@@ -44,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     _slideController.forward();
     _loadUserData();
   }
+
   Future<void> _loadUserData() async {
     setState(() {
       _isLoading = true;
@@ -64,6 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       });
     }
   }
+
   @override
   void dispose() {
     _slideController.dispose();
@@ -75,6 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     _langController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -82,7 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     final isLargeScreen = screenSize.width > 900;
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    
+
     if (_isLoading) {
       return Scaffold(
         body: Center(
@@ -141,7 +144,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-  Widget _buildHeader(bool isTablet, bool isLargeScreen, ThemeData theme, AppLocalizations l10n) {
+
+  Widget _buildHeader(
+    bool isTablet,
+    bool isLargeScreen,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: EdgeInsets.all(
         isLargeScreen
@@ -236,6 +245,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
+
   Widget _buildProfileCard(bool isTablet, bool isLargeScreen, ThemeData theme) {
     final l10n = AppLocalizations.of(context);
     return Container(
@@ -313,6 +323,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
+
   Widget _buildPersonalInfoSection(
     bool isTablet,
     bool isLargeScreen,
@@ -388,16 +399,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                     Text(
                       l10n.changePassword,
                       style: TextStyle(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.7,
+                        ),
                         fontSize: isTablet ? 15 : 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     const Spacer(),
                     Icon(
-                       Icons.arrow_forward_ios,
-                       size: isTablet ? 16 : 14,
-                       color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                      Icons.arrow_forward_ios,
+                      size: isTablet ? 16 : 14,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ],
                 ),
@@ -411,6 +424,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ],
     );
   }
+
   Widget _buildSection(
     String title,
     IconData icon,
@@ -469,6 +483,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
+
   Widget _buildFormField(
     String label,
     TextEditingController controller, {
@@ -538,7 +553,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-  void _changeProfileImage(ThemeData theme, bool isTablet, AppLocalizations l10n) {
+
+  void _changeProfileImage(
+    ThemeData theme,
+    bool isTablet,
+    AppLocalizations l10n,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -603,6 +623,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
     );
   }
+
   Widget _buildPhotoOption(
     String title,
     IconData icon,
@@ -639,6 +660,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
+
   void _takePhoto(AppLocalizations l10n) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -649,6 +671,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
+
   void _chooseFromGallery(AppLocalizations l10n) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -659,6 +682,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
+
   void _removePhoto(AppLocalizations l10n) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -669,7 +693,11 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
+
   bool _validateForm(AppLocalizations l10n) {
+    // Name validation regex - only letters (including accented), spaces, hyphens, apostrophes
+    final nameRegex = RegExp(r"^[a-zA-ZÀ-ÿ\s\-']+$");
+
     if (_firstNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -680,10 +708,36 @@ class _ProfileScreenState extends State<ProfileScreen>
       );
       return false;
     }
+    // Validate first name format
+    final firstName = _firstNameController.text.trim();
+    if (!nameRegex.hasMatch(firstName) ||
+        firstName.replaceAll(RegExp(r"[^a-zA-ZÀ-ÿ]"), '').length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.invalidName),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return false;
+    }
     if (_lastNameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.lastNameRequired),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return false;
+    }
+    // Validate last name format
+    final lastName = _lastNameController.text.trim();
+    if (!nameRegex.hasMatch(lastName) ||
+        lastName.replaceAll(RegExp(r"[^a-zA-ZÀ-ÿ]"), '').length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.invalidName),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -724,6 +778,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
     return true;
   }
+
   Future<void> _saveProfile(AppLocalizations l10n) async {
     if (!_validateForm(l10n)) {
       return;
@@ -737,7 +792,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         throw Exception('No user logged in');
       }
 
-      final newWorkEmail = _workEmailController.text.trim().isEmpty ? null : _workEmailController.text.trim();
+      final newWorkEmail =
+          _workEmailController.text.trim().isEmpty
+              ? null
+              : _workEmailController.text.trim();
       final updatedUser = User(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
@@ -755,31 +813,30 @@ class _ProfileScreenState extends State<ProfileScreen>
       );
 
       final userId = currentUser.uid ?? currentUser.id;
-    debugPrint('Updating user profile for ID: $userId');
-    
-    if (userId == null || userId.isEmpty) {
-      throw Exception('User ID is missing');
-    }
+      debugPrint('Updating user profile for ID: $userId');
 
-    final response = await _userProvider.updateUser(
-      userId,
-      updatedUser,
-    );
+      if (userId == null || userId.isEmpty) {
+        throw Exception('User ID is missing');
+      }
+
+      final response = await _userProvider.updateUser(userId, updatedUser);
       if (response != null && response.statusCode == 200) {
-        
         if (currentUser.workEmail != newWorkEmail) {
-           if (mounted) {
-              final mailProvider = Provider.of<MailProvider>(context, listen: false);
-              await mailProvider.resetLocalState();
-              
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(l10n.workEmailUpdatedGmailDisconnected),
-                  backgroundColor: Colors.orange,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-           }
+          if (mounted) {
+            final mailProvider = Provider.of<MailProvider>(
+              context,
+              listen: false,
+            );
+            await mailProvider.resetLocalState();
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.workEmailUpdatedGmailDisconnected),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         }
 
         final responseData = response.data;
@@ -788,10 +845,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           await _userProvider.updateUserData(serverUser);
           _authProvider.updateUserInSession(serverUser);
         } else {
-           await _userProvider.updateUserData(updatedUser);
-           _authProvider.updateUserInSession(updatedUser);
+          await _userProvider.updateUserData(updatedUser);
+          _authProvider.updateUserInSession(updatedUser);
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.profileSaved),
@@ -854,266 +911,342 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: theme.colorScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
-          ),
-          title: Text(
-            l10n.changePassword,
-            style: TextStyle(
-              color: theme.colorScheme.onSurface,
-              fontSize: isTablet ? 20 : 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: oldPasswordController,
-                  obscureText: obscureOldPassword,
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: isTablet ? 16 : 14,
+      builder:
+          (dialogContext) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  backgroundColor: theme.colorScheme.surface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
                   ),
-                  decoration: InputDecoration(
-                    labelText: l10n.currentPassword,
-                    labelStyle: TextStyle(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                      ),
-                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: theme.colorScheme.primary),
-                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        obscureOldPassword ? Icons.visibility_off : Icons.visibility,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                      onPressed: () => setDialogState(() => obscureOldPassword = !obscureOldPassword),
-                    ),
-                  ),
-                ),
-                SizedBox(height: isTablet ? 20 : 16),
-                Focus(
-                  onFocusChange: (hasFocus) {
-                    setDialogState(() {
-                      isPasswordFocused = hasFocus;
-                    });
-                  },
-                  child: TextField(
-                    controller: newPasswordController,
-                    obscureText: obscureNewPassword,
+                  title: Text(
+                    l10n.changePassword,
                     style: TextStyle(
                       color: theme.colorScheme.onSurface,
-                      fontSize: isTablet ? 16 : 14,
-                    ),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        hasMinLength = value.length >= 9;
-                        hasUppercase = value.contains(RegExp(r'[A-Z]'));
-                        hasLowercase = value.contains(RegExp(r'[a-z]'));
-                        hasNumber = value.contains(RegExp(r'[0-9]'));
-                        hasSpecialChar = value.contains(RegExp(r'[!@#\$&*~^%_+=(){}\[\]:;<>?\/|,-]'));
-                      });
-                    },
-                    decoration: InputDecoration(
-                      labelText: l10n.newPassword,
-                      labelStyle: TextStyle(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                        ),
-                        borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: theme.colorScheme.primary),
-                        borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          obscureNewPassword ? Icons.visibility_off : Icons.visibility,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                        onPressed: () => setDialogState(() => obscureNewPassword = !obscureNewPassword),
-                      ),
+                      fontSize: isTablet ? 20 : 18,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                if (isPasswordFocused) ...[
-                  const SizedBox(height: 8),
-                  _buildPasswordRequirements(
-                    context,
-                    hasMinLength,
-                    hasUppercase,
-                    hasLowercase,
-                    hasNumber,
-                    hasSpecialChar,
-                    isTablet ? 16 : 14,
-                  ),
-                ],
-                SizedBox(height: isTablet ? 20 : 16),
-                TextField(
-                  controller: confirmPasswordController,
-                  obscureText: obscureConfirmPassword,
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: isTablet ? 16 : 14,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: l10n.confirmPassword,
-                    labelStyle: TextStyle(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                      ),
-                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: theme.colorScheme.primary),
-                      borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                      onPressed: () => setDialogState(() => obscureConfirmPassword = !obscureConfirmPassword),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
-              child: Text(
-                l10n.cancel,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  fontSize: isTablet ? 16 : 14,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: isLoading
-                  ? null
-                  : () async {
-                      final oldPassword = oldPasswordController.text;
-                      final newPassword = newPasswordController.text;
-                      final confirmPassword = confirmPasswordController.text;
-
-                      if (oldPassword.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.passwordRequired),
-                            backgroundColor: Colors.red,
-                            behavior: SnackBarBehavior.floating,
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: oldPasswordController,
+                          obscureText: obscureOldPassword,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: isTablet ? 16 : 14,
                           ),
-                        );
-                        return;
-                      }
-
-                      final validationError = validatePassword(newPassword);
-                      if (validationError != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(validationError),
-                            backgroundColor: Colors.red,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                        return;
-                      }
-
-                      if (newPassword != confirmPassword) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.passwordMatchError),
-                            backgroundColor: Colors.red,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                        return;
-                      }
-
-                      setDialogState(() => isLoading = true);
-
-                      try {
-                        await _userProvider.changePassword(
-                          oldPassword,
-                          newPassword,
-                          confirmPassword,
-                        );
-                        Navigator.of(dialogContext).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.passwordUpdated),
-                            backgroundColor: Colors.green,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                          decoration: InputDecoration(
+                            labelText: l10n.currentPassword,
+                            labelStyle: TextStyle(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: theme.colorScheme.outline.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 10 : 8,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: theme.colorScheme.primary,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 10 : 8,
+                              ),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                obscureOldPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
+                              ),
+                              onPressed:
+                                  () => setDialogState(
+                                    () =>
+                                        obscureOldPassword =
+                                            !obscureOldPassword,
+                                  ),
                             ),
                           ),
-                        );
-                      } catch (e) {
-                        setDialogState(() => isLoading = false);
-                        String errorMessage = l10n.unknownError;
-                        if (e is DioException) {
-                          final data = e.response?.data;
-                          if (data != null && data is Map) {
-                            errorMessage = data['error'] ?? data['message'] ?? l10n.unknownError;
-                          }
-                        }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(errorMessage),
-                            backgroundColor: Colors.red,
-                            behavior: SnackBarBehavior.floating,
+                        ),
+                        SizedBox(height: isTablet ? 20 : 16),
+                        Focus(
+                          onFocusChange: (hasFocus) {
+                            setDialogState(() {
+                              isPasswordFocused = hasFocus;
+                            });
+                          },
+                          child: TextField(
+                            controller: newPasswordController,
+                            obscureText: obscureNewPassword,
+                            style: TextStyle(
+                              color: theme.colorScheme.onSurface,
+                              fontSize: isTablet ? 16 : 14,
+                            ),
+                            onChanged: (value) {
+                              setDialogState(() {
+                                hasMinLength = value.length >= 9;
+                                hasUppercase = value.contains(RegExp(r'[A-Z]'));
+                                hasLowercase = value.contains(RegExp(r'[a-z]'));
+                                hasNumber = value.contains(RegExp(r'[0-9]'));
+                                hasSpecialChar = value.contains(
+                                  RegExp(r'[!@#\$&*~^%_+=(){}\[\]:;<>?\/|,-]'),
+                                );
+                              });
+                            },
+                            decoration: InputDecoration(
+                              labelText: l10n.newPassword,
+                              labelStyle: TextStyle(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.outline.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  isTablet ? 10 : 8,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  isTablet ? 10 : 8,
+                                ),
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  obscureNewPassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                ),
+                                onPressed:
+                                    () => setDialogState(
+                                      () =>
+                                          obscureNewPassword =
+                                              !obscureNewPassword,
+                                    ),
+                              ),
+                            ),
                           ),
-                        );
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(isTablet ? 10 : 8),
-                ),
-              ),
-              child: isLoading
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: theme.colorScheme.onPrimary,
-                      ),
-                    )
-                  : Text(
-                      l10n.update,
-                      style: TextStyle(
-                        color: theme.colorScheme.onPrimary,
-                        fontSize: isTablet ? 16 : 14,
+                        ),
+                        if (isPasswordFocused) ...[
+                          const SizedBox(height: 8),
+                          _buildPasswordRequirements(
+                            context,
+                            hasMinLength,
+                            hasUppercase,
+                            hasLowercase,
+                            hasNumber,
+                            hasSpecialChar,
+                            isTablet ? 16 : 14,
+                          ),
+                        ],
+                        SizedBox(height: isTablet ? 20 : 16),
+                        TextField(
+                          controller: confirmPasswordController,
+                          obscureText: obscureConfirmPassword,
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface,
+                            fontSize: isTablet ? 16 : 14,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: l10n.confirmPassword,
+                            labelStyle: TextStyle(
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: theme.colorScheme.outline.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 10 : 8,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                color: theme.colorScheme.primary,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                isTablet ? 10 : 8,
+                              ),
+                            ),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                obscureConfirmPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
+                              ),
+                              onPressed:
+                                  () => setDialogState(
+                                    () =>
+                                        obscureConfirmPassword =
+                                            !obscureConfirmPassword,
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed:
+                          isLoading
+                              ? null
+                              : () => Navigator.of(dialogContext).pop(),
+                      child: Text(
+                        l10n.cancel,
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
+                          fontSize: isTablet ? 16 : 14,
+                        ),
                       ),
                     ),
-            ),
-          ],
-        ),
-      ),
+                    ElevatedButton(
+                      onPressed:
+                          isLoading
+                              ? null
+                              : () async {
+                                final oldPassword = oldPasswordController.text;
+                                final newPassword = newPasswordController.text;
+                                final confirmPassword =
+                                    confirmPasswordController.text;
+
+                                if (oldPassword.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(l10n.passwordRequired),
+                                      backgroundColor: Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                final validationError = validatePassword(
+                                  newPassword,
+                                );
+                                if (validationError != null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(validationError),
+                                      backgroundColor: Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                if (newPassword != confirmPassword) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(l10n.passwordMatchError),
+                                      backgroundColor: Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setDialogState(() => isLoading = true);
+
+                                try {
+                                  await _userProvider.changePassword(
+                                    oldPassword,
+                                    newPassword,
+                                    confirmPassword,
+                                  );
+                                  Navigator.of(dialogContext).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(l10n.passwordUpdated),
+                                      backgroundColor: Colors.green,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  setDialogState(() => isLoading = false);
+                                  String errorMessage = l10n.unknownError;
+                                  if (e is DioException) {
+                                    final data = e.response?.data;
+                                    if (data != null && data is Map) {
+                                      errorMessage =
+                                          data['error'] ??
+                                          data['message'] ??
+                                          l10n.unknownError;
+                                    }
+                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(errorMessage),
+                                      backgroundColor: Colors.red,
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            isTablet ? 10 : 8,
+                          ),
+                        ),
+                      ),
+                      child:
+                          isLoading
+                              ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: theme.colorScheme.onPrimary,
+                                ),
+                              )
+                              : Text(
+                                l10n.update,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onPrimary,
+                                  fontSize: isTablet ? 16 : 14,
+                                ),
+                              ),
+                    ),
+                  ],
+                ),
+          ),
     );
   }
 
@@ -1139,25 +1272,52 @@ class _ProfileScreenState extends State<ProfileScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            AppLocalizations.of(context)!.passwordRequirements,
+            AppLocalizations.of(context).passwordRequirements,
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: fontSize - 1,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 8),
-          _buildRequirementItem(context, "9+ Characters", hasMinLength, fontSize),
-          _buildRequirementItem(context, "Uppercase Letter", hasUppercase, fontSize),
-          _buildRequirementItem(context, "Lowercase Letter", hasLowercase, fontSize),
+          _buildRequirementItem(
+            context,
+            "9+ Characters",
+            hasMinLength,
+            fontSize,
+          ),
+          _buildRequirementItem(
+            context,
+            "Uppercase Letter",
+            hasUppercase,
+            fontSize,
+          ),
+          _buildRequirementItem(
+            context,
+            "Lowercase Letter",
+            hasLowercase,
+            fontSize,
+          ),
           _buildRequirementItem(context, "Number", hasNumber, fontSize),
-          _buildRequirementItem(context, "Special Character", hasSpecialChar, fontSize),
+          _buildRequirementItem(
+            context,
+            "Special Character",
+            hasSpecialChar,
+            fontSize,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRequirementItem(BuildContext context, String text, bool isMet, double fontSize) {
+  Widget _buildRequirementItem(
+    BuildContext context,
+    String text,
+    bool isMet,
+    double fontSize,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
@@ -1165,16 +1325,26 @@ class _ProfileScreenState extends State<ProfileScreen>
           Icon(
             isMet ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
             size: 16,
-            color: isMet ? Colors.green : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+            color:
+                isMet
+                    ? Colors.green
+                    : Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.4),
           ),
           const SizedBox(width: 8),
           Text(
             text,
             style: TextStyle(
               fontSize: fontSize - 2,
-              color: isMet 
-                  ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9)
-                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              color:
+                  isMet
+                      ? Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.9)
+                      : Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
         ],
@@ -1182,4 +1352,3 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 }
-

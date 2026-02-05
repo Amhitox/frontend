@@ -317,7 +317,7 @@ class _SplashScreenState extends State<SplashScreen>
                                       ),
                                       SizedBox(height: isSmallScreen ? 6 : 8),
                                       Text(
-                                        AppLocalizations.of(context)!.appTagline,
+                                        AppLocalizations.of(context).appTagline,
                                         style: TextStyle(
                                           color: secondaryTextColor,
                                           fontSize: subtitleSize,
@@ -363,7 +363,7 @@ class _SplashScreenState extends State<SplashScreen>
                                     ),
                                     SizedBox(height: isSmallScreen ? 12 : 16),
                                     Text(
-                                      AppLocalizations.of(context)!.loading,
+                                      AppLocalizations.of(context).loading,
                                       style: TextStyle(
                                         color: secondaryTextColor.withValues(
                                           alpha: 0.8,

@@ -4,8 +4,6 @@ import 'package:frontend/models/task.dart';
 import 'package:frontend/models/taskpriority.dart';
 import 'package:frontend/services/task_service.dart';
 import 'package:frontend/managers/task_manager.dart';
-import 'package:frontend/providers/sub_provider.dart';
-import 'package:provider/provider.dart' as provider;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:async';
 
@@ -178,7 +176,7 @@ class TaskProvider extends ChangeNotifier {
             taskId = data['taskId'];
           }
 
-          if (taskId == null || taskId.isEmpty) {
+          if (taskId.isEmpty) {
              print("TaskProvider: taskId not found in response: $data");
              throw Exception("taskId not found in response");
           }

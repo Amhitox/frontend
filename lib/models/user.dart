@@ -48,12 +48,39 @@ class User {
       subscriptionTier: json['subscriptionTier'] as String?,
       subscriptionStatus: json['subscriptionStatus'] as String?,
       subscriptionPeriod: json['subscriptionPeriod'] as String?,
-      trialEndDate: json['trialEndDate'] is String ? DateTime.parse(json['trialEndDate']) : null,
-      currentPeriodEnd: json['currentPeriodEnd'] is String ? DateTime.parse(json['currentPeriodEnd']) : null,
+      trialEndDate: _parseDate(json['trialEndDate']),
+      currentPeriodEnd: _parseDate(json['currentPeriodEnd']),
       jobTitle: json['jobTitle'] as String?,
       voicePreferences: json['voicePreferences'] as Map<String, dynamic>?,
     );
   }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String) {
+      if (value.isEmpty) return null;
+      try {
+        // Try ISO 8601
+        return DateTime.parse(value);
+      } catch (_) {
+        // Try parsing as int timestamp string
+        final asInt = int.tryParse(value);
+        if (asInt != null) return DateTime.fromMillisecondsSinceEpoch(asInt);
+      }
+    }
+    // Handle Firestore Timestamp object structure
+    if (value is Map) {
+      if (value.containsKey('_seconds')) {
+         return DateTime.fromMillisecondsSinceEpoch((value['_seconds'] as int) * 1000);
+      }
+      if (value.containsKey('seconds')) {
+         return DateTime.fromMillisecondsSinceEpoch((value['seconds'] as int) * 1000);
+      }
+    }
+    return null;
+  }
+
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
     if (uid != null) json['uid'] = uid;

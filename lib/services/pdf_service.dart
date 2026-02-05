@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -191,7 +190,7 @@ class PdfService {
             ],
           ),
         ),
-        pw.SizedBox(width: 40, child: pw.Text('${value.toStringAsFixed(1)}', textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 12))),
+        pw.SizedBox(width: 40, child: pw.Text(value.toStringAsFixed(1), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 12))),
       ],
     );
   }

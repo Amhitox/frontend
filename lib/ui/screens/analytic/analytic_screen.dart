@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/models/analytic_data.dart';
 import 'package:frontend/providers/analytic_provider.dart';
-import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:provider/provider.dart';
@@ -122,7 +121,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                AppLocalizations.of(context)!.errorLoadingAnalytics,
+                                AppLocalizations.of(context).errorLoadingAnalytics,
                                 style: TextStyle(color: theme.colorScheme.error),
                               ),
                               SizedBox(height: 8),
@@ -131,7 +130,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                                 onPressed: () {
                                   provider.fetchAnalytics(_selectedPeriod, forceRefresh: true);
                                 },
-                                child: Text(AppLocalizations.of(context)!.retry),
+                                child: Text(AppLocalizations.of(context).retry),
                               )
                             ],
                           ),
@@ -140,7 +139,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
                       final data = provider.getData(_selectedPeriod);
                       if (data == null) {
-                        return Center(child: Text(AppLocalizations.of(context)!.noData));
+                        return Center(child: Text(AppLocalizations.of(context).noData));
                       }
                       
                       return RefreshIndicator(
@@ -407,7 +406,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      AppLocalizations.of(context)!.analytics,
+                      AppLocalizations.of(context).analytics,
                       style: TextStyle(
                         color: theme.colorScheme.onSurface,
                         fontSize: titleSize,
@@ -417,7 +416,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     ),
                     SizedBox(height: _isTablet(screenWidth) ? 6 : 4),
                     Text(
-                      AppLocalizations.of(context)!.analyticsSubtitle,
+                      AppLocalizations.of(context).analyticsSubtitle,
                       style: TextStyle(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.7,
@@ -480,9 +479,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                             
                             scaffoldMessenger.showSnackBar(
                               SnackBar(
-                                content: Text('${AppLocalizations.of(context)!.savedTo}: $newPath'),
+                                content: Text('${AppLocalizations.of(context).savedTo}: $newPath'),
                                 action: SnackBarAction(
-                                  label: AppLocalizations.of(context)!.open,
+                                  label: AppLocalizations.of(context).open,
                                   onPressed: () {
                                     OpenFilex.open(newPath);
                                   },
@@ -494,9 +493,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                          } catch (e) {
                            scaffoldMessenger.showSnackBar(
                               SnackBar(
-                                content: Text('${AppLocalizations.of(context)!.savedTo}: $path'),
+                                content: Text('${AppLocalizations.of(context).savedTo}: $path'),
                                 action: SnackBarAction(
-                                  label: AppLocalizations.of(context)!.open,
+                                  label: AppLocalizations.of(context).open,
                                   onPressed: () {
                                     OpenFilex.open(path);
                                   },
@@ -506,7 +505,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                          }
                        } else {
                          scaffoldMessenger.showSnackBar(
-                           SnackBar(content: Text(AppLocalizations.of(context)!.failedToGenerate)),
+                           SnackBar(content: Text(AppLocalizations.of(context).failedToGenerate)),
                          );
                        }
                     },
@@ -521,10 +520,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       final path = await provider.generateAndDownloadReport(_selectedPeriod);
                        
                       if (path != null) {
-                        await Share.shareXFiles([XFile(path)], text: AppLocalizations.of(context)!.shareAnalyticsMessage);
+                        await Share.shareXFiles([XFile(path)], text: AppLocalizations.of(context).shareAnalyticsMessage);
                       } else {
                         scaffoldMessenger.showSnackBar(
-                          SnackBar(content: Text(AppLocalizations.of(context)!.failedToGenerateShare)),
+                          SnackBar(content: Text(AppLocalizations.of(context).failedToGenerateShare)),
                         );
                       }
                   }, screenWidth),
@@ -553,7 +552,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildQuickMetric(
-                      AppLocalizations.of(context)!.score,
+                      AppLocalizations.of(context).score,
                       '${data.productivityScore}%',
                       _getProductivityColor(data.productivityScore),
                       screenWidth,
@@ -564,7 +563,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       color: theme.colorScheme.outline.withValues(alpha: 0.3),
                     ),
                     _buildQuickMetric(
-                      AppLocalizations.of(context)!.emails,
+                      AppLocalizations.of(context).emails,
                       '${data.emailsSent + data.emailsReceived}',
                       Colors.blue,
                       screenWidth,
@@ -575,7 +574,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       color: theme.colorScheme.outline.withValues(alpha: 0.3),
                     ),
                     _buildQuickMetric(
-                      AppLocalizations.of(context)!.tasks,
+                      AppLocalizations.of(context).tasks,
                       '${data.tasksCompleted}',
                       Colors.orange,
                       screenWidth,
@@ -762,13 +761,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   String _getShortPeriodName(BuildContext context, String period) {
     switch (period) {
       case 'This Week':
-        return AppLocalizations.of(context)!.week;
+        return AppLocalizations.of(context).week;
       case 'This Month':
-        return AppLocalizations.of(context)!.month;
+        return AppLocalizations.of(context).month;
       case 'This Year':
-        return AppLocalizations.of(context)!.year;
+        return AppLocalizations.of(context).year;
       case 'Today':
-         return AppLocalizations.of(context)!.today;
+         return AppLocalizations.of(context).today;
       default:
         return period;
     }
@@ -810,25 +809,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           mainAxisSpacing: mainSpacing,
           children: [
             _buildStatCard(
-              AppLocalizations.of(context)!.emailsSent,
+              AppLocalizations.of(context).emailsSent,
               data.emailsSent.toString(),
               Icons.send,
               Colors.blue,
             ),
             _buildStatCard(
-              AppLocalizations.of(context)!.emailsReceived,
+              AppLocalizations.of(context).emailsReceived,
               data.emailsReceived.toString(),
               Icons.inbox,
               Colors.green,
             ),
             _buildStatCard(
-              AppLocalizations.of(context)!.tasksCompleted,
+              AppLocalizations.of(context).tasksCompleted,
               data.tasksCompleted.toString(),
               Icons.check_circle,
               Colors.orange,
             ),
             _buildStatCard(
-              AppLocalizations.of(context)!.meetings,
+              AppLocalizations.of(context).meetings,
               data.meetingsAttended.toString(),
               Icons.event,
               Colors.purple,
@@ -994,7 +993,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  AppLocalizations.of(context)!.productivityScore,
+                  AppLocalizations.of(context).productivityScore,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface,
                     fontSize: titleSize,
@@ -1045,7 +1044,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${AppLocalizations.of(context)!.avgResponseTime}: ${data.responseTime}',
+                  '${AppLocalizations.of(context).avgResponseTime}: ${data.responseTime}',
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: subtitleSize,
@@ -1103,7 +1102,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.activityTrends,
+              AppLocalizations.of(context).activityTrends,
               style: TextStyle(
                 color: theme.colorScheme.onSurface,
                 fontSize: titleSize,
@@ -1143,13 +1142,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             final height = maxValue == 0 ? 0.0 : (value / maxValue) * _getChartMaxHeight(screenWidth);
             final label = index < 7 
                 ? [
-                    AppLocalizations.of(context)!.monday.substring(0, 3), 
-                    AppLocalizations.of(context)!.tuesday.substring(0, 3), 
-                    AppLocalizations.of(context)!.wednesday.substring(0, 3), 
-                    AppLocalizations.of(context)!.thursday.substring(0, 3), 
-                    AppLocalizations.of(context)!.friday.substring(0, 3), 
-                    AppLocalizations.of(context)!.saturday.substring(0, 3), 
-                    AppLocalizations.of(context)!.sunday.substring(0, 3)
+                    AppLocalizations.of(context).monday.substring(0, 3), 
+                    AppLocalizations.of(context).tuesday.substring(0, 3), 
+                    AppLocalizations.of(context).wednesday.substring(0, 3), 
+                    AppLocalizations.of(context).thursday.substring(0, 3), 
+                    AppLocalizations.of(context).friday.substring(0, 3), 
+                    AppLocalizations.of(context).saturday.substring(0, 3), 
+                    AppLocalizations.of(context).sunday.substring(0, 3)
                   ][index] 
                 : '';
                 
@@ -1250,7 +1249,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  AppLocalizations.of(context)!.keyInsights,
+                  AppLocalizations.of(context).keyInsights,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface,
                     fontSize: titleSize,
@@ -1261,7 +1260,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
             SizedBox(height: _isTablet(screenWidth) ? 20 : 16),
             _buildInsightItem(
-              AppLocalizations.of(context)!.peakActivity,
+              AppLocalizations.of(context).peakActivity,
               _getPeakActivityInsight(context, data),
               Icons.trending_up,
               Colors.green,
@@ -1269,7 +1268,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
             SizedBox(height: _isTablet(screenWidth) ? 16 : 12),
             _buildInsightItem(
-              AppLocalizations.of(context)!.responsePattern,
+              AppLocalizations.of(context).responsePattern,
               _getResponsePatternInsight(context, data),
               Icons.schedule,
               Colors.blue,
@@ -1277,7 +1276,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             ),
             SizedBox(height: _isTablet(screenWidth) ? 16 : 12),
             _buildInsightItem(
-              AppLocalizations.of(context)!.suggestion,
+              AppLocalizations.of(context).suggestion,
               _getSuggestion(context, data),
               Icons.recommend,
               Colors.orange,
@@ -1363,7 +1362,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
 
   String _getPeakActivityInsight(BuildContext context, AnalyticData data) {
     final weeklyData = data.weeklyData;
-    if (weeklyData.isEmpty) return AppLocalizations.of(context)!.noActivityData;
+    if (weeklyData.isEmpty) return AppLocalizations.of(context).noActivityData;
     
     int maxIndex = 0;
     num maxValue = -1;
@@ -1375,35 +1374,35 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
     }
     
     final days = [
-      AppLocalizations.of(context)!.monday,
-      AppLocalizations.of(context)!.tuesday,
-      AppLocalizations.of(context)!.wednesday,
-      AppLocalizations.of(context)!.thursday,
-      AppLocalizations.of(context)!.friday,
-      AppLocalizations.of(context)!.saturday,
-      AppLocalizations.of(context)!.sunday,
+      AppLocalizations.of(context).monday,
+      AppLocalizations.of(context).tuesday,
+      AppLocalizations.of(context).wednesday,
+      AppLocalizations.of(context).thursday,
+      AppLocalizations.of(context).friday,
+      AppLocalizations.of(context).saturday,
+      AppLocalizations.of(context).sunday,
     ];
     if (maxIndex < days.length) {
-      return '${AppLocalizations.of(context)!.mostProductiveDay} ${days[maxIndex]}';
+      return '${AppLocalizations.of(context).mostProductiveDay} ${days[maxIndex]}';
     }
-    return AppLocalizations.of(context)!.consistentActivity;
+    return AppLocalizations.of(context).consistentActivity;
   }
 
   String _getResponsePatternInsight(BuildContext context, AnalyticData data) {
     if (data.productivityScore > 80) {
-      return AppLocalizations.of(context)!.excellentResponse;
+      return AppLocalizations.of(context).excellentResponse;
     } else if (data.productivityScore > 60) {
-      return AppLocalizations.of(context)!.improvedResponse;
+      return AppLocalizations.of(context).improvedResponse;
     } else {
-      return AppLocalizations.of(context)!.automateResponses;
+      return AppLocalizations.of(context).automateResponses;
     }
   }
 
   String _getSuggestion(BuildContext context, AnalyticData data) {
     if (data.productivityScore > 80) {
-      return AppLocalizations.of(context)!.shareTips;
+      return AppLocalizations.of(context).shareTips;
     } else {
-      return AppLocalizations.of(context)!.timeBlocking;
+      return AppLocalizations.of(context).timeBlocking;
     }
   }
 }

@@ -32,7 +32,7 @@ class NotificationApiService {
       }
       return [];
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -51,7 +51,7 @@ class NotificationApiService {
         },
       );
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 
@@ -70,7 +70,7 @@ class NotificationApiService {
         },
       );
     } catch (e) {
-      throw e;
+      rethrow;
     }
   }
 }

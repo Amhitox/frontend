@@ -1,128 +1,212 @@
-CONDITIONS GÉNÉRALES DE VENTE / TERMS OF SALE – AIXY
-Version du 10 octobre 2025
+FR:
+# CONDITIONS GÉNÉRALES DE VENTE (CGV)
 
------------------------------------------------------------------------------------------------------------
+### AVERTISSEMENT
 
-Article 1 : Objet / Purpose
-      FR: Les présentes Conditions Générales de Vente (CGV) régissent la vente des abonnements et services proposés par l’application AIXY,
-éditée par ELYO AI NOVA. Elles précisent les droits et obligations de l’utilisateur et de l’éditeur.
-      EN: These Terms of Sale govern the sale of subscriptions and services offered by the AIXY application,
-published by ELYO AI NOVA. They set out the rights and obligations of the user and the publisher.
+Vous venez de vous connecter à l’Application AIXY, éditée par la société ELYO AI NOVA.
+Vous devez lire attentivement les dispositions qui suivent, car elles constituent un contrat établissant les conditions générales de vente des services et abonnements numériques proposés par l’Application.
 
-Article 2 : Produits et services / Products and Services
-      FR :
-· L’Application propose des abonnements Semestriel et annuels, répartis en packs : Pro Essentiel, PRO BUSINESS et PREMIUM
-· L’éditeur peut ajouter de nouveaux services à tout moment.
-· Une période d’essai gratuite de 7 jours est offerte à tous les nouveaux utilisateurs n’ayant jamais été inscrits ni bénéficié du service auparavant.
-      EN :
-· The Application offers  Semi-Annual and annual subscriptions, divided into packages: Pro Essential, PRO BUSINESS & Premium.
-· The publisher may add new services at any time.
-· A 7-day free trial period is offered to all new users.
------------------------------------------------------------------------------------------------------------
+> **Toute validation d’un abonnement ou service, notamment par clic de confirmation ou paiement, vaut acceptation irrévocable des présentes Conditions Générales de Vente.**
 
-Article 3 : Tarifs / Pricing
-FR :
-· Les tarifs des abonnements sont affichés dans l’Application et peuvent varier selon le pack choisi.
-· Les tarifs sont automatiquement affichés en MAD ou en USD en fonction de la région de l’utilisateur
-EN :
-· Subscription prices are displayed in the Application and may vary according to the selected package.
-· Pricing is automatically displayed in MAD or USD based on the user’s region.
+En conséquence, vous ne pouvez souscrire aux services proposés que si vous acceptez l’intégralité des conditions ci-après.
 
------------------------------------------------------------------------------------------------------------
+---
 
-Article 4 : Modalités de paiement / Payment Terms
+## 1. Préambule
 
-FR :
-* Paiement par carte bancaire locale et internationale, PayPal, et autres canaux de paiement si nécessaire.
-* Le paiement est exigible à la souscription et sera renouvelé automatiquement selon la période choisie, sauf résiliation avant la date de renouvellement.
+Les présentes Conditions Générales de Vente régissent l’ensemble des transactions effectuées via l’Application AIXY.
+Toute souscription à un abonnement ou service payant implique l’acceptation pleine, entière et irrévocable des présentes CGV par l’utilisateur.
 
-EN :
-* Payment by local and international bank cards, PayPal, and other payment methods if required.
-* Payment is due at the time of subscription and will be automatically renewed based on the selected billing period, unless canceled before the renewal date.
+## 2. Objet
 
------------------------------------------------------------------------------------------------------------
+Le présent contrat est un contrat de services à distance ayant pour objet de définir les droits et obligations des parties dans le cadre de la vente d’abonnements et services numériques proposés par ELYO AI NOVA, via l’Application AIXY, notamment au moyen de plateformes de paiement sécurisées, dont le Centre Monétique Interbancaire (CMI).
 
-Article 5 : Résiliation et remboursement / Termination and Refund
+**AIXY** est un service et une marque exploitée par **ELYO AI NOVA**.
 
-FR :
-· L’utilisateur peut résilier son abonnement à tout moment via l’Application.
-· Aucun remboursement ne sera effectué pour les périodes déjà payées, sauf disposition légale applicable.
-· La période d’essai gratuite peut être interrompue par l’utilisateur sans frais.
+## 3. Définitions
 
-EN :
-· Users may terminate their subscription at any time via the Application.
-· No refund will be provided for already paid periods, except as required by law.
-· The free trial period may be terminated by the user at any time without charge.
+Aux fins des présentes CGV, les termes suivants auront la signification ci-après :
 
------------------------------------------------------------------------------------------------------------
+*   **Contrat à distance** : contrat conclu exclusivement par voie électronique entre AIXY et l’utilisateur.
+*   **Utilisateur / Client** : toute personne physique ou morale souscrivant aux services proposés.
+*   **Abonnement** : accès payant aux fonctionnalités de l’Application pour une durée déterminée.
+*   **Commande** : validation électronique de la souscription à un abonnement ou service payant.
 
-Article 6 : Modification des services / Service Changes
+## 4. Produit / Service
 
-FR :
-* L’éditeur se réserve le droit de modifier, d’ajouter ou de retirer des services à tout moment.
-* Les modifications seront communiquées à l’utilisateur via l’Application ou par tout autre moyen jugé approprié, à sa discrétion.
+Les services proposés par AIXY sont des services numériques accessibles en ligne, selon les fonctionnalités incluses dans l’abonnement choisi.
 
-EN :
-* The publisher reserves the right to modify, add, or remove services at any time.
-* Any changes will be communicated to users through the Application or by any other means deemed appropriate, at the publisher’s discretion.
+L’éditeur se réserve le droit de modifier, faire évoluer, suspendre ou supprimer tout service, sans préavis et sans obligation de maintien des fonctionnalités existantes.
+Aucune incompatibilité technique avec l’équipement de l’utilisateur ne pourra engager la responsabilité d’AIXY.
 
------------------------------------------------------------------------------------------------------------
+## 5. Passer une commande
 
-Article 7 : Obligations de l’utilisateur / User Obligations
+La souscription s’effectue directement via l’Application :
 
-FR :
-· L’utilisateur s’engage à fournir des informations exactes et à respecter les présentes CGV.
-· Toute utilisation frauduleuse ou non autorisée de l’Application pourra entraîner la résiliation immédiate de l’abonnement.
+1.  Sélection du pack ou abonnement souhaité ;
+2.  Validation des informations ;
+3.  Confirmation et paiement.
 
-EN :
-· Users agree to provide accurate information and comply with these Terms of Sale.
-· Any fraudulent or unauthorized use of the Application may result in immediate termination of the subscription.
+Toute validation vaut commande ferme et définitive.
+En cas d’erreur de saisie, l’utilisateur peut contacter le support dans un délai de 24 heures, sans garantie d’annulation après paiement effectif.
 
------------------------------------------------------------------------------------------------------------
+## 6. Prix
 
-Article 8 : Responsabilité / Liability
+Les prix sont indiqués dans l’Application en dirhams marocains (MAD) ou en dollars américains (USD) selon la localisation de l’utilisateur.
+Les tarifs applicables sont ceux en vigueur au moment de la souscription.
+AIXY se réserve le droit de modifier ses tarifs à tout moment, sans effet rétroactif sur les abonnements en cours.
 
-FR :
-· L’éditeur met en œuvre tous les moyens raisonnables pour fournir les services, mais ne peut garantir leur disponibilité ininterrompue.
-· L’éditeur ne pourra être tenu responsable des dommages directs ou indirects liés à l’utilisation de l’Application, sauf en cas de faute lourde ou intentionnelle.
+## 7. Exécution de la commande
 
-EN :
-· The publisher implements all reasonable measures to provide services, but cannot guarantee uninterrupted availability.
-· The publisher cannot be held liable for direct or indirect damages related to the use of the Application, except in cases of gross negligence or intentional misconduct.
+L’accès aux services est activé immédiatement ou dans un délai raisonnable après confirmation du paiement.
+En cas d’indisponibilité temporaire du service, aucune indemnité ne pourra être réclamée par l’utilisateur.
 
------------------------------------------------------------------------------------------------------------
+## 8. Livraison
 
-Article 9 : Propriété intellectuelle / Intellectual Property
+Les services proposés étant entièrement numériques, aucune livraison physique n’est effectuée.
+L’accès aux services est fourni via l’Application AIXY, à l’aide des identifiants de l’utilisateur.
 
-FR :
-· Les contenus, logos, textes et fonctionnalités de l’Application sont protégés par le droit de la propriété intellectuelle.
-· Toute reproduction ou exploitation sans autorisation est interdite.
+## 9. Mode de paiement
 
-EN :
-· The content, logos, texts, and features of the Application are protected by intellectual property law.
-· Any reproduction or exploitation without permission is prohibited.
+Le paiement s’effectue via les moyens proposés dans l’Application, notamment :
 
------------------------------------------------------------------------------------------------------------
+*   carte bancaire locale ou internationale via CMI,
+*   tout autre moyen de paiement ajouté ultérieurement.
 
-Article 10 : Loi applicable et juridiction / Governing Law and Jurisdiction
+Les paiements sont sécurisés.
+L’utilisateur garantit disposer des autorisations nécessaires pour utiliser le moyen de paiement choisi.
 
-FR :
-· Les présentes CGV sont régies par la loi marocaine et les lois applicables en matière de protection des données.
-· Tout litige sera soumis aux tribunaux compétents du Maroc.
+## 10. Confidentialité des données
 
-EN :
-· These Terms of Sale are governed by Moroccan law and applicable data protection laws.
-· Any dispute will be submitted to the competent courts of Morocco.
+Les données collectées sont nécessaires au traitement des commandes et à la fourniture des services.
+Elles sont traitées de manière confidentielle, conformément à la législation marocaine en vigueur relative à la protection des données personnelles.
 
------------------------------------------------------------------------------------------------------------
+## 11. Annulation d’une commande payée
 
-Article 11 : Mentions légales / Legal Notices
+Toute commande validée et payée est définitive.
+Aucune annulation ni remboursement ne sera accordé après activation de l’abonnement, sauf obligation légale contraire.
 
-FR :
-· Éditeur : ELYO AI NOVA
-· Adresse : 26 Avenue Mers Soultan, Apt 3, Étage 1, Casablanca, Maroc · Email : support@elyoainova.com
+## 12. Droit de rétractation
 
+Conformément à la réglementation applicable aux services numériques, le droit de rétractation peut être exclu dès lors que l’exécution du service a commencé avec l’accord de l’utilisateur.
+En validant sa commande, l’utilisateur reconnaît et accepte l’exécution immédiate du service et renonce expressément à son droit de rétractation.
 
-EN :
-· Publisher: ELYO AI NOVA
-· Address: 26 Avenue Mers Soultan, Apt 3, 1st Floor, Casablanca, Morocco · Email: support@elyoainova.com
+## 13. Garantie
+
+AIXY fournit les services en l’état, sans garantie de performance ou d’absence d’erreurs.
+Aucune garantie n’est accordée quant à l’adéquation des services aux besoins spécifiques de l’utilisateur.
+
+## 14. Preuve des transactions par carte bancaire
+
+Les données enregistrées par le CMI et les prestataires de paiement constituent la preuve irréfutable des transactions réalisées entre l’utilisateur et ELYO AI NOVA.
+
+## 15. Force majeure
+
+ELYO AI NOVA ne pourra être tenue responsable de l’inexécution ou du retard dans l’exécution de ses obligations en cas de force majeure, telle que définie par la loi marocaine.
+
+EN:
+# GENERAL TERMS AND CONDITIONS OF SALE (GTCS)
+
+### WARNING
+
+You have just connected to the AIXY Application, published by ELYO AI NOVA.
+You must carefully read the provisions below, as they constitute a contract establishing the general terms and conditions of sale for the digital services and subscriptions offered by the Application.
+
+> **Any validation of a subscription or service—particularly by confirmation click or payment—constitutes irrevocable acceptance of these General Terms and Conditions of Sale.**
+
+Consequently, you may only subscribe to the offered services if you fully accept all the conditions set forth below.
+
+---
+
+## 1. Preamble
+
+These General Terms and Conditions of Sale govern all transactions carried out via the AIXY Application.
+Any subscription to a paid service or plan implies the user’s full, complete, and irrevocable acceptance of these GTCS.
+
+## 2. Purpose
+
+This agreement is a remote service contract intended to define the rights and obligations of the parties in connection with the sale of digital subscriptions and services offered by ELYO AI NOVA through the AIXY Application, particularly via secure payment platforms, including the Interbank Monetary Center (CMI).
+
+**AIXY** is a service and a trademark operated by **ELYO AI NOVA**.
+
+## 3. Definitions
+
+For the purposes of these GTCS, the following terms shall have the meanings defined below:
+
+*   **Remote Contract**: A contract concluded exclusively by electronic means between AIXY and the user.
+*   **User / Client**: Any natural or legal person subscribing to the services offered.
+*   **Subscription**: Paid access to the Application’s features for a defined period.
+*   **Order**: Electronic validation of a subscription or paid service.
+
+## 4. Product / Service
+
+The services offered by AIXY are digital services accessible online, according to the features included in the selected subscription.
+
+The publisher reserves the right to modify, develop, suspend, or remove any service without prior notice and without any obligation to maintain existing functionalities.
+Any technical incompatibility with the user’s equipment shall not engage AIXY’s liability.
+
+## 5. Placing an Order
+
+Subscription is carried out directly via the Application as follows:
+
+1.  Selection of the desired package or subscription;
+2.  Validation of information;
+3.  Confirmation and payment.
+
+Any validation constitutes a final and binding order.
+In the event of a data entry error, the user may contact support within 24 hours, without any guarantee of cancellation once payment has been processed.
+
+## 6. Prices
+
+Prices are displayed in the Application in Moroccan Dirhams (MAD) or US Dollars (USD) depending on the user’s location.
+The applicable prices are those in effect at the time of subscription.
+AIXY reserves the right to modify its prices at any time, without retroactive effect on current subscriptions.
+
+## 7. Order Execution
+
+Access to the services is activated immediately or within a reasonable timeframe after payment confirmation.
+In the event of temporary service unavailability, no compensation may be claimed by the user.
+
+## 8. Delivery
+
+As the services are entirely digital, no physical delivery is performed.
+Access to the services is provided via the AIXY Application using the user’s credentials.
+
+## 9. Payment Methods
+
+Payment is made using the methods offered in the Application, including:
+
+*   Local or international bank cards via CMI;
+*   Any other payment method added in the future.
+
+Payments are secured.
+The user guarantees that they have the necessary authorizations to use the selected payment method.
+
+## 10. Data Confidentiality
+
+The collected data is necessary for order processing and service delivery.
+It is processed confidentially, in accordance with Moroccan legislation in force regarding the protection of personal data.
+
+## 11. Cancellation of a Paid Order
+
+Any validated and paid order is final.
+No cancellation or refund will be granted after the subscription has been activated, except where required by applicable law.
+
+## 12. Right of Withdrawal
+
+In accordance with regulations applicable to digital services, the right of withdrawal may be excluded once service execution has begun with the user’s consent.
+
+By validating their order, the user acknowledges and accepts the immediate execution of the service and expressly waives their right of withdrawal.
+
+## 13. Warranty
+
+AIXY provides the services “as is”, without any guarantee of performance or error-free operation.
+No guarantee is given regarding the suitability of the services for the user’s specific needs.
+
+## 14. Proof of Credit Card Transactions
+
+The data recorded by CMI and payment service providers constitute irrefutable proof of transactions carried out between the user and ELYO AI NOVA.
+
+## 15. Force Majeure
+
+ELYO AI NOVA shall not be held liable for failure or delay in the performance of its obligations in the event of force majeure, as defined by Moroccan law.

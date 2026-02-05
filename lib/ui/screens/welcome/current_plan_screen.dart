@@ -34,7 +34,7 @@ class CurrentPlanScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      AppLocalizations.of(context)!.currentPlan,
+                      AppLocalizations.of(context).currentPlan,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -123,7 +123,7 @@ class CurrentPlanScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 24),
                               Text(
-                                isEssential ? AppLocalizations.of(context)!.essentialPlan : AppLocalizations.of(context)!.premiumPlan,
+                                isEssential ? AppLocalizations.of(context).essentialPlan : AppLocalizations.of(context).premiumPlan,
                                 style: const TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.w800,
@@ -160,8 +160,8 @@ class CurrentPlanScreen extends StatelessWidget {
                               const SizedBox(height: 32),
                               Text(
                                 isEssential
-                                    ? AppLocalizations.of(context)!.essentialPlanDesc
-                                    : AppLocalizations.of(context)!.premiumPlanDesc,
+                                    ? AppLocalizations.of(context).essentialPlanDesc
+                                    : AppLocalizations.of(context).premiumPlanDesc,
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: Colors.grey[300],
@@ -176,7 +176,7 @@ class CurrentPlanScreen extends StatelessWidget {
                                   TextButton(
                                     onPressed: () => context.pop(),
                                     child: Text(
-                                      AppLocalizations.of(context)!.backToHome,
+                                      AppLocalizations.of(context).backToHome,
                                       style: TextStyle(
                                         color: Colors.grey[400],
                                         fontSize: 14,

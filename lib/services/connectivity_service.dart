@@ -1,9 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:frontend/services/firabasesync_service.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:frontend/providers/task_provider.dart';
-import 'package:frontend/providers/meeting_provider.dart';
 
 class ConnectivityService {
   final FirebaseSyncService syncService;

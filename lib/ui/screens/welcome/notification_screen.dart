@@ -88,7 +88,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     final isTablet = screenSize.width > 600;
     final theme = Theme.of(context);
     final provider = context.watch<NotificationProvider>();
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
 
     return PopScope(
       canPop: false,
@@ -138,7 +138,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Widget _buildHeader(bool isTablet, ThemeData theme, NotificationProvider provider) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Container(
       margin: EdgeInsets.all(isTablet ? 20 : 16),
       padding: EdgeInsets.all(isTablet ? 24 : 20),
@@ -258,7 +258,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Widget _buildFilterTabs(bool isTablet, ThemeData theme) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Container(
       margin: EdgeInsets.symmetric(
         horizontal: isTablet ? 20 : 16,
@@ -332,7 +332,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Widget _buildQuickStats(bool isTablet, ThemeData theme, NotificationProvider provider) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final notifications = provider.notifications;
     final unreadCount = notifications.where((n) => !n.isRead).length;
     final highPriorityCount =
@@ -722,7 +722,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   Widget _buildPriorityBadge(NotificationPriority priority, bool isTablet) {
     if (priority == NotificationPriority.normal) return const SizedBox();
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     Color color;
     String text;
     switch (priority) {
@@ -798,7 +798,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   void _markAllAsRead(ThemeData theme, bool isTablet) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder:
@@ -850,7 +850,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   void _clearAllNotifications(ThemeData theme, bool isTablet) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder:

@@ -38,8 +38,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _breathingController.dispose();
     super.dispose();
   }
+  @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
     final pages = [
       OnboardingPage(
         icon: Icons.mic,
@@ -252,7 +253,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 ),
               ),
               child: Text(
-                AppLocalizations.of(context)!.skip,
+                AppLocalizations.of(context).skip,
                 style: TextStyle(
                   color:
                       isDark
@@ -645,7 +646,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ),
                 ),
                 child: Text(
-                  _currentPage < pages.length - 1 ? AppLocalizations.of(context)!.continueBtn : AppLocalizations.of(context)!.getStarted,
+                  _currentPage < pages.length - 1 ? AppLocalizations.of(context).continueBtn : AppLocalizations.of(context).getStarted,
                   style: TextStyle(
                     fontSize: buttonFontSize,
                     fontWeight: FontWeight.w700,
@@ -674,7 +675,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                         curve: Curves.easeInOut,
                       ),
                   child: Text(
-                    AppLocalizations.of(context)!.back,
+                    AppLocalizations.of(context).back,
                     style: TextStyle(
                       color: secondaryTextColor,
                       fontSize: buttonFontSize,

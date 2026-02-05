@@ -98,7 +98,7 @@ class AppRoutes {
       navigatorKey: navigatorKey,
       initialLocation: splash,
       refreshListenable: _authProvider,
-      redirect: (context, state) {
+      redirect: (context, state) async {
         final auth = _authProvider;
         if (auth == null) return null;
 
@@ -125,7 +125,12 @@ class AppRoutes {
 
         if (!canAccess) {
              if (isAccessGate) return null;
-             if (isSubscription) return null;
+             if (isSubscription) {
+                // Pre-fetch location before allowing navigation to subscription
+                // This prevents loading flicker on the screen
+                await auth.checkLocation();
+                return null;
+             }
              if (isCallback) return null;
              
              return accessGate;
@@ -391,7 +396,7 @@ class AppRoutes {
         GoRoute(
           path: subscription,
           name: 'subscription',
-          builder: (context, state) => const SubscriptionPlansScreen(),
+          builder: (context, state) => SubscriptionPlansScreen(),
         ),
         GoRoute(
           path: addSchedule,

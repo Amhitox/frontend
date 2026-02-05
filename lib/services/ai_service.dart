@@ -56,7 +56,7 @@ class AiService {
         options: Options(headers: headers),
       );
       return response.data;
-    } on DioException catch (e) {
+    } on DioException {
       return null;
     } catch (e) {
       return null;

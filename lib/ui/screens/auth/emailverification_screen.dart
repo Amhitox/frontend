@@ -24,7 +24,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         if (mounted) {
           setState(() {
             _isVerifying = false;
-            _message = AppLocalizations.of(context)!.invalidLink;
+            _message = AppLocalizations.of(context).invalidLink;
           });
         }
       });
@@ -36,7 +36,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       setState(() {
         _isVerifying = false;
         _isVerified = true;
-        _message = AppLocalizations.of(context)!.emailVerified;
+        _message = AppLocalizations.of(context).emailVerified;
       });
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
@@ -47,14 +47,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       setState(() {
         _isVerifying = false;
         _isVerified = false;
-        _message = AppLocalizations.of(context)!.verificationFailedMessage;
+        _message = AppLocalizations.of(context).verificationFailedMessage;
       });
     }
   }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)!.emailVerification)),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).emailVerification)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -71,7 +71,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 ),
               const SizedBox(height: 20),
               Text(
-                _message.isEmpty && _isVerifying ? AppLocalizations.of(context)!.verifyingEmail : _message,
+                _message.isEmpty && _isVerifying ? AppLocalizations.of(context).verifyingEmail : _message,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
@@ -79,7 +79,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 const SizedBox(height: 30),
                 ElevatedButton(
                   onPressed: () => context.push('/login'),
-                  child: Text(AppLocalizations.of(context)!.goToLogin),
+                  child: Text(AppLocalizations.of(context).goToLogin),
                 ),
               ],
             ],

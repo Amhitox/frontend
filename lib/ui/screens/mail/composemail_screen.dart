@@ -4,15 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:file_picker/file_picker.dart';
-import 'package:frontend/services/mail_service.dart';
-import 'package:frontend/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:frontend/models/email_message.dart';
 import 'package:frontend/providers/mail_provider.dart';
 
-import 'dart:convert';
 import 'package:frontend/utils/localization.dart';
-import 'package:frontend/services/ai_service.dart';
 import 'package:frontend/services/transcription_service.dart';
 
 class ComposeMailScreen extends StatefulWidget {
@@ -183,11 +179,11 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     }
     
     if (_toRecipients.isEmpty) {
-      _showFeedback(AppLocalizations.of(context)!.pleaseAddRecipient, isError: true);
+      _showFeedback(AppLocalizations.of(context).pleaseAddRecipient, isError: true);
       return;
     }
     if (_subjectController.text.isEmpty) {
-      _showFeedback(AppLocalizations.of(context)!.pleaseAddSubject, isError: true);
+      _showFeedback(AppLocalizations.of(context).pleaseAddSubject, isError: true);
       return;
     }
 
@@ -240,16 +236,16 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
 
       if (mounted) {
         if (result != null && result['error'] == null) {
-          _showFeedback(AppLocalizations.of(context)!.messageSent);
+          _showFeedback(AppLocalizations.of(context).messageSent);
           _closeScreen();
         } else {
-           final errorMsg = result?['error'] ?? AppLocalizations.of(context)!.unknownError;
+           final errorMsg = result?['error'] ?? AppLocalizations.of(context).unknownError;
           _showFeedback(errorMsg.toString(), isError: true);
         }
       }
     } catch (e) {
       if (mounted) {
-        _showFeedback('${AppLocalizations.of(context)!.errorSendingEmail}: $e', isError: true);
+        _showFeedback('${AppLocalizations.of(context).errorSendingEmail}: $e', isError: true);
       }
     } finally {
       if (mounted) {
@@ -278,7 +274,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     
     // Draft needs at least a recipient or subject or body
     if (_toRecipients.isEmpty && _subjectController.text.isEmpty && _bodyController.document.toPlainText().trim().isEmpty) {
-      _showFeedback(AppLocalizations.of(context)!.draftEmpty, isError: true);
+      _showFeedback(AppLocalizations.of(context).draftEmpty, isError: true);
       return;
     }
 
@@ -325,16 +321,16 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       if (mounted) {
         if (result != null && (result['success'] == true || result['draftId'] != null)) {
           HapticFeedback.lightImpact();
-          _showFeedback(AppLocalizations.of(context)!.draftSaved);
+          _showFeedback(AppLocalizations.of(context).draftSaved);
           _closeScreen();
         } else {
-           final errorMsg = result?['error'] ?? AppLocalizations.of(context)!.draftSaveFailed;
+           final errorMsg = result?['error'] ?? AppLocalizations.of(context).draftSaveFailed;
           _showFeedback(errorMsg.toString(), isError: true);
         }
       }
     } catch (e) {
       if (mounted) {
-        _showFeedback('${AppLocalizations.of(context)!.errorSavingDraft}: $e', isError: true);
+        _showFeedback('${AppLocalizations.of(context).errorSavingDraft}: $e', isError: true);
       }
     } finally {
       if (mounted) {
@@ -353,7 +349,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       if (result != null) {
         for (PlatformFile file in result.files) {
           if (file.size > 25 * 1024 * 1024) {
-            _showFeedback('${AppLocalizations.of(context)!.fileTooLarge} "${file.name}"', isError: true);
+            _showFeedback('${AppLocalizations.of(context).fileTooLarge} "${file.name}"', isError: true);
             continue;
           }
            final attachment = AttachmentItem(
@@ -367,12 +363,12 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           });
         }
         if (result.files.isNotEmpty) {
-          _showFeedback('${AppLocalizations.of(context)!.filesAdded} (${result.files.length})');
+          _showFeedback('${AppLocalizations.of(context).filesAdded} (${result.files.length})');
           HapticFeedback.lightImpact();
         }
       }
     } catch (e) {
-      _showFeedback('${AppLocalizations.of(context)!.errorPickingFiles}: $e', isError: true);
+      _showFeedback('${AppLocalizations.of(context).errorPickingFiles}: $e', isError: true);
     } finally {
       setState(() => _isUploadingFile = false);
     }
@@ -399,11 +395,11 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           });
         }
         if (result.files.isNotEmpty) {
-          _showFeedback('${AppLocalizations.of(context)!.imagesAdded} (${result.files.length})');
+          _showFeedback('${AppLocalizations.of(context).imagesAdded} (${result.files.length})');
         }
       }
     } catch (e) {
-      _showFeedback('${AppLocalizations.of(context)!.errorPickingImages}: $e', isError: true);
+      _showFeedback('${AppLocalizations.of(context).errorPickingImages}: $e', isError: true);
     } finally {
       setState(() => _isUploadingFile = false);
     }
@@ -414,7 +410,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
       _attachments.removeAt(index);
     });
     HapticFeedback.lightImpact();
-    _showFeedback(AppLocalizations.of(context)!.attachmentRemoved);
+    _showFeedback(AppLocalizations.of(context).attachmentRemoved);
   }
 
   void _showFeedback(String message, {bool isError = false}) {
@@ -530,7 +526,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  widget.editingMail != null ? AppLocalizations.of(context)!.editMessage : AppLocalizations.of(context)!.compose,
+                  widget.editingMail != null ? AppLocalizations.of(context).editMessage : AppLocalizations.of(context).compose,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontSize:
@@ -664,7 +660,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  AppLocalizations.of(context)!.originalMail,
+                  AppLocalizations.of(context).originalMail,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: isTablet ? 13 : 12,
@@ -695,7 +691,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             controller: _toController,
             focusNode: _toFocus,
             selectedValues: _toRecipients,
-            hint: AppLocalizations.of(context)!.to,
+            hint: AppLocalizations.of(context).to,
             isTablet: isTablet,
             isRequired: true,
             suggestions: _suggestions,
@@ -706,14 +702,14 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               children: [
                 if (!_showCc)
                   _buildSmallButton(
-                    AppLocalizations.of(context)!.cc,
+                    AppLocalizations.of(context).cc,
                     () => setState(() => _showCc = true),
                     isTablet,
                   ),
                 if (!_showCc && !_showBcc) SizedBox(width: isTablet ? 8 : 6),
                 if (!_showBcc)
                   _buildSmallButton(
-                    AppLocalizations.of(context)!.bcc,
+                    AppLocalizations.of(context).bcc,
                     () => setState(() => _showBcc = true),
                     isTablet,
                   ),
@@ -725,7 +721,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               controller: _ccController,
               focusNode: _ccFocus,
               selectedValues: _ccRecipients,
-              hint: AppLocalizations.of(context)!.cc,
+              hint: AppLocalizations.of(context).cc,
               isTablet: isTablet,
               suggestions: _suggestions,
             ),
@@ -736,7 +732,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               controller: _bccController,
               focusNode: _bccFocus,
               selectedValues: _bccRecipients,
-              hint: AppLocalizations.of(context)!.bcc,
+              hint: AppLocalizations.of(context).bcc,
               isTablet: isTablet,
               suggestions: _suggestions,
             ),
@@ -745,7 +741,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           _buildCompactTextField(
             controller: _subjectController,
             focusNode: _subjectFocus,
-            hint: AppLocalizations.of(context)!.subject,
+            hint: AppLocalizations.of(context).subject,
             isTablet: isTablet,
             isRequired: true,
           ),
@@ -1094,7 +1090,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
           Row(
             children: [
               Text(
-                '${AppLocalizations.of(context)!.attachments} (${_attachments.length})',
+                '${AppLocalizations.of(context).attachments} (${_attachments.length})',
                 style: TextStyle(
                   color: Theme.of(
                     context,
@@ -1105,7 +1101,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               ),
               const Spacer(),
               Text(
-                '${AppLocalizations.of(context)!.total}: ${_formatFileSize(_attachments.fold<int>(0, (sum, item) => sum + item.size))}',
+                '${AppLocalizations.of(context).total}: ${_formatFileSize(_attachments.fold<int>(0, (sum, item) => sum + item.size))}',
                 style: TextStyle(
                   color: Theme.of(
                     context,
@@ -1370,7 +1366,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               icon: _isRefining
                   ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimaryContainer))
                   : const Icon(Icons.autorenew_rounded, size: 18),
-              label: Text(AppLocalizations.of(context)!.refine),
+              label: Text(AppLocalizations.of(context).refine),
             ),
           ),
           if (showMic) ...[
@@ -1386,7 +1382,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                 icon: _isAiGenerating
                     ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _isListening ? Colors.white : Theme.of(context).colorScheme.onSecondaryContainer))
                     : Icon(_isListening ? Icons.mic : Icons.mic_none_rounded, size: 18),
-                label: Text(AppLocalizations.of(context)!.mic),
+                label: Text(AppLocalizations.of(context).mic),
               ),
             ),
           ],
@@ -1400,7 +1396,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
               icon: _isSending
                   ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.send, size: 18),
-              label: Text(_isSending ? AppLocalizations.of(context)!.sending : AppLocalizations.of(context)!.send),
+              label: Text(_isSending ? AppLocalizations.of(context).sending : AppLocalizations.of(context).send),
             ),
           ),
         ],
@@ -1411,7 +1407,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
   // AI Refinement Methods
   Future<void> _performAutoRefinement() async {
     if (_refinementAttempts >= 2) {
-      _showFeedback(AppLocalizations.of(context)!.voiceRefinementLimit, isError: true);
+      _showFeedback(AppLocalizations.of(context).voiceRefinementLimit, isError: true);
       return;
     }
 
@@ -1419,7 +1415,7 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
     final currentBody = _bodyController.document.toPlainText().trim();
 
     if (currentSubject.isEmpty && currentBody.isEmpty) {
-      _showFeedback(AppLocalizations.of(context)!.contentCannotBeEmpty, isError: true);
+      _showFeedback(AppLocalizations.of(context).contentCannotBeEmpty, isError: true);
       return;
     }
 
@@ -1453,12 +1449,12 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
             }
           });
           
-          _showFeedback(AppLocalizations.of(context)!.emailRefined);
+          _showFeedback(AppLocalizations.of(context).emailRefined);
        } else {
-          _showFeedback(result?['error'] ?? AppLocalizations.of(context)!.refinementFailed, isError: true);
+          _showFeedback(result?['error'] ?? AppLocalizations.of(context).refinementFailed, isError: true);
        }
     } catch (e) {
-       _showFeedback('${AppLocalizations.of(context)!.refinementFailed}: $e', isError: true);
+       _showFeedback('${AppLocalizations.of(context).refinementFailed}: $e', isError: true);
     } finally {
        if (mounted) {
          setState(() => _isRefining = false);
@@ -1570,9 +1566,9 @@ class _ComposeMailScreenState extends State<ComposeMailScreen>
                _bodyController.document.insert(0, plainText);
             }
           });
-          _showFeedback(AppLocalizations.of(context)!.emailRefined);
+          _showFeedback(AppLocalizations.of(context).emailRefined);
        } else {
-          _showFeedback(result?['error'] ?? AppLocalizations.of(context)!.refinementFailed, isError: true);
+          _showFeedback(result?['error'] ?? AppLocalizations.of(context).refinementFailed, isError: true);
        }
     } catch (e) {
        _showFeedback('Error generating reply: $e', isError: true);

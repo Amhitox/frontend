@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/ui/widgets/calendar_view.dart';
-import 'package:frontend/ui/widgets/meeting_sync_status_indicator.dart';
 import 'package:frontend/providers/meeting_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../models/meeting.dart';

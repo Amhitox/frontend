@@ -1,147 +1,149 @@
-CONDITIONS GÉNÉRALES D’UTILISATION (CGU) – GENERAL CONDITIONS OF USE (GCU) – AIXY Version du 10 octobre 2025
-
------------------------------------------------------------------------------------------------------------
-
-Article 1 : Objet / Purpose
-
-FR: Les présentes Conditions Générales d’Utilisation (CGU) régissent l’accès et l’utilisation de l’application mobile AIXY (ci-après « l’Application »), éditée par ELYO AI NOVA. Toute utilisation de l’Application implique l’acceptation sans réserve des présentes CGU.
-
-EN: These Terms of Use (TOU) govern access to and use of the mobile application AIXY (hereinafter “the Application”), published by ELYO AI NOVA. Any use of the Application implies unconditional acceptance of these TOU.
-
------------------------------------------------------------------------------------------------------------
-
-Article 2 : Accès à l’Application / Access to the Application
-
 FR:
+# CONDITIONS GÉNÉRALES D’UTILISATION (CGU)
 
-· L’Application est accessible aux utilisateurs disposant d’un appareil compatible et d’une connexion Internet.
+## Article 1 : Objet
 
-· L’éditeur se réserve le droit de modifier, suspendre ou interrompre l’accès à tout moment, sans préavis.
+Les présentes Conditions Générales d’Utilisation (ci-après « CGU ») régissent l’accès et l’utilisation de l’application mobile AIXY (ci-après « l’Application »), éditée par ELYO AI NOVA, conformément à la législation en vigueur.
+
+En accédant à l’Application et en utilisant ses services, l’utilisateur reconnaît avoir pris connaissance des présentes CGU et les accepter sans réserve.
+Toute utilisation de l’Application vaut acceptation pleine et entière des présentes conditions.
+
+ELYO AI NOVA se réserve le droit de modifier à tout moment les présentes CGU. Les modifications entrent en vigueur dès leur publication dans l’Application. Toute utilisation continue de l’Application après modification constitue une acceptation des CGU mises à jour.
+
+## Article 2 : Accès à l’Application
+
+L’Application mobile AIXY est accessible à tout utilisateur disposant d’un appareil compatible et d’une connexion Internet. L’accès à certains services peut nécessiter la création d’un compte utilisateur.
+
+L’éditeur se réserve le droit de modifier, suspendre ou interrompre, temporairement ou définitivement, tout ou partie de l’Application, à tout moment et sans préavis, notamment pour des raisons techniques, de maintenance, de sécurité ou de mise à jour.
+
+## Article 3 : Services
+
+L’Application AIXY propose notamment des services de gestion des emails, des tâches, de l’agenda et du service client. Elle pourra également proposer, à l’avenir, des services complémentaires, notamment liés à la gestion des vols et à tout autre service connexe.
+
+L’utilisateur peut interagir avec l’Application au moyen de commandes vocales et textuelles, reposant sur des technologies d’intelligence artificielle. L’utilisateur reconnaît que ces technologies peuvent produire des résultats automatisés susceptibles de comporter des limites ou des erreurs.
+
+L’éditeur se réserve le droit de faire évoluer, ajouter, modifier ou supprimer tout ou partie des services proposés, à tout moment, sans préavis et sans que cela n’ouvre droit à une quelconque indemnisation.
+
+## Article 4 : Conditions d’utilisation
+
+L’utilisation de l’Application AIXY constitue une acceptation implicite, pleine et entière des présentes CGU.
+L’Application ne doit en aucun cas être utilisée à des fins illégales, frauduleuses, ou contraires à la législation en vigueur, à l’ordre public ou aux bonnes mœurs.
+
+## Article 5 : Données personnelles et sous-traitance
+
+Dans le cadre de la fourniture et de l’amélioration des services proposés par l’Application AIXY, certaines données à caractère personnel peuvent être traitées par des prestataires techniques tiers, agissant en qualité de sous-traitants, notamment pour des besoins :
+
+*   d’hébergement et de stockage,
+*   de traitement automatisé et d’analyse,
+*   de sécurité et d’assistance technique,
+*   de gestion des paiements électroniques.
+
+Ces prestataires peuvent inclure, sans que cette liste soit limitative, des établissements de paiement tels que le Centre Monétique Interbancaire (CMI), ainsi que tout autre prestataire de paiement autorisé.
+
+Les prestataires concernés sont tenus de respecter des obligations de confidentialité et de sécurité, conformément à la législation applicable en matière de protection des données à caractère personnel.
+
+Certaines données peuvent être hébergées ou traitées au Maroc ou à l’étranger, sous réserve du respect des dispositions légales et réglementaires en vigueur.
+Pour plus d’informations, l’utilisateur est invité à consulter la Politique de Confidentialité.
+
+## Article 6 : Résiliation du service
+
+L’utilisateur peut, à tout moment, supprimer son compte, depuis l’Application ou par demande adressée au support, sans droit à remboursement, quels que soient le motif ou la durée d’utilisation.
+
+AIXY se réserve le droit de suspendre ou supprimer, sans préavis, tout compte utilisateur en cas de manquement aux présentes CGU, notamment en cas de :
+
+*   utilisation abusive ou non conforme de l’Application ;
+*   tentative de manipulation, fraude ou usage suspect ;
+*   actes portant atteinte aux systèmes, aux services ou aux intérêts d’AIXY ;
+*   comportement contraire à la loi, y compris pendant la période d’essai ou après celle-ci.
+
+La suspension ou la résiliation du compte n’ouvre droit à aucune indemnité ni remboursement.
+
+## Article 7 : Modification des CGU
+
+L’éditeur se réserve le droit de modifier les présentes CGU à tout moment.
+Les modifications s’appliquent dès leur publication au sein de l’Application.
+
+## Article 8 : Loi applicable et juridiction compétente
+
+Les présentes CGU sont régies par la loi marocaine, notamment par la loi n° 09-08 relative à la protection des données à caractère personnel.
+Tout litige relatif à l’interprétation ou à l’exécution des présentes CGU sera soumis aux tribunaux compétents du Royaume du Maroc.
+
+## Article 9 : Mentions légales
+
+*   **Éditeur** : ELYO AI NOVA
+*   **Support** : support@elyoainova.com
 
 EN:
+# TERMS AND CONDITIONS OF USE (TCU)
 
-· The Application is accessible to users with a compatible device and an internet connection.
+## Article 1: Purpose
 
-· The publisher reserves the right to modify, suspend, or discontinue access at any time without prior notice.
+These Terms and Conditions of Use (hereinafter referred to as the “TCU”) govern access to and use of the AIXY mobile application (hereinafter referred to as the “Application”), published by ELYO AI NOVA, in accordance with applicable legislation.
 
------------------------------------------------------------------------------------------------------------
+By accessing the Application and using its services, the user acknowledges having read these TCU and accepts them without reservation.
+Any use of the Application constitutes full and complete acceptance of these terms.
 
-Article 3 : Services / Services
+ELYO AI NOVA reserves the right to modify these TCU at any time. Changes take effect upon publication within the Application. Continued use of the Application after such modifications constitutes acceptance of the updated TCU.
 
-FR:
+## Article 2: Access to the Application
 
-· L’Application permet la gestion des emails, tâches, agenda, service client, et, à l’avenir, la gestion des vols et autres services.
+The AIXY mobile Application is accessible to any user with a compatible device and an Internet connection. Access to certain services may require the creation of a user account.
 
-· L’utilisateur peut interagir avec l’Application via commandes vocales et textuelles, utilisant l’intelligence artificielle.
+The publisher reserves the right to modify, suspend, or interrupt, temporarily or permanently, all or part of the Application at any time and without prior notice, particularly for technical, maintenance, security, or update reasons.
 
-· L’éditeur se réserve le droit d’ajouter, modifier ou retirer des services à tout moment.
+## Article 3: Services
 
-EN:
+The AIXY Application notably provides services related to email management, task management, calendar management, and customer support. It may also offer additional services in the future, including services related to flight management and any other related services.
 
-· The Application allows management of emails, tasks, calendar, customer service, and in the future, flight management and other services.
+Users may interact with the Application through voice and text commands, relying on artificial intelligence technologies. The user acknowledges that these technologies may generate automated results that may contain limitations or errors.
 
-· Users may interact with the Application via voice and text commands, using artificial intelligence.
+The publisher reserves the right to evolve, add, modify, or remove all or part of the services offered at any time, without prior notice and without giving rise to any compensation.
 
-· The publisher reserves the right to add, modify, or remove services at any time.
+## Article 4: Conditions of Use
 
------------------------------------------------------------------------------------------------------------
+Use of the AIXY Application constitutes implicit, full, and unconditional acceptance of these TCU.
+The Application must not, under any circumstances, be used for illegal, fraudulent purposes, or in any manner contrary to applicable laws, public order, or accepted standards of conduct.
 
-Article 4 : Données personnelles / Personal Data
+## Article 5: Personal Data and Subcontracting
 
-FR:
+As part of providing and improving the services offered by the AIXY Application, certain personal data may be processed by third-party technical service providers, acting as data processors, in particular for purposes including:
 
-· L’Application peut collecter : nom, prénom, email, téléphone, commandes vocales, historiques d’usage, et localisation.
+*   hosting and storage;
+*   automated processing and analysis;
+*   security and technical support;
+*   electronic payment management.
 
-· Ces données sont utilisées pour fournir et améliorer les services, personnaliser l’expérience, assurer la sécurité et respecter les obligations légales.
+These service providers may include, without limitation, payment institutions such as the Interbank Monetary Center (CMI), as well as any other authorized payment service provider.
 
-· L’utilisateur est invité à consulter la Politique de Confidentialité pour plus de détails.
+The service providers concerned are required to comply with confidentiality and security obligations, in accordance with applicable personal data protection laws.
 
-EN:
+Certain data may be hosted or processed in Morocco or abroad, subject to compliance with applicable legal and regulatory provisions.
+For more information, users are invited to consult the Privacy Policy.
 
-· The Application may collect: name, first name, email, phone number, voice commands, usage history, and location.
+## Article 6: Service Termination
 
-· These data are used to provide and improve services, personalize experience, ensure security, and comply with legal obligations.
+Users may delete their account at any time, directly from the Application or by submitting a request to support, without entitlement to any refund, regardless of the reason or duration of use.
 
-· Users are invited to consult the Privacy Policy for more details.
+AIXY reserves the right to suspend or delete, without prior notice, any user account in the event of a breach of these TCU, including but not limited to:
 
------------------------------------------------------------------------------------------------------------
+*   abusive or non-compliant use of the Application;
+*   attempted manipulation, fraud, or suspicious activity;
+*   actions that harm the systems, services, or interests of AIXY;
+*   behavior contrary to the law, including during or after any trial period.
 
-Article 5 : Responsabilités / Responsibilities
+Suspension or termination of the account does not entitle the user to any compensation or refund.
 
-FR:
+## Article 7: Modification of the TCU
 
-· L’éditeur met en œuvre tous les moyens raisonnables pour assurer le bon fonctionnement de l’Application.
+The publisher reserves the right to modify these TCU at any time.
+The modifications apply as soon as they are published within the Application.
 
-· L’éditeur ne pourra être tenu responsable des dommages directs ou indirects liés à l’utilisation de l’Application, sauf en cas de faute lourde ou intentionnelle.
+## Article 8: Applicable Law and Jurisdiction
 
-EN:
+These TCU are governed by Moroccan law, in particular Law No. 09-08 relating to the protection of personal data.
+Any dispute relating to the interpretation or execution of these TCU shall be submitted to the competent courts of the Kingdom of Morocco.
 
-· The publisher implements all reasonable measures to ensure the proper functioning of the Application.
+## Article 9: Legal Notices
 
-· The publisher cannot be held liable for direct or indirect damages related to the use of the Application, except in cases of gross negligence or intentional misconduct.
-
-
------------------------------------------------------------------------------------------------------------
-
-Article 6 : Propriété intellectuelle / Intellectual Property
-
-FR:
-
-· Tous les contenus, logos, images, textes, codes et designs de l’Application sont protégés par les lois relatives à la propriété intellectuelle.
-
-· Toute reproduction, diffusion ou exploitation sans autorisation écrite est interdite.
-
-EN:
-
-· All content, logos, images, texts, codes, and designs of the Application are protected by intellectual property laws.
-
-· Any reproduction, distribution, or exploitation without written permission is prohibited.
-
------------------------------------------------------------------------------------------------------------
-
-Article 7 : Modifications des CGU / Changes to the TOU
-
-FR:
-
-· L’éditeur se réserve le droit de modifier les CGU à tout moment.
-
-· Les modifications s’appliquent dès leur publication sur l’Application.
-
-EN:
-
-· The publisher reserves the right to modify the TOU at any time.
-
-· Changes apply immediately upon publication on the Application.
-
------------------------------------------------------------------------------------------------------------
-
-Article 8 : Loi applicable et juridiction / Governing Law and Jurisdiction
-
-FR:
-
-· Les présentes CGU sont régies par la loi marocaine et la loi n°09-08 sur la protection des données personnelles.
-
-· Tout litige sera soumis aux tribunaux compétents du Maroc.
-
-EN:
-
-· These TOU are governed by Moroccan law and Law No. 09-08 on the protection of personal data.
-
-· Any dispute will be submitted to the competent courts of Morocco.
-
------------------------------------------------------------------------------------------------------------
-
-Article 9 : Mentions légales / Legal Notices
-
-FR:
-
-· Éditeur : ELYO AI NOVA
-
-· Adresse : 26 Avenue Mers sultan , Apt 3, Étage 1, Casablanca, Maroc · Email : support@elyoainova.com
-
-
-EN:
-
-· Publisher: ELYO AI NOVA
-
-· Address: 26 Avenue Mers sultan , Apt 3, Étage 1, Casablanca, Maroc · Email: support@elyoainova.com
+*   **Publisher**: ELYO AI NOVA
+*   **Support**: support@elyoainova.com

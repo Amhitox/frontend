@@ -25,34 +25,38 @@ class _CmiPaymentScreenState extends State<CmiPaymentScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageFinished: (url) {
-            setState(() {
-              _isLoading = false;
-            });
-          },
-          onNavigationRequest: (NavigationRequest request) {
-            if (request.url.contains("payment/cmi/success") || request.url.contains("okUrl")) {
-               _isSuccess = true;
-               return NavigationDecision.navigate;
-            } else if (request.url.contains("payment/cmi/fail") || request.url.contains("failUrl")) {
-               _isSuccess = false;
-               return NavigationDecision.navigate;
-            }
-            return NavigationDecision.navigate;
-          },
-        ),
-      )
-      ..loadRequest(
-        Uri.dataFromString(
-          _generateHtmlForm(widget.gatewayUrl, widget.params),
-          mimeType: 'text/html',
-          encoding: Encoding.getByName('utf-8'),
-        ),
-      );
+    _controller =
+        WebViewController()
+          ..setJavaScriptMode(JavaScriptMode.unrestricted)
+          ..setNavigationDelegate(
+            NavigationDelegate(
+              onPageFinished: (url) {
+                setState(() {
+                  _isLoading = false;
+                });
+              },
+              onNavigationRequest: (NavigationRequest request) {
+                final url = request.url.toLowerCase();
+                if (url.contains("/payment/cmi/success") ||
+                    url.contains("/payment/cmi/callback/ok")) {
+                  _isSuccess = true;
+                  return NavigationDecision.navigate;
+                } else if (url.contains("/payment/cmi/fail") ||
+                    url.contains("/payment/cmi/callback/fail")) {
+                  _isSuccess = false;
+                  return NavigationDecision.navigate;
+                }
+                return NavigationDecision.navigate;
+              },
+            ),
+          )
+          ..loadRequest(
+            Uri.dataFromString(
+              _generateHtmlForm(widget.gatewayUrl, widget.params),
+              mimeType: 'text/html',
+              encoding: Encoding.getByName('utf-8'),
+            ),
+          );
   }
 
   String _generateHtmlForm(String url, Map<String, dynamic> params) {
@@ -73,6 +77,7 @@ class _CmiPaymentScreenState extends State<CmiPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) {
@@ -80,25 +85,25 @@ class _CmiPaymentScreenState extends State<CmiPaymentScreen> {
         Navigator.pop(context, _isSuccess ?? false);
       },
       child: Scaffold(
-        backgroundColor: AppTheme.deepDark,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
           title: const Text("Secure Payment"),
-          backgroundColor: AppTheme.darkBlue,
-          foregroundColor: Colors.white,
+          backgroundColor: theme.appBarTheme.backgroundColor,
+          foregroundColor: theme.appBarTheme.foregroundColor,
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.pop(context, _isSuccess ?? false),
           ),
         ),
         body: Stack(
-            children: [
-              WebViewWidget(controller: _controller),
-              if (_isLoading)
-                const Center(
-                  child: CircularProgressIndicator(color: AppTheme.primaryBlue),
-                ),
-            ],
-          ),
+          children: [
+            WebViewWidget(controller: _controller),
+            if (_isLoading)
+              const Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryBlue),
+              ),
+          ],
+        ),
       ),
     );
   }

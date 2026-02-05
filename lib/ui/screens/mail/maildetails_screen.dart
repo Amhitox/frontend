@@ -15,7 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:frontend/ui/screens/mail/composemail_screen.dart';
-import 'package:audioplayers/audioplayers.dart'; // Keep for types if needed, or remove if provider manages completely. Provider exposes simple states.
+// Keep for types if needed, or remove if provider manages completely. Provider exposes simple states.
 import 'package:frontend/providers/audio_provider.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
 import 'package:frontend/utils/localization.dart';
@@ -463,14 +463,14 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
            }
         } else {
            ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(AppLocalizations.of(context)!.failedToGenerate)),
+            SnackBar(content: Text(AppLocalizations.of(context).failedToGenerate)),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppLocalizations.of(context)!.errorSummarizing}: $e')),
+          SnackBar(content: Text('${AppLocalizations.of(context).errorSummarizing}: $e')),
         );
       }
     } finally {
@@ -488,7 +488,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.emailDeletedSuccess),
+            content: Text(AppLocalizations.of(context).emailDeletedSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -497,7 +497,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.emailDeleteFailed),
+            content: Text(AppLocalizations.of(context).emailDeleteFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -507,7 +507,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${AppLocalizations.of(context)!.emailDeleteError}: $e'),
+            content: Text('${AppLocalizations.of(context).emailDeleteError}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -522,21 +522,21 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text(AppLocalizations.of(context)!.deleteEmail),
+            title: Text(AppLocalizations.of(context).deleteEmail),
             content: Text(
-              AppLocalizations.of(context)!.confirmDeleteEmailPermanent,
+              AppLocalizations.of(context).confirmDeleteEmailPermanent,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text(AppLocalizations.of(context)!.cancel),
+                child: Text(AppLocalizations.of(context).cancel),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   _deleteEmail();
                 },
-                child: Text(AppLocalizations.of(context)!.delete, style: TextStyle(color: Colors.red)),
+                child: Text(AppLocalizations.of(context).delete, style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
@@ -558,11 +558,11 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     if (type == 'forward') {
       subject = 'Fwd: $subject';
       to = '';
-      quotedBody = '---------- ${AppLocalizations.of(context)!.forwardedMessage} ---------\n'
-          '${AppLocalizations.of(context)!.from}: ${email.sender} <${email.senderEmail}>\n'
-          '${AppLocalizations.of(context)!.date}: $dateStr\n'
-          '${AppLocalizations.of(context)!.subject}: ${email.subject}\n'
-          '${AppLocalizations.of(context)!.to}: ${email.headers?.to ?? AppLocalizations.of(context)!.unknown}\n\n';
+      quotedBody = '---------- ${AppLocalizations.of(context).forwardedMessage} ---------\n'
+          '${AppLocalizations.of(context).from}: ${email.sender} <${email.senderEmail}>\n'
+          '${AppLocalizations.of(context).date}: $dateStr\n'
+          '${AppLocalizations.of(context).subject}: ${email.subject}\n'
+          '${AppLocalizations.of(context).to}: ${email.headers?.to ?? AppLocalizations.of(context).unknown}\n\n';
     } else {
       // Reply or Reply All
       if (!subject.startsWith('Re:')) {
@@ -584,7 +584,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
         cc = email.headers?.cc ?? '';
       }
 
-      quotedBody = 'On $dateStr, ${email.sender} ${AppLocalizations.of(context)!.wrote}:\n';
+      quotedBody = 'On $dateStr, ${email.sender} ${AppLocalizations.of(context).wrote}:\n';
     }
 
     // Append original body (stripping HTML tags and decoding entities)
@@ -679,7 +679,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                    crossAxisAlignment: CrossAxisAlignment.start,
                    children: [
                         Text(
-                        AppLocalizations.of(context)!.priorityAudioSummary,
+                        AppLocalizations.of(context).priorityAudioSummary,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
@@ -698,7 +698,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                         )
                       else 
                         Text(
-                          AppLocalizations.of(context)!.tapToPlay,
+                          AppLocalizations.of(context).tapToPlay,
                           style: TextStyle(
                             fontSize: 12,
                             color: theme.colorScheme.onSurfaceVariant,
@@ -981,21 +981,21 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
           children: [
             _buildActionButton(
               icon: Icons.reply,
-              label: AppLocalizations.of(context)!.reply,
+              label: AppLocalizations.of(context).reply,
               onTap: () => _navigateToCompose(type: 'reply'),
               theme: theme, 
               isTablet: isTablet
             ),
             _buildActionButton(
               icon: Icons.reply_all,
-              label: AppLocalizations.of(context)!.replyAll,
+              label: AppLocalizations.of(context).replyAll,
               onTap: () => _navigateToCompose(type: 'replyAll'),
               theme: theme,
               isTablet: isTablet
             ),
             _buildActionButton(
               icon: Icons.forward,
-              label: AppLocalizations.of(context)!.forward,
+              label: AppLocalizations.of(context).forward,
               onTap: () => _navigateToCompose(type: 'forward'),
               theme: theme,
               isTablet: isTablet
@@ -1051,21 +1051,21 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                           await userProvider.removePriorityEmail(userId, senderEmail);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(AppLocalizations.of(context)!.removedFromVIP)),
+                              SnackBar(content: Text(AppLocalizations.of(context).removedFromVIP)),
                             );
                           }
                         } else {
                           await userProvider.addPriorityEmail(userId, senderEmail);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(AppLocalizations.of(context)!.addedToVIP)),
+                              SnackBar(content: Text(AppLocalizations.of(context).addedToVIP)),
                             );
                           }
                         }
                       } catch (e) {
                          if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(AppLocalizations.of(context)!.vipStatusUpdateFailed)),
+                              SnackBar(content: Text(AppLocalizations.of(context).vipStatusUpdateFailed)),
                             );
                           }
                       }
@@ -1094,7 +1094,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            AppLocalizations.of(context)!.vip,
+                            AppLocalizations.of(context).vip,
                             style: TextStyle(
                               color: isPriority ? Colors.orange : theme.colorScheme.onSurfaceVariant,
                               fontSize: isTablet ? 12 : 10,
@@ -1255,21 +1255,21 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                   await userProvider.removePriorityEmail(userId, senderEmail);
                      if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                         SnackBar(content: Text(AppLocalizations.of(context)!.removedFromVIP)),
+                         SnackBar(content: Text(AppLocalizations.of(context).removedFromVIP)),
                        );
                      }
                 } else {
                   await userProvider.addPriorityEmail(userId, senderEmail);
                    if (mounted) {
                      ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(AppLocalizations.of(context)!.addedToVIP)),
+                      SnackBar(content: Text(AppLocalizations.of(context).addedToVIP)),
                     );
                   }
                 }
               } catch (e) {
                  if (mounted) {
                      ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(AppLocalizations.of(context)!.vipStatusUpdateFailed)),
+                      SnackBar(content: Text(AppLocalizations.of(context).vipStatusUpdateFailed)),
                     );
                   }
               }
@@ -1297,7 +1297,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    AppLocalizations.of(context)!.vip,
+                    AppLocalizations.of(context).vip,
                     style: TextStyle(
                       color: isPriority ? Colors.orange : theme.colorScheme.onSurfaceVariant,
                       fontSize: isTablet ? 12 : 10,
@@ -1328,7 +1328,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    AppLocalizations.of(context)!.important,
+                    AppLocalizations.of(context).important,
                     style: TextStyle(
                       color: Colors.red,
                       fontSize: isTablet ? 12 : 10,
@@ -1456,7 +1456,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
     final isHtml = _isHtmlContent(displayContent);
 
     print('📧 Email body - Length: ${displayContent.length}, isHtml: $isHtml');
-    if (displayContent.length > 0 && displayContent.length < 200) {
+    if (displayContent.isNotEmpty && displayContent.length < 200) {
       print(
         '📧 Content preview: ${displayContent.substring(0, displayContent.length > 100 ? 100 : displayContent.length)}...',
       );
@@ -1487,7 +1487,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
         clipBehavior: Clip.antiAlias,
         child:
             _isWebViewLoading
-                ? Container(
+                ? SizedBox(
                   height: 400, // Minimum height to prevent layout thrashing
                   child: Center(
                     child: Column(
@@ -1496,7 +1496,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                         CircularProgressIndicator(),
                         const SizedBox(height: 16),
                         Text(
-                          AppLocalizations.of(context)!.loadingEmail,
+                          AppLocalizations.of(context).loadingEmail,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -1522,7 +1522,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          AppLocalizations.of(context)!.failedToLoadEmail,
+                          AppLocalizations.of(context).failedToLoadEmail,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: theme.colorScheme.error,
                           ),
@@ -1536,7 +1536,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                             });
                             _loadContentToWebView();
                           },
-                          child: Text(AppLocalizations.of(context)!.retry),
+                          child: Text(AppLocalizations.of(context).retry),
                         ),
                       ],
                     ),
@@ -1926,17 +1926,17 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildDetailRow(context, AppLocalizations.of(context)!.from, '$sender <$email>', theme),
+                          _buildDetailRow(context, AppLocalizations.of(context).from, '$sender <$email>', theme),
                           const SizedBox(height: 4),
-                          _buildDetailRow(context, AppLocalizations.of(context)!.to, to, theme),
+                          _buildDetailRow(context, AppLocalizations.of(context).to, to, theme),
                           const SizedBox(height: 4),
-                          _buildDetailRow(context, AppLocalizations.of(context)!.date, fullDate, theme),
+                          _buildDetailRow(context, AppLocalizations.of(context).date, fullDate, theme),
                           const SizedBox(height: 8),
                            Row(
                              mainAxisAlignment: MainAxisAlignment.end,
                              children: [
                                Text(
-                                  AppLocalizations.of(context)!.hideDetails,
+                                  AppLocalizations.of(context).hideDetails,
                                   style: TextStyle(
                                      fontSize: 12,
                                      color: theme.colorScheme.primary,
@@ -2005,7 +2005,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
            child: OutlinedButton.icon(
              onPressed: _summarizeEmail,
               icon: Icon(Icons.auto_awesome, size: 18),
-              label: Text(AppLocalizations.of(context)!.summarizeWithAI),
+              label: Text(AppLocalizations.of(context).summarizeWithAI),
              style: OutlinedButton.styleFrom(
                foregroundColor: theme.colorScheme.primary,
                side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.3)),
@@ -2045,7 +2045,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
               const SizedBox(width: 8),
               const SizedBox(width: 8),
               Text(
-                AppLocalizations.of(context)!.aiSummary,
+                AppLocalizations.of(context).aiSummary,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -2062,7 +2062,7 @@ class _MailDetailScreenState extends State<MailDetailScreen> {
           const SizedBox(height: 12),
           if (_isSummarizing && !hasSummary)
             Text(
-               AppLocalizations.of(context)!.generatingSummary,
+               AppLocalizations.of(context).generatingSummary,
                style: TextStyle(
                  fontStyle: FontStyle.italic,
                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),

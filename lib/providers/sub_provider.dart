@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/models/quota_status.dart';
 
 import 'package:frontend/services/sub_service.dart';
-import 'dart:convert';
+
 class SubProvider extends ChangeNotifier {
   final SubService subService;
   bool _isLoading = false;
@@ -20,8 +20,10 @@ class SubProvider extends ChangeNotifier {
     try {
       final offset = DateTime.now().timeZoneOffset;
       final timezoneOffset = _formatTimezoneOffset(offset);
-      
-      final response = await subService.getQuotaStatus(timezoneOffset: timezoneOffset);
+
+      final response = await subService.getQuotaStatus(
+        timezoneOffset: timezoneOffset,
+      );
       if (response.statusCode == 200) {
         final data = response.data;
         if (data['success'] == true) {
@@ -46,7 +48,10 @@ class SubProvider extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>> addPriorityEmail(String userId, String email) async {
+  Future<Map<String, dynamic>> addPriorityEmail(
+    String userId,
+    String email,
+  ) async {
     try {
       final response = await subService.addPriorityEmail(userId, email);
       if (response.statusCode == 200) {
@@ -58,17 +63,19 @@ class SubProvider extends ChangeNotifier {
     } on DioException catch (e) {
       if (e.response?.statusCode == 403 || e.response?.statusCode == 400) {
         final data = e.response?.data;
-        if (data != null && (data['quotaExceeded'] == true || data['code'] == 'QUOTA_EXCEEDED')) {
+        if (data != null &&
+            (data['quotaExceeded'] == true ||
+                data['code'] == 'QUOTA_EXCEEDED')) {
           return {
             'success': false,
             'quotaExceeded': true,
-            'error': data['error'] ?? 'Quota exceeded'
+            'error': data['error'] ?? 'Quota exceeded',
           };
         }
       }
       return {
         'success': false,
-        'error': e.response?.data?['error'] ?? 'Failed to add priority email'
+        'error': e.response?.data?['error'] ?? 'Failed to add priority email',
       };
     }
   }
@@ -101,24 +108,48 @@ class SubProvider extends ChangeNotifier {
     required Map<String, dynamic> userInfo,
     required String planTier,
     required String planPeriod,
+    String? currency,
   }) async {
     _isLoading = true;
     notifyListeners();
     try {
+      debugPrint('🔵 Initiating CMI payment:');
+      debugPrint('   Amount: $amount');
+      debugPrint('   UserId: $userId');
+      debugPrint('   PlanTier: $planTier');
+      debugPrint('   PlanPeriod: $planPeriod');
+      debugPrint('   Currency: $currency');
+
       final response = await subService.signCmiPayment(
         amount: amount,
         userId: userId,
         userInfo: userInfo,
         planTier: planTier,
         planPeriod: planPeriod,
+        currency: currency,
       );
-      
+
+      debugPrint('🟢 CMI Response status: ${response.statusCode}');
+      debugPrint('🟢 CMI Response data: ${response.data}');
+
       if (response.statusCode == 200) {
-        return response.data;
+        final data = response.data;
+        if (data != null && data['url'] != null) {
+          return data;
+        } else {
+          debugPrint('🔴 CMI Response missing url: $data');
+          return null;
+        }
       }
+      debugPrint('🔴 CMI Response not 200: ${response.statusCode}');
+      return null;
+    } on DioException catch (e) {
+      debugPrint('🔴 CMI DioException: ${e.message}');
+      debugPrint('🔴 CMI DioException response: ${e.response?.data}');
+      debugPrint('🔴 CMI DioException status: ${e.response?.statusCode}');
       return null;
     } catch (e) {
-      debugPrint('Error initiating CMI payment: $e');
+      debugPrint('🔴 Error initiating CMI payment: $e');
       return null;
     } finally {
       _isLoading = false;

@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/providers/meeting_provider.dart';
-import 'package:provider/provider.dart';
 
 class FirebaseSyncService {
   final String userId;

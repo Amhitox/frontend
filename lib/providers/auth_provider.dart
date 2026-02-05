@@ -24,12 +24,14 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   User? _user;
   String? _errorMessage;
+  bool? _isMorocco;
   final _googleSignIn = GoogleSignIn.instance;
   final firebaseAuth = FirebaseAuth.instance;
   Dio get dio => _dio;
   bool get isLoading => _isLoading;
   User? get user => _user;
   bool get isLoggedIn => _user != null;
+  bool? get isMorocco => _isMorocco;
   String? get errorMessage => _errorMessage;
   bool get canAccessApp {
     if (_user?.status == 'inactive') return false;
@@ -43,13 +45,14 @@ class AuthProvider extends ChangeNotifier {
 
     if (status == 'ACTIVE' || status == 'CANCELLED') {
       if (tier == 'FREE_TRIAL') {
-         if (_user?.trialEndDate != null && now.isAfter(_user!.trialEndDate!)) {
-           return false;
-         }
-         return true;
+        if (_user?.trialEndDate != null && now.isAfter(_user!.trialEndDate!)) {
+          return false;
+        }
+        return true;
       }
-      
-      if (_user?.currentPeriodEnd != null && now.isAfter(_user!.currentPeriodEnd!)) {
+
+      if (_user?.currentPeriodEnd != null &&
+          now.isAfter(_user!.currentPeriodEnd!)) {
         return false;
       }
       return true;
@@ -57,7 +60,7 @@ class AuthProvider extends ChangeNotifier {
 
     if (status == 'FREE_TRIAL') {
       if (_user?.trialEndDate != null && now.isAfter(_user!.trialEndDate!)) {
-        return false; 
+        return false;
       }
       return true;
     }
@@ -68,7 +71,10 @@ class AuthProvider extends ChangeNotifier {
   bool get isPremium {
     final tier = _user?.subscriptionTier;
     // Simple check: Is the tier one of the paid tiers?
-    return tier == 'PREMIUM' || tier == 'PRO_BUSINESS' || tier == 'ESSENTIAL' || tier == 'DAILY_TEST';
+    return tier == 'PREMIUM' ||
+        tier == 'PRO_BUSINESS' ||
+        tier == 'ESSENTIAL' ||
+        tier == 'DAILY_TEST';
   }
 
   Future<void> init() async {
@@ -93,9 +99,27 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> checkLocation() async {
+    if (_isMorocco != null) return;
+    try {
+      final dio = Dio();
+      final response = await dio.get('http://ip-api.com/json');
+      if (response.statusCode == 200) {
+        _isMorocco = response.data['countryCode'] == 'MA';
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error checking location in AuthProvider: $e');
+      _isMorocco = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> refreshUserProfile() async {
     final response = await _authService.getUserProfile();
-    if (response != null && response.data != null && response.data["user"] != null) {
+    if (response != null &&
+        response.data != null &&
+        response.data["user"] != null) {
       final serverUser = User.fromJson(response.data["user"]);
       _user = serverUser;
       final prefs = await SharedPreferences.getInstance();
@@ -118,14 +142,14 @@ class AuthProvider extends ChangeNotifier {
         password,
         fcmData,
       );
-      
+
       if (response == null) {
         _errorMessage = "Network error. Please try again.";
         return false;
       }
-      
+
       final data = response.data;
-      
+
       if (response.statusCode == 200 && data["success"] == true) {
         _user = User.fromJson(data["user"]);
         final prefs = await SharedPreferences.getInstance();
@@ -134,8 +158,10 @@ class AuthProvider extends ChangeNotifier {
         await CalendarManager().init(_user!.id ?? 'default_user');
         await _cookieJar.loadForRequest(Uri.parse(AppConstants.baseUrl));
         return true;
-      } else if (data["success"] == false && data["needsEmailVerification"] == true) {
-        _errorMessage = data["message"] ?? "Please verify your email before logging in.";
+      } else if (data["success"] == false &&
+          data["needsEmailVerification"] == true) {
+        _errorMessage =
+            data["message"] ?? "Please verify your email before logging in.";
         return false;
       } else if (response.statusCode == 404) {
         _errorMessage = data["message"] ?? "User not found.";
@@ -185,19 +211,23 @@ class AuthProvider extends ChangeNotifier {
         birthday: birthday,
         fcmData: fcmData,
       );
-      
+
       if (response == null) {
         _errorMessage = "Network error. Please try again.";
         return false;
       }
-      
+
       final data = response.data;
-      
+
       if (response.statusCode == 201 && data["success"] == true) {
-        _errorMessage = data["message"] ?? "Account created successfully! Check your email for verification.";
+        _errorMessage =
+            data["message"] ??
+            "Account created successfully! Check your email for verification.";
         return true;
       } else if (response.statusCode == 409) {
-        _errorMessage = data["error"] ?? "Email already registered. Please use a different email or login.";
+        _errorMessage =
+            data["error"] ??
+            "Email already registered. Please use a different email or login.";
         return false;
       } else if (response.statusCode == 400) {
         if (data["details"] != null && data["details"] is List) {
@@ -205,14 +235,19 @@ class AuthProvider extends ChangeNotifier {
               .map((e) => e["message"]?.toString() ?? e.toString())
               .join("\n");
         } else {
-          _errorMessage = data["error"] ?? "Validation error. Please check your input.";
+          _errorMessage =
+              data["error"] ?? "Validation error. Please check your input.";
         }
         return false;
       } else if (response.statusCode == 500) {
-        _errorMessage = data["error"] ?? "Registration failed. Please try again later.";
+        _errorMessage =
+            data["error"] ?? "Registration failed. Please try again later.";
         return false;
       } else {
-        _errorMessage = data["error"] ?? data["message"] ?? "Registration failed. Please try again.";
+        _errorMessage =
+            data["error"] ??
+            data["message"] ??
+            "Registration failed. Please try again.";
         return false;
       }
     } on DioException catch (e) {
@@ -229,7 +264,10 @@ class AuthProvider extends ChangeNotifier {
             _errorMessage = data["error"] ?? "Validation error.";
           }
         } else {
-          _errorMessage = data["error"] ?? data["message"] ?? "Network error. Please try again.";
+          _errorMessage =
+              data["error"] ??
+              data["message"] ??
+              "Network error. Please try again.";
         }
       } else {
         _errorMessage = "Network error. Please try again.";
@@ -291,15 +329,15 @@ class AuthProvider extends ChangeNotifier {
         fcmData,
       );
       if (googleResponse.statusCode == 200) {
-         // Use the user data directly from the login response if available
-         if (googleResponse.data["user"] != null) {
-            _user = User.fromJson(googleResponse.data["user"]);
-         } else {
-            // Fallback to getMe if not in response
-            final response = await _authService.getMe();
-            _user = User.fromJson(response.data["user"]);
-         }
-        
+        // Use the user data directly from the login response if available
+        if (googleResponse.data["user"] != null) {
+          _user = User.fromJson(googleResponse.data["user"]);
+        } else {
+          // Fallback to getMe if not in response
+          final response = await _authService.getMe();
+          _user = User.fromJson(response.data["user"]);
+        }
+
         _errorMessage = "nothing";
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user', jsonEncode(_user!.toJson()));
@@ -423,11 +461,11 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint("Apple Sign-In error: $e");
       if (e is SignInWithAppleAuthorizationException) {
-         if (e.code == AuthorizationErrorCode.canceled) {
-            _errorMessage = "Sign in canceled";
-         } else {
-            _errorMessage = e.message;
-         }
+        if (e.code == AuthorizationErrorCode.canceled) {
+          _errorMessage = "Sign in canceled";
+        } else {
+          _errorMessage = e.message;
+        }
       } else if (e is FirebaseAuthException) {
         _errorMessage = e.message;
       } else {

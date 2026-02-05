@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:frontend/ui/widgets/dragable_menu.dart';
 import 'package:frontend/ui/widgets/side_menu.dart';
-import 'package:frontend/providers/auth_provider.dart';
-import 'package:frontend/services/mail_service.dart';
 import 'package:frontend/models/email_message.dart';
 import 'package:frontend/services/notification_service.dart';
 import 'package:frontend/providers/mail_provider.dart';
@@ -32,7 +30,7 @@ class _MailScreenState extends State<MailScreen>
   List<EmailMessage> _emails = [];
   String? _nextPageToken;
   bool _isLoading = false;
-  bool _hasMore = true;
+  final bool _hasMore = true;
   String? _errorMessage;
 
   bool _isCheckingConnection = true;
@@ -92,22 +90,25 @@ class _MailScreenState extends State<MailScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _resolveInitialState();
     });
-    
+
     // Listen for incoming notifications to refresh list active filter
     _notificationSub = NotificationService().messageStream.listen((message) {
       // Check if notification is related to Email
       final data = message.data;
       final notification = message.notification;
-      
+
       bool isEmail = false;
-      
+
       // Check data payload first (more reliable if backend sets type)
       if (data.isNotEmpty) {
         final type = data['type']?.toString().toLowerCase();
         final category = data['category']?.toString().toLowerCase();
-        if (type == 'email' || type == 'gmail' || 
-            category == 'email' || category == 'gmail' ||
-            data.containsKey('emailId') || data.containsKey('threadId')) {
+        if (type == 'email' ||
+            type == 'gmail' ||
+            category == 'email' ||
+            category == 'gmail' ||
+            data.containsKey('emailId') ||
+            data.containsKey('threadId')) {
           isEmail = true;
         }
       }
@@ -116,14 +117,19 @@ class _MailScreenState extends State<MailScreen>
       if (!isEmail && notification != null) {
         final title = notification.title?.toLowerCase() ?? '';
         final body = notification.body?.toLowerCase() ?? '';
-        if (title.contains('email') || title.contains('gmail') || 
-            body.contains('email') || body.contains('gmail')) {
+        if (title.contains('email') ||
+            title.contains('gmail') ||
+            body.contains('email') ||
+            body.contains('gmail')) {
           isEmail = true;
         }
       }
 
       if (isEmail) {
-         context.read<MailProvider>().loadEmails(filter: _selectedFilter, forceRefresh: true);
+        context.read<MailProvider>().loadEmails(
+          filter: _selectedFilter,
+          forceRefresh: true,
+        );
       }
     });
   }
@@ -139,71 +145,72 @@ class _MailScreenState extends State<MailScreen>
   }
 
   void _resolveInitialState() {
-      if (widget.initialExtra != null) {
-        if (widget.initialExtra!.containsKey('emails')) {
-          setState(() {
-            _emails = widget.initialExtra!['emails'] as List<EmailMessage>;
-            _hasInitiallyLoaded = true;
-            _isLoading = false;
-          });
-          return;
-        }
-
-        // Handle Search/Filter from AI
-        if (widget.initialExtra!.containsKey('query') || widget.initialExtra!.containsKey('filter')) {
-           final query = widget.initialExtra!['query'] as String?;
-           final filter = widget.initialExtra!['filter'] as String?;
-           
-           // Ensure we are connected first
-           final provider = context.read<MailProvider>();
-           provider.checkConnection().then((_) {
-               if (!mounted) return;
-                
-               if (filter != null) {
-                 setState(() => _selectedFilter = filter);
-               }
-
-               if (query != null) {
-                   setState(() {
-                     _isSearching = true;
-                     _searchController.text = query;
-                     // Auto-focus removed as per user request
-                   });
-                   // Only load if connected, otherwise the UI will show connect view naturally
-                   if (provider.isConnected) {
-                     provider.loadEmails(filter: _selectedFilter, query: query);
-                   }
-                   _hasInitiallyLoaded = true;
-                   setState(() => _isCheckingConnection = false);
-               } else if (filter != null) {
-                    if (provider.isConnected) {
-                       provider.loadEmails(filter: filter);
-                    }
-                   _hasInitiallyLoaded = true;
-                   setState(() => _isCheckingConnection = false);
-               }
-           });
-           return;
-        }
-      } else {
-        // If we are revisiting without params, and we were searching, reset.
-        if (_isSearching) {
-           setState(() {
-             _isSearching = false;
-             _searchController.clear();
-             // Reset to Primary if desired, or keep current filter
-           });
-           
-           // Reload logic for normal view will handle the rest
-           final provider = context.read<MailProvider>();
-           if (provider.isConnected) {
-               provider.loadEmails(filter: _selectedFilter);
-           }
-           return;
-        }
+    if (widget.initialExtra != null) {
+      if (widget.initialExtra!.containsKey('emails')) {
+        setState(() {
+          _emails = widget.initialExtra!['emails'] as List<EmailMessage>;
+          _hasInitiallyLoaded = true;
+          _isLoading = false;
+        });
+        return;
       }
-      
-      _checkConnectionAndLoadEmails();
+
+      // Handle Search/Filter from AI
+      if (widget.initialExtra!.containsKey('query') ||
+          widget.initialExtra!.containsKey('filter')) {
+        final query = widget.initialExtra!['query'] as String?;
+        final filter = widget.initialExtra!['filter'] as String?;
+
+        // Ensure we are connected first
+        final provider = context.read<MailProvider>();
+        provider.checkConnection().then((_) {
+          if (!mounted) return;
+
+          if (filter != null) {
+            setState(() => _selectedFilter = filter);
+          }
+
+          if (query != null) {
+            setState(() {
+              _isSearching = true;
+              _searchController.text = query;
+              // Auto-focus removed as per user request
+            });
+            // Only load if connected, otherwise the UI will show connect view naturally
+            if (provider.isConnected) {
+              provider.loadEmails(filter: _selectedFilter, query: query);
+            }
+            _hasInitiallyLoaded = true;
+            setState(() => _isCheckingConnection = false);
+          } else if (filter != null) {
+            if (provider.isConnected) {
+              provider.loadEmails(filter: filter);
+            }
+            _hasInitiallyLoaded = true;
+            setState(() => _isCheckingConnection = false);
+          }
+        });
+        return;
+      }
+    } else {
+      // If we are revisiting without params, and we were searching, reset.
+      if (_isSearching) {
+        setState(() {
+          _isSearching = false;
+          _searchController.clear();
+          // Reset to Primary if desired, or keep current filter
+        });
+
+        // Reload logic for normal view will handle the rest
+        final provider = context.read<MailProvider>();
+        if (provider.isConnected) {
+          provider.loadEmails(filter: _selectedFilter);
+        }
+        return;
+      }
+    }
+
+    _checkConnectionAndLoadEmails();
   }
 
   @override
@@ -229,7 +236,7 @@ class _MailScreenState extends State<MailScreen>
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    
+
     setState(() {}); // Update string if needed for UI
 
     _debounce = Timer(const Duration(milliseconds: 100), () {
@@ -240,35 +247,44 @@ class _MailScreenState extends State<MailScreen>
       );
     });
   }
-  
+
   String _getLocalizedFilterName(BuildContext context, String filter) {
-    final loc = AppLocalizations.of(context)!;
+    final loc = AppLocalizations.of(context);
     switch (filter) {
-      case 'Primary': return loc.primary;
-      case 'Priority': return loc.priority;
-      case 'Sent': return loc.sent;
-      case 'Drafts': return loc.drafts;
-      case 'Important': return loc.important;
-      case 'Trash': return loc.trash;
-      case 'Spam': return loc.spam;
-      case 'Other': return loc.other;
-      default: return filter;
+      case 'Primary':
+        return loc.primary;
+      case 'Priority':
+        return loc.priority;
+      case 'Sent':
+        return loc.sent;
+      case 'Drafts':
+        return loc.drafts;
+      case 'Important':
+        return loc.important;
+      case 'Trash':
+        return loc.trash;
+      case 'Spam':
+        return loc.spam;
+      case 'Other':
+        return loc.other;
+      default:
+        return filter;
     }
   }
 
   Future<void> _checkConnectionAndLoadEmails() async {
     final provider = context.read<MailProvider>();
     await provider.checkConnection();
-    
+
     if (provider.isConnected) {
-        if (!_hasInitiallyLoaded) {
-          provider.loadEmails(filter: _selectedFilter);
-          _hasInitiallyLoaded = true;
-        }
+      if (!_hasInitiallyLoaded) {
+        provider.loadEmails(filter: _selectedFilter);
+        _hasInitiallyLoaded = true;
+      }
     }
-    
+
     setState(() {
-       _isCheckingConnection = false;
+      _isCheckingConnection = false;
     });
   }
 
@@ -290,14 +306,14 @@ class _MailScreenState extends State<MailScreen>
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.emailDeletedSuccess),
+            content: Text(AppLocalizations.of(context).emailDeletedSuccess),
             backgroundColor: Colors.green,
           ),
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.emailDeleteFailed),
+            content: Text(AppLocalizations.of(context).emailDeleteFailed),
             backgroundColor: Colors.red,
           ),
         );
@@ -306,7 +322,9 @@ class _MailScreenState extends State<MailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${AppLocalizations.of(context)!.emailDeleteError}: $e'),
+            content: Text(
+              '${AppLocalizations.of(context).emailDeleteError}: $e',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -366,7 +384,9 @@ class _MailScreenState extends State<MailScreen>
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   title: Text(
-                    email.isUnread ? AppLocalizations.of(context)!.markAsRead : AppLocalizations.of(context)!.markAsUnread,
+                    email.isUnread
+                        ? AppLocalizations.of(context).markAsRead
+                        : AppLocalizations.of(context).markAsUnread,
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -382,7 +402,7 @@ class _MailScreenState extends State<MailScreen>
                     Icons.delete_outline_rounded,
                     color: Colors.red,
                   ),
-                  title: Text(AppLocalizations.of(context)!.delete),
+                  title: Text(AppLocalizations.of(context).delete),
                   onTap: () {
                     Navigator.pop(context);
                     _deleteEmail(email);
@@ -417,7 +437,9 @@ class _MailScreenState extends State<MailScreen>
               colors: [
                 Theme.of(context).scaffoldBackgroundColor,
                 Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
-                Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.8),
+                Theme.of(
+                  context,
+                ).scaffoldBackgroundColor.withValues(alpha: 0.8),
               ],
             ),
           ),
@@ -433,7 +455,9 @@ class _MailScreenState extends State<MailScreen>
                         _buildQuickStats(isTablet, isLargeScreen),
                         _buildFilterDropdown(isTablet, isLargeScreen),
                       ],
-                      Expanded(child: _buildMainContent(isTablet, isLargeScreen)),
+                      Expanded(
+                        child: _buildMainContent(isTablet, isLargeScreen),
+                      ),
                     ],
                   ),
                 ),
@@ -482,7 +506,7 @@ class _MailScreenState extends State<MailScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_filteredEmails.length} ${AppLocalizations.of(context)!.messages}',
+                    '${_filteredEmails.length} ${AppLocalizations.of(context).messages}',
                     style: TextStyle(
                       color: Theme.of(
                         context,
@@ -497,7 +521,7 @@ class _MailScreenState extends State<MailScreen>
                 focusNode: _searchFocusNode,
                 onChanged: _onSearchChanged,
                 decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.searchMail,
+                  hintText: AppLocalizations.of(context).searchMail,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20.0),
                     borderSide: BorderSide.none,
@@ -527,9 +551,9 @@ class _MailScreenState extends State<MailScreen>
                 if (_isSearching) {
                   // Delay focus to allow CrossFade animation to reveal the TextField
                   Future.delayed(const Duration(milliseconds: 350), () {
-                     if (mounted && _isSearching) {
+                    if (mounted && _isSearching) {
                       _searchFocusNode.requestFocus();
-                     }
+                    }
                   });
                 } else {
                   _searchFocusNode.unfocus();
@@ -618,25 +642,27 @@ class _MailScreenState extends State<MailScreen>
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
       ),
       child: PopupMenuButton<String>(
         offset: const Offset(0, 50),
         constraints: BoxConstraints(
-           minWidth: MediaQuery.of(context).size.width - (isLargeScreen ? 48 : (isTablet ? 40 : 32)),
+          minWidth:
+              MediaQuery.of(context).size.width -
+              (isLargeScreen ? 48 : (isTablet ? 40 : 32)),
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         color: Theme.of(context).colorScheme.surfaceContainer,
         initialValue: _selectedFilter,
         onSelected: (String newValue) {
-            if (newValue != _selectedFilter) {
-               setState(() => _selectedFilter = newValue);
-               context.read<MailProvider>().loadEmails(filter: newValue);
-            }
+          if (newValue != _selectedFilter) {
+            setState(() => _selectedFilter = newValue);
+            context.read<MailProvider>().loadEmails(filter: newValue);
+          }
         },
         itemBuilder: (BuildContext context) {
-           return _filters.map((String value) {
+          return _filters.map((String value) {
             return PopupMenuItem<String>(
               value: value,
               child: Text(_getLocalizedFilterName(context, value)),
@@ -658,7 +684,9 @@ class _MailScreenState extends State<MailScreen>
               ),
               Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ],
           ),
@@ -671,7 +699,7 @@ class _MailScreenState extends State<MailScreen>
     // Watch provider to get real-time stats
     final mailProvider = context.watch<MailProvider>();
     final emails = mailProvider.getEmailsForFilter(_selectedFilter);
-    
+
     return Container(
       margin: EdgeInsets.fromLTRB(
         isLargeScreen
@@ -691,10 +719,10 @@ class _MailScreenState extends State<MailScreen>
           isLargeScreen
               ? Row(
                 children: [
-                   Expanded(
+                  Expanded(
                     child: _buildStatChip(
                       '${emails.where((e) => e.isUnread).length}',
-                      AppLocalizations.of(context)!.unread,
+                      AppLocalizations.of(context).unread,
                       Colors.blue,
                       isTablet,
                     ),
@@ -703,7 +731,7 @@ class _MailScreenState extends State<MailScreen>
                   Expanded(
                     child: _buildStatChip(
                       '${emails.where((e) => e.isImportant).length}',
-                      AppLocalizations.of(context)!.important,
+                      AppLocalizations.of(context).important,
                       Colors.red,
                       isTablet,
                     ),
@@ -712,7 +740,7 @@ class _MailScreenState extends State<MailScreen>
                   Expanded(
                     child: _buildStatChip(
                       '${emails.length}',
-                      AppLocalizations.of(context)!.total,
+                      AppLocalizations.of(context).total,
                       Colors.green,
                       isTablet,
                     ),
@@ -723,21 +751,21 @@ class _MailScreenState extends State<MailScreen>
                 children: [
                   _buildStatChip(
                     '${emails.where((e) => e.isUnread).length}',
-                    AppLocalizations.of(context)!.unread,
+                    AppLocalizations.of(context).unread,
                     Colors.blue,
                     isTablet,
                   ),
                   SizedBox(width: isTablet ? 16 : 12),
                   _buildStatChip(
                     '${emails.where((e) => e.isImportant).length}',
-                    AppLocalizations.of(context)!.important,
+                    AppLocalizations.of(context).important,
                     Colors.red,
                     isTablet,
                   ),
                   SizedBox(width: isTablet ? 16 : 12),
                   _buildStatChip(
                     '${emails.length}',
-                    AppLocalizations.of(context)!.total,
+                    AppLocalizations.of(context).total,
                     Colors.green,
                     isTablet,
                   ),
@@ -827,8 +855,6 @@ class _MailScreenState extends State<MailScreen>
     return _buildMailList(emails, isTablet, isLargeScreen);
   }
 
-
-
   Widget _buildLoadingState() {
     return Center(
       child: Column(
@@ -837,7 +863,7 @@ class _MailScreenState extends State<MailScreen>
           CircularProgressIndicator(),
           SizedBox(height: 16),
           Text(
-            AppLocalizations.of(context)!.loading,
+            AppLocalizations.of(context).loading,
             style: TextStyle(
               color: Theme.of(
                 context,
@@ -860,7 +886,7 @@ class _MailScreenState extends State<MailScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                AppLocalizations.of(context)!.connectEmailAccount,
+                AppLocalizations.of(context).connectEmailAccount,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -871,27 +897,27 @@ class _MailScreenState extends State<MailScreen>
                 runSpacing: 24,
                 alignment: WrapAlignment.center,
                 children: [
-                  _buildProviderCard(
-                    'Gmail',
-                    Icons.mail_outline_rounded,
-                    Colors.red,
-                    () async {
-                      final provider = context.read<MailProvider>();
-                      await provider.setProvider('gmail');
-                      final res = await provider.connectGmail();
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            (res == null || (res is Map && res['authUrl'] != null))
-                                ? 'Opening Gmail connect…'
-                                : 'Connect failed',
-                          ),
-                        ),
-                      );
-                    },
-                    isTablet,
-                  ),
+                  // _buildProviderCard(
+                  //   'Gmail',
+                  //   Icons.mail_outline_rounded,
+                  //   Colors.red,
+                  //   () async {
+                  //     final provider = context.read<MailProvider>();
+                  //     await provider.setProvider('gmail');
+                  //     final res = await provider.connectGmail();
+                  //     if (!mounted) return;
+                  //     ScaffoldMessenger.of(context).showSnackBar(
+                  //       SnackBar(
+                  //         content: Text(
+                  //           (res == null || (res is Map && res['authUrl'] != null))
+                  //               ? 'Opening Gmail connect…'
+                  //               : 'Connect failed',
+                  //         ),
+                  //       ),
+                  //     );
+                  //   },
+                  //   isTablet,
+                  // ),
                   _buildProviderCard(
                     'Outlook',
                     Icons.window_sharp, // Microsoft-ish icon
@@ -901,11 +927,12 @@ class _MailScreenState extends State<MailScreen>
                       await provider.setProvider('outlook');
                       final res = await provider.connectOutlook();
                       if (!mounted) return;
-                     // Assuming connectOutlook also returns authUrl or similar map
+                      // Assuming connectOutlook also returns authUrl or similar map
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            (res == null || (res is Map && res['authUrl'] != null))
+                            (res == null ||
+                                    (res is Map && res['authUrl'] != null))
                                 ? 'Opening Outlook connect…'
                                 : 'Connect failed',
                           ),
@@ -914,8 +941,32 @@ class _MailScreenState extends State<MailScreen>
                     },
                     isTablet,
                   ),
+                  _buildProviderCard(
+                    'Hotmail',
+                    Icons.window_sharp,
+                    Colors.blueAccent,
+                    () async {
+                      final provider = context.read<MailProvider>();
+                      await provider.setProvider('outlook');
+                      final res = await provider.connectOutlook();
+                      if (!mounted) return;
+                      // Assuming connectOutlook also returns authUrl or similar map
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            (res == null ||
+                                    (res is Map && res['authUrl'] != null))
+                                ? 'Opening Outlook connect…'
+                                : 'Connect failed',
+                          ),
+                        ),
+                      );
+                    },
+                    isTablet,
+                  ),
+                  // _buildProviderCard('Personal Domains', Icons.window_sharp, Colors.redAccent, () async {}, isTablet)
                 ],
-              )
+              ),
             ],
           ),
         ),
@@ -943,28 +994,28 @@ class _MailScreenState extends State<MailScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-               Container(
+              Container(
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 40, color: color),
-               ),
-               const SizedBox(height: 16),
-               Text(
-                 name,
-                 style: theme.textTheme.titleMedium?.copyWith(
-                   fontWeight: FontWeight.bold,
-                 ),
-               ),
-               const SizedBox(height: 8),
-               Text(
-                 'Connect $name',
-                 style: theme.textTheme.bodySmall?.copyWith(
-                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                 ),
-               ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Connect $name',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
             ],
           ),
         ),
@@ -1005,7 +1056,7 @@ class _MailScreenState extends State<MailScreen>
                       : 16,
             ),
             Text(
-              AppLocalizations.of(context)!.somethingWentWrong,
+              AppLocalizations.of(context).somethingWentWrong,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize:
@@ -1046,9 +1097,13 @@ class _MailScreenState extends State<MailScreen>
                       : 16,
             ),
             ElevatedButton.icon(
-              onPressed: () => context.read<MailProvider>().loadEmails(filter: _selectedFilter, forceRefresh: true),
+              onPressed:
+                  () => context.read<MailProvider>().loadEmails(
+                    filter: _selectedFilter,
+                    forceRefresh: true,
+                  ),
               icon: Icon(Icons.refresh_rounded),
-              label: Text(AppLocalizations.of(context)!.retry),
+              label: Text(AppLocalizations.of(context).retry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: Colors.white,
@@ -1110,7 +1165,7 @@ class _MailScreenState extends State<MailScreen>
                       : 16,
             ),
             Text(
-              AppLocalizations.of(context)!.noEmailsFound,
+              AppLocalizations.of(context).noEmailsFound,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize:
@@ -1131,17 +1186,24 @@ class _MailScreenState extends State<MailScreen>
                       : 8,
             ),
             Text(
-              (){
-                 final loc = AppLocalizations.of(context)!;
-                 switch (_selectedFilter) {
-                   case 'Primary': return loc.emptyPrimary;
-                   case 'Sent': return loc.emptySent;
-                   case 'Drafts': return loc.emptyDrafts;
-                   case 'Important': return loc.emptyImportant;
-                   case 'Trash': return loc.emptyTrash;
-                   case 'Spam': return loc.emptySpam;
-                   default: return loc.emptyOther;
-                 }
+              () {
+                final loc = AppLocalizations.of(context);
+                switch (_selectedFilter) {
+                  case 'Primary':
+                    return loc.emptyPrimary;
+                  case 'Sent':
+                    return loc.emptySent;
+                  case 'Drafts':
+                    return loc.emptyDrafts;
+                  case 'Important':
+                    return loc.emptyImportant;
+                  case 'Trash':
+                    return loc.emptyTrash;
+                  case 'Spam':
+                    return loc.emptySpam;
+                  default:
+                    return loc.emptyOther;
+                }
               }(),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyLarge?.copyWith(
@@ -1160,7 +1222,11 @@ class _MailScreenState extends State<MailScreen>
     );
   }
 
-  Widget _buildMailList(List<EmailMessage> emails, bool isTablet, bool isLargeScreen) {
+  Widget _buildMailList(
+    List<EmailMessage> emails,
+    bool isTablet,
+    bool isLargeScreen,
+  ) {
     final mailProvider = context.watch<MailProvider>();
     final isLoading = mailProvider.isLoading;
     final hasMore = mailProvider.hasMoreForFilter(_selectedFilter);
@@ -1194,7 +1260,12 @@ class _MailScreenState extends State<MailScreen>
         physics: const AlwaysScrollableScrollPhysics(),
         controller: _scrollController,
         padding: EdgeInsets.symmetric(
-          horizontal: isLargeScreen ? 24 : isTablet ? 20 : 16,
+          horizontal:
+              isLargeScreen
+                  ? 24
+                  : isTablet
+                  ? 20
+                  : 16,
           vertical: 16,
         ),
         itemCount: listItems.length,
@@ -1221,83 +1292,75 @@ class _MailScreenState extends State<MailScreen>
   }
 
   // Extracted Method for cleaner code - Helper
-  Widget _buildDismissibleEmailItem(EmailMessage email, bool isTablet, bool isLargeScreen) {
-        return Dismissible(
-          key: Key(email.id),
-          direction: DismissDirection.endToStart,
-          confirmDismiss: (direction) async {
-            return await showDialog(
-              context: context,
-              builder:
-                  (context) => AlertDialog(
-                    title: Text(AppLocalizations.of(context)!.deleteEmail),
-                    content: Text(
-                      AppLocalizations.of(context)!.confirmDeleteEmail,
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: Text(AppLocalizations.of(context)!.cancel),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        child: Text(
-                          AppLocalizations.of(context)!.delete,
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ],
+  Widget _buildDismissibleEmailItem(
+    EmailMessage email,
+    bool isTablet,
+    bool isLargeScreen,
+  ) {
+    return Dismissible(
+      key: Key(email.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        return await showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: Text(AppLocalizations.of(context).deleteEmail),
+                content: Text(AppLocalizations.of(context).confirmDeleteEmail),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(AppLocalizations.of(context).cancel),
                   ),
-            );
-          },
-          onDismissed: (direction) {
-            _deleteEmail(email);
-          },
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: EdgeInsets.only(right: 20),
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
-            ),
-            child: Icon(
-              Icons.delete_outline_rounded,
-              color: Colors.white,
-              size: isTablet ? 28 : 24,
-            ),
-          ),
-          child: GestureDetector(
-            onTap: () {
-              // Mark as read when tapped
-              if (email.isUnread) {
-                _markAsRead(email);
-              }
-
-              // Check if it's a draft
-              if (email.draftId != null) {
-                 context.pushNamed('composemail', extra: email);
-              } else {
-                 // Navigate to mail details with EmailMessage
-                 context.pushNamed('maildetail', extra: email);
-              }
-            },
-            onLongPress: () {
-              _showEmailContextMenu(
-                email,
-                isTablet,
-                isLargeScreen,
-              );
-            },
-            child: _buildMailItem(
-              email,
-              isTablet,
-              isLargeScreen,
-            ),
-          ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: Text(
+                      AppLocalizations.of(context).delete,
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              ),
         );
+      },
+      onDismissed: (direction) {
+        _deleteEmail(email);
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+        ),
+        child: Icon(
+          Icons.delete_outline_rounded,
+          color: Colors.white,
+          size: isTablet ? 28 : 24,
+        ),
+      ),
+      child: GestureDetector(
+        onTap: () {
+          // Mark as read when tapped
+          if (email.isUnread) {
+            _markAsRead(email);
+          }
+
+          // Check if it's a draft
+          if (email.draftId != null) {
+            context.pushNamed('composemail', extra: email);
+          } else {
+            // Navigate to mail details with EmailMessage
+            context.pushNamed('maildetail', extra: email);
+          }
+        },
+        onLongPress: () {
+          _showEmailContextMenu(email, isTablet, isLargeScreen);
+        },
+        child: _buildMailItem(email, isTablet, isLargeScreen),
+      ),
+    );
   }
-
-
 
   Widget _buildPaginationLoader() {
     return Container(
@@ -1357,7 +1420,7 @@ class _MailScreenState extends State<MailScreen>
                             ),
                           ),
                         ),
-                         if (email.isSpam)
+                        if (email.isSpam)
                           Padding(
                             padding: EdgeInsets.only(left: isTablet ? 12 : 8),
                             child: Icon(
@@ -1415,45 +1478,59 @@ class _MailScreenState extends State<MailScreen>
             maxLines: isTablet ? 3 : 2,
             overflow: TextOverflow.ellipsis,
           ),
-          if (email.hasAttachments && email.attachments != null && email.attachments!.isNotEmpty)
+          if (email.hasAttachments &&
+              email.attachments != null &&
+              email.attachments!.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(top: isTablet ? 12 : 8),
               child: Wrap(
                 spacing: 8,
                 runSpacing: 6,
-                children: email.attachments!.map((attachment) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          attachment.fileIcon,
-                          style: TextStyle(fontSize: isTablet ? 14 : 12),
+                children:
+                    email.attachments!.map((attachment) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
                         ),
-                        const SizedBox(width: 6),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: isTablet ? 150 : 100),
-                          child: Text(
-                            attachment.filename,
-                            style: TextStyle(
-                              fontSize: isTablet ? 13 : 11,
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.2),
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              attachment.fileIcon,
+                              style: TextStyle(fontSize: isTablet ? 14 : 12),
+                            ),
+                            const SizedBox(width: 6),
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: isTablet ? 150 : 100,
+                              ),
+                              child: Text(
+                                attachment.filename,
+                                style: TextStyle(
+                                  fontSize: isTablet ? 13 : 11,
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.8),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
               ),
             ),
         ],
@@ -1475,8 +1552,8 @@ class _MailScreenState extends State<MailScreen>
       ),
       child: Center(
         child: Text(
-          name.trim().isEmpty 
-              ? '?' 
+          name.trim().isEmpty
+              ? '?'
               : name
                   .split(' ')
                   .where((n) => n.isNotEmpty)
@@ -1497,7 +1574,7 @@ class _MailScreenState extends State<MailScreen>
   String _cleanHtml(String html) {
     // 1. Remove HTML tags
     var text = html.replaceAll(RegExp(r'<[^>]*>'), '');
-    
+
     // 2. Decode basic entities
     text = text
         .replaceAll('&nbsp;', ' ')
@@ -1506,13 +1583,13 @@ class _MailScreenState extends State<MailScreen>
         .replaceAll('&gt;', '>')
         .replaceAll('&quot;', '"')
         .replaceAll('&apos;', "'");
-        
+
     // 3. Remove numeric entities like &#13;
     text = text.replaceAll(RegExp(r'&#\d+;'), '');
-    
+
     // 4. Collapse multiple spaces/newlines
     text = text.replaceAll(RegExp(r'\s+'), ' ');
-    
+
     return text.trim();
   }
 }

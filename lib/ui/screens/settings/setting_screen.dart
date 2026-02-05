@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:frontend/utils/localization.dart';
 import 'package:frontend/providers/mail_provider.dart';
-import 'package:frontend/providers/sub_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -29,7 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   String _selectedVoice = '';
   String _selectedLanguage = '';
   ThemeMode _selectedTheme = ThemeMode.system;
-  bool _pushNotifications = true;
+  final bool _pushNotifications = true;
   @override
   void initState() {
     super.initState();
@@ -54,13 +53,9 @@ class _SettingsScreenState extends State<SettingsScreen>
     super.dispose();
   }
 
-
-
-
-
   void _changeTheme(ThemeMode themeMode) {
     final l10n = AppLocalizations.of(context);
-    
+
     themeProvider.setTheme(themeMode);
     setState(() {
       _selectedTheme = themeMode;
@@ -110,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     // Ideally we would use the new localization but this is fine for feedback
 
     if (!mounted) return;
-    
+
     // Use a robust way to show snackbar, checking if context is still valid for ScaffoldMessenger
     try {
       final messenger = ScaffoldMessenger.of(context);
@@ -120,7 +115,9 @@ class _SettingsScreenState extends State<SettingsScreen>
           content: Text('${l10n.language} ${l10n.changed} $displayLanguage'),
           backgroundColor: Theme.of(context).colorScheme.primary,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     } catch (e) {
@@ -138,7 +135,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     final l10n = AppLocalizations.of(context);
     var user = context.watch<AuthProvider>().user ?? User();
 
-
     if (_selectedVoice.isEmpty) {
       _selectedVoice = user.voicePreferences?['defaultTtsVoiceId'] ?? 'nova';
       if (_selectedVoice != 'onyx' && _selectedVoice != 'nova') {
@@ -150,11 +146,9 @@ class _SettingsScreenState extends State<SettingsScreen>
       _selectedLanguage = AppLocalizations.of(context).locale.languageCode;
     }
 
-
     if (_selectedTheme != themeProvider.themeMode) {
-       _selectedTheme = themeProvider.themeMode;
+      _selectedTheme = themeProvider.themeMode;
     }
-    
 
     if (_workEmail == 'amhita.maroua@gmail.com' || _workEmail.isEmpty) {
       _workEmail = user.workEmail ?? user.email ?? '';
@@ -172,162 +166,175 @@ class _SettingsScreenState extends State<SettingsScreen>
       child: Scaffold(
         drawer: const SideMenu(),
         body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.scaffoldBackgroundColor,
-              theme.colorScheme.surface.withValues(alpha: 0.1),
-              theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
-            ],
-          ),
-        ),
-        child: Stack(
-          children: [
-            SafeArea(
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Column(
-              children: [
-                _buildHeader(isTablet, isLargeScreen, theme, user),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(
-                      horizontal:
-                          isLargeScreen
-                              ? 24
-                              : isTablet
-                              ? 20
-                              : 16,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-
-                        _buildEmailSection(
-                          isTablet,
-                          isLargeScreen,
-                          theme,
-                          user,
-                        ),
-                        
-                        // _buildConnectedAccountsSection(isTablet, isLargeScreen, theme),
-                        _buildSection(
-                          AppLocalizations.of(context).appPreferences,
-                          Icons.tune_outlined,
-                          [
-                            _buildVoiceSelector(isTablet, theme),
-                            _buildLanguageSelector(isTablet, theme, user),
-                            _buildThemeSelector(isTablet, theme),
-                          ],
-                          isTablet,
-                          isLargeScreen,
-                          theme,
-                        ),
-                        _buildSection(
-                          AppLocalizations.of(context).supportFeedback,
-                          Icons.help_outline,
-                          [
-                            // _buildSettingItem(
-                            //   AppLocalizations.of(context).rateUs,
-                            //   AppLocalizations.of(context).loveTheApp,
-                            //   Icons.star_outline,
-                            //   showArrow: false,
-                            //   trailing: Row(
-                            //     mainAxisSize: MainAxisSize.min,
-                            //     children: List.generate(
-                            //       5,
-                            //       (index) => Icon(
-                            //         Icons.star,
-                            //         size: isTablet ? 18 : 16,
-                            //         color: Colors.orange.withValues(alpha: 0.7),
-                            //       ),
-                            //     ),
-                            //   ),
-                            //   onTap: () => _showRateDialog(theme, isTablet),
-                            //   isTablet: isTablet,
-                            //   theme: theme,
-                            // ),
-                            // _buildSettingItem(
-                            //   AppLocalizations.of(context).shareApp,
-                            //   AppLocalizations.of(context).tellYourFriends,
-                            //   Icons.share_outlined,
-                            //   onTap: () => _shareApp(theme, isTablet),
-                            //   isTablet: isTablet,
-                            //   theme: theme,
-                            // ),
-                            _buildSettingItem(
-                              AppLocalizations.of(context).helpSupport,
-                              AppLocalizations.of(context).getHelp,
-                              Icons.support_agent_outlined,
-                              onTap: () => context.push('/support'),
-                              isTablet: isTablet,
-                              theme: theme,
-                            ),
-                          ],
-                          isTablet,
-                          isLargeScreen,
-                          theme,
-                        ),
-                        _buildSection(
-                          AppLocalizations.of(context).legalDocuments,
-                          Icons.gavel_outlined,
-                          [
-                            _buildSettingItem( // Changed from _buildSettingsTile to _buildSettingItem to match existing code
-                              AppLocalizations.of(context).termsOfService,
-                              AppLocalizations.of(context).termsAndConditions, // Added subtitle
-                              Icons.description_outlined,
-                              onTap: () => context.push('/terms'),
-                              isTablet: isTablet,
-                              theme: theme,
-                            ),
-                            _buildSettingItem( // Changed from _buildSettingsTile to _buildSettingItem to match existing code
-                              AppLocalizations.of(context).privacyPolicy,
-                              AppLocalizations.of(context).howWeProtectYourData, // Added subtitle
-                              Icons.privacy_tip_outlined,
-                              onTap: () => context.push('/privacy'),
-                              isTablet: isTablet,
-                              theme: theme,
-                            ),
-                            _buildSettingItem( // Changed from _buildSettingsTile to _buildSettingItem to match existing code
-                              AppLocalizations.of(context).generalConditions,
-                              AppLocalizations.of(context).termsAndConditions, // Assuming a similar subtitle for general conditions
-                              Icons.rule_outlined,
-                              onTap: () => context.push('/generalConditions'),
-                              isTablet: isTablet,
-                              theme: theme,
-                            ),
-                            _buildSettingItem(
-                              AppLocalizations.of(context).appVersion,
-                              AppLocalizations.of(context).version123,
-                              Icons.system_update_outlined,
-                              showArrow: false,
-                              onTap: () => _checkForUpdates(theme, isTablet),
-                              isTablet: isTablet,
-                              theme: theme,
-                            ),
-                          ],
-                          isTablet,
-                          isLargeScreen,
-                          theme,
-                        ),
-                        SizedBox(height: isTablet ? 24 : 20),
-                        _buildSignOutButton(isTablet, theme),
-                        SizedBox(height: isTablet ? 48 : 40),
-                      ],
-                    ),
-                  ),
-                ),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.scaffoldBackgroundColor,
+                theme.colorScheme.surface.withValues(alpha: 0.1),
+                theme.scaffoldBackgroundColor.withValues(alpha: 0.8),
               ],
             ),
           ),
-            ),
-            const DraggableMenu(),
-          ],
+          child: Stack(
+            children: [
+              SafeArea(
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    children: [
+                      _buildHeader(isTablet, isLargeScreen, theme, user),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.symmetric(
+                            horizontal:
+                                isLargeScreen
+                                    ? 24
+                                    : isTablet
+                                    ? 20
+                                    : 16,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildEmailSection(
+                                isTablet,
+                                isLargeScreen,
+                                theme,
+                                user,
+                              ),
+
+                              // _buildConnectedAccountsSection(isTablet, isLargeScreen, theme),
+                              _buildSection(
+                                AppLocalizations.of(context).appPreferences,
+                                Icons.tune_outlined,
+                                [
+                                  _buildVoiceSelector(isTablet, theme),
+                                  _buildLanguageSelector(isTablet, theme, user),
+                                  _buildThemeSelector(isTablet, theme),
+                                ],
+                                isTablet,
+                                isLargeScreen,
+                                theme,
+                              ),
+                              _buildSection(
+                                AppLocalizations.of(context).supportFeedback,
+                                Icons.help_outline,
+                                [
+                                  // _buildSettingItem(
+                                  //   AppLocalizations.of(context).rateUs,
+                                  //   AppLocalizations.of(context).loveTheApp,
+                                  //   Icons.star_outline,
+                                  //   showArrow: false,
+                                  //   trailing: Row(
+                                  //     mainAxisSize: MainAxisSize.min,
+                                  //     children: List.generate(
+                                  //       5,
+                                  //       (index) => Icon(
+                                  //         Icons.star,
+                                  //         size: isTablet ? 18 : 16,
+                                  //         color: Colors.orange.withValues(alpha: 0.7),
+                                  //       ),
+                                  //     ),
+                                  //   ),
+                                  //   onTap: () => _showRateDialog(theme, isTablet),
+                                  //   isTablet: isTablet,
+                                  //   theme: theme,
+                                  // ),
+                                  // _buildSettingItem(
+                                  //   AppLocalizations.of(context).shareApp,
+                                  //   AppLocalizations.of(context).tellYourFriends,
+                                  //   Icons.share_outlined,
+                                  //   onTap: () => _shareApp(theme, isTablet),
+                                  //   isTablet: isTablet,
+                                  //   theme: theme,
+                                  // ),
+                                  _buildSettingItem(
+                                    AppLocalizations.of(context).helpSupport,
+                                    AppLocalizations.of(context).getHelp,
+                                    Icons.support_agent_outlined,
+                                    onTap: () => context.push('/support'),
+                                    isTablet: isTablet,
+                                    theme: theme,
+                                  ),
+                                ],
+                                isTablet,
+                                isLargeScreen,
+                                theme,
+                              ),
+                              _buildSection(
+                                AppLocalizations.of(context).legalDocuments,
+                                Icons.gavel_outlined,
+                                [
+                                  _buildSettingItem(
+                                    // Changed from _buildSettingsTile to _buildSettingItem to match existing code
+                                    AppLocalizations.of(context).termsOfService,
+                                    AppLocalizations.of(
+                                      context,
+                                    ).termsAndConditions, // Added subtitle
+                                    Icons.description_outlined,
+                                    onTap: () => context.push('/terms'),
+                                    isTablet: isTablet,
+                                    theme: theme,
+                                  ),
+                                  _buildSettingItem(
+                                    // Changed from _buildSettingsTile to _buildSettingItem to match existing code
+                                    AppLocalizations.of(context).privacyPolicy,
+                                    AppLocalizations.of(
+                                      context,
+                                    ).howWeProtectYourData, // Added subtitle
+                                    Icons.privacy_tip_outlined,
+                                    onTap: () => context.push('/privacy'),
+                                    isTablet: isTablet,
+                                    theme: theme,
+                                  ),
+                                  _buildSettingItem(
+                                    // Changed from _buildSettingsTile to _buildSettingItem to match existing code
+                                    AppLocalizations.of(
+                                      context,
+                                    ).generalConditions,
+                                    AppLocalizations.of(
+                                      context,
+                                    ).termsAndConditions, // Assuming a similar subtitle for general conditions
+                                    Icons.rule_outlined,
+                                    onTap:
+                                        () =>
+                                            context.push('/generalConditions'),
+                                    isTablet: isTablet,
+                                    theme: theme,
+                                  ),
+                                  _buildSettingItem(
+                                    AppLocalizations.of(context).appVersion,
+                                    AppLocalizations.of(context).version123,
+                                    Icons.system_update_outlined,
+                                    showArrow: false,
+                                    onTap:
+                                        () => _checkForUpdates(theme, isTablet),
+                                    isTablet: isTablet,
+                                    theme: theme,
+                                  ),
+                                ],
+                                isTablet,
+                                isLargeScreen,
+                                theme,
+                              ),
+                              SizedBox(height: isTablet ? 24 : 20),
+                              _buildSignOutButton(isTablet, theme),
+                              SizedBox(height: isTablet ? 48 : 40),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const DraggableMenu(),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -367,7 +374,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         children: [
           Row(
             children: [
-              
               GestureDetector(
                 onTap: () {},
                 // onTap: () => _changeProfileImage(theme, isTablet),
@@ -506,10 +512,6 @@ class _SettingsScreenState extends State<SettingsScreen>
       ),
     );
   }
-
-
-
-
 
   Widget _buildEmailSection(
     bool isTablet,
@@ -800,7 +802,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   Widget _buildConnectedAccountsSection(
-      bool isTablet, bool isLargeScreen, ThemeData theme) {
+    bool isTablet,
+    bool isLargeScreen,
+    ThemeData theme,
+  ) {
     final provider = context.watch<MailProvider>();
     final current = provider.currentProvider;
 
@@ -825,7 +830,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           Icons.window_sharp,
           current == 'outlook',
           () {
-             if (current != 'outlook') {
+            if (current != 'outlook') {
               provider.setProvider('outlook');
             }
           },
@@ -873,7 +878,11 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
           child: Row(
             children: [
-              Icon(icon, color: theme.colorScheme.onSurface, size: isTablet ? 24 : 20),
+              Icon(
+                icon,
+                color: theme.colorScheme.onSurface,
+                size: isTablet ? 24 : 20,
+              ),
               SizedBox(width: isTablet ? 16 : 12),
               Expanded(
                 child: Text(
@@ -1098,7 +1107,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
     try {
       await context.read<UserProvider>().updateVoicePreference(voiceId);
-      
+
       var user = context.read<AuthProvider>().user;
       if (user != null) {
         user.voicePreferences = {'defaultTtsVoiceId': voiceId};
@@ -1106,7 +1115,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       }
 
       if (!mounted) return;
-      
+
       try {
         final messenger = ScaffoldMessenger.of(context);
         messenger.clearSnackBars();
@@ -1115,7 +1124,9 @@ class _SettingsScreenState extends State<SettingsScreen>
             content: Text('${l10n.voice} ${l10n.changed}'),
             backgroundColor: Theme.of(context).colorScheme.primary,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       } catch (e) {
@@ -1161,8 +1172,8 @@ class _SettingsScreenState extends State<SettingsScreen>
               fontSize: isTablet ? 13 : 12,
             ),
             items: [
-               DropdownMenuItem(value: 'nova', child: Text(l10n.female)),
-               DropdownMenuItem(value: 'onyx', child: Text(l10n.male)),
+              DropdownMenuItem(value: 'nova', child: Text(l10n.female)),
+              DropdownMenuItem(value: 'onyx', child: Text(l10n.male)),
             ],
             onChanged: (value) {
               if (value != null) {
@@ -1179,12 +1190,12 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildLanguageSelector(bool isTablet, ThemeData theme, User user) {
     final l10n = AppLocalizations.of(context);
-    
+
     // Ensure _selectedLanguage is valid (it should be 'en' or 'fr')
     // If for some reason it's not, fallback to current locale
     String currentValue = _selectedLanguage;
     if (currentValue != 'en' && currentValue != 'fr') {
-       currentValue = AppLocalizations.of(context).locale.languageCode;
+      currentValue = AppLocalizations.of(context).locale.languageCode;
     }
 
     return _buildSettingItem(
@@ -1210,14 +1221,8 @@ class _SettingsScreenState extends State<SettingsScreen>
               fontSize: isTablet ? 13 : 12,
             ),
             items: [
-              DropdownMenuItem(
-                value: 'en',
-                child: Text(l10n.english),
-              ),
-              DropdownMenuItem(
-                value: 'fr',
-                child: Text(l10n.french),
-              ),
+              DropdownMenuItem(value: 'en', child: Text(l10n.english)),
+              DropdownMenuItem(value: 'fr', child: Text(l10n.french)),
             ],
             onChanged: (value) {
               if (value != null) {
@@ -1234,7 +1239,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   Widget _buildThemeSelector(bool isTablet, ThemeData theme) {
     final l10n = AppLocalizations.of(context);
-    
+
     String getThemeName(ThemeMode mode) {
       switch (mode) {
         case ThemeMode.dark:
@@ -1268,12 +1273,13 @@ class _SettingsScreenState extends State<SettingsScreen>
               color: theme.colorScheme.onSurface,
               fontSize: isTablet ? 13 : 12,
             ),
-            items: ThemeMode.values.map((ThemeMode mode) {
-              return DropdownMenuItem<ThemeMode>(
-                value: mode,
-                child: Text(getThemeName(mode)),
-              );
-            }).toList(),
+            items:
+                ThemeMode.values.map((ThemeMode mode) {
+                  return DropdownMenuItem<ThemeMode>(
+                    value: mode,
+                    child: Text(getThemeName(mode)),
+                  );
+                }).toList(),
             onChanged: (ThemeMode? value) {
               if (value != null) {
                 _changeTheme(value);
@@ -1348,9 +1354,74 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _editName(ThemeData theme, bool isTablet, User user) {
-    final TextEditingController nameController = TextEditingController(
-      text: _userName,
+    final TextEditingController firstNameController = TextEditingController(
+      text: user.firstName ?? '',
     );
+    final TextEditingController lastNameController = TextEditingController(
+      text: user.lastName ?? '',
+    );
+
+    // Validation function for names - only letters (including accented), at least 2 characters
+    bool validateName(String name) {
+      if (name.length < 2) return false;
+      final nameRegex = RegExp(r"^[a-zA-ZÀ-ÿ]+$");
+      return nameRegex.hasMatch(name);
+    }
+
+    // Show error dialog
+    void showErrorDialog(BuildContext ctx, String message) {
+      showDialog(
+        context: ctx,
+        builder:
+            (errorContext) => AlertDialog(
+              backgroundColor: theme.colorScheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
+              ),
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: isTablet ? 28 : 24,
+                  ),
+                  SizedBox(width: isTablet ? 12 : 8),
+                  Text(
+                    AppLocalizations.of(ctx).error,
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface,
+                      fontSize: isTablet ? 20 : 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                message,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                  fontSize: isTablet ? 16 : 14,
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () => Navigator.of(errorContext).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                  ),
+                  child: Text(
+                    AppLocalizations.of(ctx).ok,
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimary,
+                      fontSize: isTablet ? 16 : 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+      );
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1358,58 +1429,139 @@ class _SettingsScreenState extends State<SettingsScreen>
           (context) => StatefulBuilder(
             builder: (dialogContext, setState) {
               bool isLoading = false;
+              final l10n = AppLocalizations.of(context);
               return AlertDialog(
                 backgroundColor: theme.colorScheme.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(isTablet ? 20 : 16),
                 ),
                 title: Text(
-                  AppLocalizations.of(context).editName,
+                  l10n.editName,
                   style: TextStyle(
                     color: theme.colorScheme.onSurface,
                     fontSize: isTablet ? 20 : 18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                content: TextField(
-                  controller: nameController,
-                  enabled: !isLoading,
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontSize: isTablet ? 16 : 14,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: AppLocalizations.of(context).enterName,
-                    hintStyle: TextStyle(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // First Name Field
+                    TextField(
+                      controller: firstNameController,
+                      enabled: !isLoading,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: isTablet ? 16 : 14,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: l10n.firstName,
+                        labelStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                        hintText:
+                            l10n.enter + ' ' + l10n.firstName.toLowerCase(),
+                        hintStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.outline.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
                       ),
                     ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: theme.colorScheme.primary),
+                    SizedBox(height: isTablet ? 16 : 12),
+                    // Last Name Field
+                    TextField(
+                      controller: lastNameController,
+                      enabled: !isLoading,
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: isTablet ? 16 : 14,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: l10n.lastName,
+                        labelStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                        hintText:
+                            l10n.enter + ' ' + l10n.lastName.toLowerCase(),
+                        hintStyle: TextStyle(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.outline.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 actions: [
                   TextButton(
-                    onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
+                    onPressed:
+                        isLoading
+                            ? null
+                            : () => Navigator.of(dialogContext).pop(),
                     child: Text(
-                      AppLocalizations.of(context).cancel,
+                      l10n.cancel,
                       style: TextStyle(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.7,
+                        ),
                         fontSize: isTablet ? 16 : 14,
                       ),
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            final newName = nameController.text.trim();
-                            if (newName.isNotEmpty) {
+                    onPressed:
+                        isLoading
+                            ? null
+                            : () async {
+                              final firstName = firstNameController.text.trim();
+                              final lastName = lastNameController.text.trim();
+
+                              // Validate both fields and show error dialog if invalid
+                              if (!validateName(firstName)) {
+                                showErrorDialog(
+                                  dialogContext,
+                                  l10n.invalidName,
+                                );
+                                return;
+                              }
+
+                              if (!validateName(lastName)) {
+                                showErrorDialog(
+                                  dialogContext,
+                                  l10n.invalidName,
+                                );
+                                return;
+                              }
+
                               setState(() {
                                 isLoading = true;
                               });
@@ -1417,19 +1569,20 @@ class _SettingsScreenState extends State<SettingsScreen>
                               // Capture context/providers before async gap
                               final userProvider = context.read<UserProvider>();
                               final authProvider = context.read<AuthProvider>();
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
-                              
+                              final scaffoldMessenger = ScaffoldMessenger.of(
+                                context,
+                              );
+
                               try {
-                                final parts = newName.split(' ');
-                                user.firstName = parts[0];
-                                user.lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
-                                
+                                user.firstName = firstName;
+                                user.lastName = lastName;
+
                                 await userProvider.updateUser(user.id, user);
                                 await authProvider.updateUserInSession(user);
 
                                 // Check if the dialog is still mounted/active before popping
                                 if (dialogContext.mounted) {
-                                   Navigator.of(dialogContext).pop();
+                                  Navigator.of(dialogContext).pop();
                                 }
                               } catch (e) {
                                 if (dialogContext.mounted) {
@@ -1437,34 +1590,36 @@ class _SettingsScreenState extends State<SettingsScreen>
                                     isLoading = false;
                                   });
                                   scaffoldMessenger.showSnackBar(
-                                    SnackBar(content: Text('Error updating name: $e'), backgroundColor: Colors.red),
+                                    SnackBar(
+                                      content: Text('Error updating name: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
                                   );
                                 }
                               }
-                            } else {
-                              Navigator.of(dialogContext).pop();
-                            }
-                          },
+                            },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.primary,
-                      disabledBackgroundColor: theme.colorScheme.primary.withOpacity(0.5),
+                      disabledBackgroundColor: theme.colorScheme.primary
+                          .withOpacity(0.5),
                     ),
-                    child: isLoading
-                        ? SizedBox(
-                            width: 20, 
-                            height: 20, 
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2, 
-                              color: theme.colorScheme.onPrimary
+                    child:
+                        isLoading
+                            ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.onPrimary,
+                              ),
                             )
-                          )
-                        : Text(
-                            AppLocalizations.of(context).save,
-                            style: TextStyle(
-                              color: theme.colorScheme.onPrimary,
-                              fontSize: isTablet ? 16 : 14,
+                            : Text(
+                              l10n.save,
+                              style: TextStyle(
+                                color: theme.colorScheme.onPrimary,
+                                fontSize: isTablet ? 16 : 14,
+                              ),
                             ),
-                          ),
                   ),
                 ],
               );
@@ -1522,93 +1677,117 @@ class _SettingsScreenState extends State<SettingsScreen>
                 ),
                 actions: [
                   TextButton(
-                    onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
+                    onPressed:
+                        isLoading
+                            ? null
+                            : () => Navigator.of(dialogContext).pop(),
                     child: Text(
                       AppLocalizations.of(context).cancel,
                       style: TextStyle(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.7,
+                        ),
                         fontSize: isTablet ? 16 : 14,
                       ),
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: isLoading
-                        ? null
-                        : () async {
-                            final newEmail = emailController.text.trim();
-                            if (newEmail.isNotEmpty && newEmail != user.workEmail) {
-                              setState(() {
-                                isLoading = true;
-                              });
+                    onPressed:
+                        isLoading
+                            ? null
+                            : () async {
+                              final newEmail = emailController.text.trim();
+                              if (newEmail.isNotEmpty &&
+                                  newEmail != user.workEmail) {
+                                setState(() {
+                                  isLoading = true;
+                                });
 
-                              // Capture providers BEFORE async gap
-                              final userProvider = context.read<UserProvider>();
-                              final authProvider = context.read<AuthProvider>();
-                              final mailProvider = context.read<MailProvider>();
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
-                              final appLocalizations = AppLocalizations.of(context);
+                                // Capture providers BEFORE async gap
+                                final userProvider =
+                                    context.read<UserProvider>();
+                                final authProvider =
+                                    context.read<AuthProvider>();
+                                final mailProvider =
+                                    context.read<MailProvider>();
+                                final scaffoldMessenger = ScaffoldMessenger.of(
+                                  context,
+                                );
+                                final appLocalizations = AppLocalizations.of(
+                                  context,
+                                );
 
-                              try {
-                                // Update the user object with new work email
-                                user.workEmail = newEmail;
-                                
-                                // Update in backend and local storage
-                                await userProvider.updateUser(user.id, user);
-                                await authProvider.updateUserInSession(user);
-                                
-                                // Update parent widget state if still mounted
-                                if (this.mounted) {
-                                  this.setState(() {
-                                    _workEmail = newEmail;
-                                  });
+                                try {
+                                  // Update the user object with new work email
+                                  user.workEmail = newEmail;
+
+                                  // Update in backend and local storage
+                                  await userProvider.updateUser(user.id, user);
+                                  await authProvider.updateUserInSession(user);
+
+                                  // Update parent widget state if still mounted
+                                  if (mounted) {
+                                    this.setState(() {
+                                      _workEmail = newEmail;
+                                    });
+                                  }
+
+                                  // Disconnect mail session since work email changed
+                                  await mailProvider.disconnect();
+
+                                  if (dialogContext.mounted) {
+                                    Navigator.of(dialogContext).pop();
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          appLocalizations
+                                              .workEmailUpdatedReconnect,
+                                        ),
+                                        duration: const Duration(seconds: 4),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (dialogContext.mounted) {
+                                    setState(() {
+                                      isLoading = false;
+                                    });
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Error updating email: $e',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
                                 }
-                                
-                                // Disconnect mail session since work email changed
-                                await mailProvider.disconnect();
-                                
-                                if (dialogContext.mounted) {
-                                   Navigator.of(dialogContext).pop();
-                                   scaffoldMessenger.showSnackBar(
-                                     SnackBar(
-                                       content: Text(appLocalizations.workEmailUpdatedReconnect),
-                                       duration: const Duration(seconds: 4),
-                                     ),
-                                   );
-                                }
-                              } catch (e) {
-                                if (dialogContext.mounted) {
-                                  setState(() {
-                                    isLoading = false;
-                                  });
-                                  scaffoldMessenger.showSnackBar(
-                                     SnackBar(content: Text('Error updating email: $e'), backgroundColor: Colors.red),
-                                  );
-                                }
+                              } else {
+                                Navigator.of(dialogContext).pop();
                               }
-                            } else {
-                              Navigator.of(dialogContext).pop();
-                            }
-                          },
+                            },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: theme.colorScheme.primary,
-                      disabledBackgroundColor: theme.colorScheme.primary.withOpacity(0.5),
+                      disabledBackgroundColor: theme.colorScheme.primary
+                          .withOpacity(0.5),
                     ),
-                    child: isLoading 
-                      ? SizedBox(
-                          width: 20, 
-                          height: 20, 
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2, 
-                            color: theme.colorScheme.onPrimary
-                          )
-                        )
-                      : Text(
-                          AppLocalizations.of(context).save,
-                          style: TextStyle(
-                            color: theme.colorScheme.onPrimary,
-                            fontSize: isTablet ? 16 : 14,
-                          ),
-                        ),
+                    child:
+                        isLoading
+                            ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.onPrimary,
+                              ),
+                            )
+                            : Text(
+                              AppLocalizations.of(context).save,
+                              style: TextStyle(
+                                color: theme.colorScheme.onPrimary,
+                                fontSize: isTablet ? 16 : 14,
+                              ),
+                            ),
                   ),
                 ],
               );

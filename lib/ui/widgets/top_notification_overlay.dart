@@ -8,12 +8,12 @@ class TopNotificationOverlay extends StatefulWidget {
   final VoidCallback onDismiss;
 
   const TopNotificationOverlay({
-    Key? key,
+    super.key,
     required this.title,
     required this.body,
     this.onPlay,
     required this.onDismiss,
-  }) : super(key: key);
+  });
 
   @override
   State<TopNotificationOverlay> createState() => _TopNotificationOverlayState();

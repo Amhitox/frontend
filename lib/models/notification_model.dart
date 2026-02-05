@@ -1,32 +1,20 @@
-import 'package:flutter/material.dart';
+enum NotificationType { email, task, event, calendar, system, unknown }
 
-enum NotificationType {
-  email,
-  task,
-  event,
-  calendar,
-  system,
-  unknown
-}
-
-enum NotificationPriority {
-  high,
-  normal,
-  low
-}
+enum NotificationPriority { high, normal, low }
 
 class AppNotification {
   final String id;
   final String userId;
   final String title;
   final String message; // Maps to 'body'
-  final String time;    // Maps to 'sentAt'
+  final String time; // Maps to 'sentAt'
   final NotificationType type;
-  bool isRead;          // Maps to 'read'
+  bool isRead; // Maps to 'read'
   final bool deleted;
-  final String status;  // 'sent' | 'failed' | 'delivered'
+  final String status; // 'sent' | 'failed' | 'delivered'
   final Map<String, dynamic>? metadata;
-  final NotificationPriority priority; // Not in backend type, will infer or default
+  final NotificationPriority
+  priority; // Not in backend type, will infer or default
 
   AppNotification({
     required this.id,
@@ -53,7 +41,9 @@ class AppNotification {
       isRead: json['read'] ?? false,
       deleted: json['deleted'] ?? false,
       status: json['status'] ?? 'sent',
-      metadata: json['data'] ?? json['metadata'], // Maps 'data' from backend to 'metadata' property
+      metadata:
+          json['data'] ??
+          json['metadata'], // Maps 'data' from backend to 'metadata' property
       // Infer priority from metadata or default to normal since it's not in the main type
       priority: _inferPriority(json),
     );
@@ -89,9 +79,11 @@ class AppNotification {
   static NotificationPriority _inferPriority(Map<String, dynamic> json) {
     // Basic inference or checking metadata
     if (json['metadata'] != null && json['metadata']['priority'] != null) {
-       try {
+      try {
         return NotificationPriority.values.firstWhere(
-          (e) => e.toString().split('.').last == json['metadata']['priority'].toString().toLowerCase(),
+          (e) =>
+              e.toString().split('.').last ==
+              json['metadata']['priority'].toString().toLowerCase(),
           orElse: () => NotificationPriority.normal,
         );
       } catch (_) {

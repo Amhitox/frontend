@@ -14,7 +14,6 @@ import 'package:frontend/utils/localization.dart';
 import 'dart:math' as math;
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:frontend/models/ai_response.dart';
 import 'package:frontend/models/email_message.dart';
 import 'package:frontend/services/ai_service.dart';
 import 'package:frontend/services/transcription_service.dart';

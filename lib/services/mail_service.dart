@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:app_links/app_links.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:frontend/models/email_message.dart';
+import 'package:frontend/routes/app_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 
@@ -112,7 +114,8 @@ class MailService {
 
       if (e.response?.statusCode == 401) {
         final errorData = e.response?.data;
-        if (errorData is Map && errorData['error'] == 'Refresh token not found') {
+        if (errorData is Map &&
+            errorData['error'] == 'Refresh token not found') {
           return {'error': 'Refresh token not found'};
         }
         print('⚠️ Token expired, attempting to refresh...');
@@ -140,7 +143,7 @@ class MailService {
           }
         }
       }
-      
+
       if (e.response?.statusCode == 500) {
         return {'error': 'Failed to fetch emails'};
       }
@@ -202,11 +205,7 @@ class MailService {
     String? bcc,
   }) async {
     try {
-      final formDataMap = {
-        'to': to,
-        'subject': subject,
-        'body': body,
-      };
+      final formDataMap = {'to': to, 'subject': subject, 'body': body};
 
       if (cc != null && cc.isNotEmpty) {
         formDataMap['cc'] = cc;
@@ -231,7 +230,7 @@ class MailService {
               ),
             );
           } else if (path != null && path.isNotEmpty) {
-             formData.files.add(
+            formData.files.add(
               MapEntry(
                 'attachments',
                 await MultipartFile.fromFile(path, filename: name),
@@ -242,13 +241,14 @@ class MailService {
       }
 
       final options = Options(
-        headers: _accessToken != null 
-            ? {'Authorization': 'Bearer $_accessToken'} 
-            : null,
+        headers:
+            _accessToken != null
+                ? {'Authorization': 'Bearer $_accessToken'}
+                : null,
       );
 
       final response = await _dio.post(
-        '/api/email/gmail/send', 
+        '/api/email/gmail/send',
         data: formData,
         options: options,
       );
@@ -256,38 +256,50 @@ class MailService {
       final responseData = response.data;
 
       if (response.statusCode == 200 && responseData['success'] == true) {
-        print('✅ Email sent successfully. MessageId: ${responseData['messageId']}');
+        print(
+          '✅ Email sent successfully. MessageId: ${responseData['messageId']}',
+        );
         return responseData;
       } else {
-        print('⚠️ Email send failed with status ${response.statusCode}: $responseData');
-        return responseData is Map<String, dynamic> ? responseData : {'error': responseData.toString()};
+        print(
+          '⚠️ Email send failed with status ${response.statusCode}: $responseData',
+        );
+        return responseData is Map<String, dynamic>
+            ? responseData
+            : {'error': responseData.toString()};
       }
     } on DioException catch (e) {
       print('❌ Error sending email: ${e.response?.data}');
       final errorData = e.response?.data;
       final statusCode = e.response?.statusCode;
-      
+
       if (statusCode == 400) {
         if (errorData is Map) {
           return {'error': errorData['error'] ?? 'Missing required fields'};
         }
         return {'error': 'Gmail not connected or missing required fields'};
       }
-      
+
       if (statusCode == 401) {
         if (errorData is Map) {
-          return {'error': errorData['error'] ?? 'Failed to refresh Gmail tokens', 'details': errorData['details']};
+          return {
+            'error': errorData['error'] ?? 'Failed to refresh Gmail tokens',
+            'details': errorData['details'],
+          };
         }
         return {'error': 'Failed to refresh Gmail tokens'};
       }
-      
+
       if (statusCode == 500) {
         if (errorData is Map) {
-          return {'error': 'Failed to send email', 'details': errorData['details']};
+          return {
+            'error': 'Failed to send email',
+            'details': errorData['details'],
+          };
         }
         return {'error': 'Failed to send email'};
       }
-      
+
       if (errorData is Map<String, dynamic>) {
         return errorData;
       }
@@ -306,7 +318,7 @@ class MailService {
   }) async {
     try {
       final formDataMap = <String, dynamic>{};
-      
+
       if (to.isNotEmpty) formDataMap['to'] = to;
       if (subject.isNotEmpty) formDataMap['subject'] = subject;
       if (body.isNotEmpty) formDataMap['body'] = body;
@@ -334,7 +346,7 @@ class MailService {
               ),
             );
           } else if (path != null && path.isNotEmpty) {
-             formData.files.add(
+            formData.files.add(
               MapEntry(
                 'attachments',
                 await MultipartFile.fromFile(path, filename: name),
@@ -345,20 +357,20 @@ class MailService {
       }
 
       final options = Options(
-        headers: _accessToken != null 
-            ? {'Authorization': 'Bearer $_accessToken'} 
-            : null,
+        headers:
+            _accessToken != null
+                ? {'Authorization': 'Bearer $_accessToken'}
+                : null,
       );
 
       final response = await _dio.post(
-        '/api/email/gmail/draft', 
+        '/api/email/gmail/draft',
         data: formData,
         options: options,
       );
 
       // Backend returns: { success: true, draftId: "...", message: "..." }
       return response.data;
-      
     } on DioException catch (e) {
       print('❌ Error creating draft: ${e.response?.data}');
       final errorData = e.response?.data;
@@ -514,50 +526,55 @@ class MailService {
     try {
       // 1. Get tokens and email from backend
       final tokenData = await checkTokens();
-      
+
       if (tokenData != null && tokenData['hasTokens'] == true) {
         final tokens = tokenData['tokens'];
         final accessToken = tokens?['accessToken'];
         final refreshToken = tokens?['refreshToken'];
-        final email = tokenData['email']; // Assuming 'email' or 'connectedEmail' is top-level or in tokens
-        
-        // Note: data structure depends on checkTokens response. 
+        final email =
+            tokenData['email']; // Assuming 'email' or 'connectedEmail' is top-level or in tokens
+
+        // Note: data structure depends on checkTokens response.
         // Based on typical auth flows, we check if we have what we need.
         // User request specifically asked to send: accessToken, refreshToken, connectedEmail.
-        
+
         if (accessToken != null) {
-           String? connectedEmail = email;
-           
-           // If email is missing from checkTokens, try to fetch it from Gmail Profile
-           if (connectedEmail == null) {
-             try {
-                final profileResponse = await _dio.get(
-                  'https://gmail.googleapis.com/gmail/v1/users/me/profile',
-                  options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+          String? connectedEmail = email;
+
+          // If email is missing from checkTokens, try to fetch it from Gmail Profile
+          if (connectedEmail == null) {
+            try {
+              final profileResponse = await _dio.get(
+                'https://gmail.googleapis.com/gmail/v1/users/me/profile',
+                options: Options(
+                  headers: {'Authorization': 'Bearer $accessToken'},
+                ),
+              );
+              if (profileResponse.statusCode == 200) {
+                connectedEmail = profileResponse.data['emailAddress'];
+                print(
+                  '✅ Fetched connected email from profile: $connectedEmail',
                 );
-                if (profileResponse.statusCode == 200) {
-                  connectedEmail = profileResponse.data['emailAddress'];
-                  print('✅ Fetched connected email from profile: $connectedEmail');
-                }
-             } catch (e) {
-               print('⚠️ Failed to fetch Gmail profile: $e');
-             }
-           }
+              }
+            } catch (e) {
+              print('⚠️ Failed to fetch Gmail profile: $e');
+            }
+          }
 
-           if (connectedEmail != null) {
-              final body = {
-                'accessToken': accessToken,
-                'refreshToken': refreshToken ?? '',
-                'connectedEmail': connectedEmail,
-              };
+          if (connectedEmail != null) {
+            final body = {
+              'accessToken': accessToken,
+              'refreshToken': refreshToken ?? '',
+              'connectedEmail': connectedEmail,
+            };
 
-              print('🔄 Renewing Gmail watch for $connectedEmail...');
-              
-              await _dio.post('/api/email/gmail/watch', data: body);
-              print('✅ Gmail watch renewed successfully');
-           } else {
-             print('⚠️ Could not determine connected email for watch renewal');
-           }
+            print('🔄 Renewing Gmail watch for $connectedEmail...');
+
+            await _dio.post('/api/email/gmail/watch', data: body);
+            print('✅ Gmail watch renewed successfully');
+          } else {
+            print('⚠️ Could not determine connected email for watch renewal');
+          }
         } else {
           print('⚠️ Missing access token to renew watch');
         }
@@ -568,6 +585,7 @@ class MailService {
       print('❌ Error renewing Gmail watch: $e');
     }
   }
+
   Stream<List<EmailMessage>> streamEmails() {
     try {
       return FirebaseFirestore.instance
@@ -584,6 +602,7 @@ class MailService {
       return Stream.value([]);
     }
   }
+
   Future<Map<String, dynamic>?> refineEmail(
     String currentSubject,
     String currentBody,
@@ -609,16 +628,23 @@ class MailService {
       if (response.statusCode == 200) {
         return response.data;
       }
-      
+
       return {'error': response.data['message'] ?? 'Refinement failed'};
     } on DioException catch (e) {
       if (e.response?.statusCode == 500) {
-        return {'error': 'Refinement failed', 'details': e.response?.data?['details']};
+        return {
+          'error': 'Refinement failed',
+          'details': e.response?.data?['details'],
+        };
       }
-      return {'error': e.response?.data['error'] ?? e.response?.data['message'] ?? e.message};
+      return {
+        'error':
+            e.response?.data['error'] ??
+            e.response?.data['message'] ??
+            e.message,
+      };
     }
   }
-
 
   Future<void> downloadAttachment(
     String messageId,
@@ -746,6 +772,37 @@ class DeepLinkService {
         _storePendingData(false, errorMsg, null);
         onGmailConnected(false, errorMsg, null);
       }
+    } else if (uri.host == 'elyoai-999.firebaseapp.com' &&
+        uri.path.startsWith('/__/auth/action')) {
+      print('🔐 Firebase auth action link detected');
+      final mode = uri.queryParameters['mode'];
+      final oobCode = uri.queryParameters['oobCode'];
+
+      if (mode != null && oobCode != null) {
+        final authUri = Uri(
+          path: '/__/auth/action',
+          queryParameters: {'mode': mode, 'oobCode': oobCode},
+        );
+
+        Future.delayed(const Duration(milliseconds: 100), () {
+          final navContext = AppRoutes.navigatorKey.currentContext;
+          if (navContext != null) {
+            GoRouter.of(navContext).go(authUri.toString());
+          }
+        });
+      }
+    } else if (uri.scheme == 'aixy' && uri.host == 'payment') {
+      // Handle payment deep link - redirect to subscription screen
+      print('💳 Payment deep link detected: $uri');
+      Future.delayed(const Duration(milliseconds: 100), () {
+        final navContext = AppRoutes.navigatorKey.currentContext;
+        if (navContext != null) {
+          // Navigate to subscription screen with payment interference flag
+          GoRouter.of(
+            navContext,
+          ).go('/subscription', extra: {'paymentInterfered': true});
+        }
+      });
     } else if (uri.scheme == 'mailto') {
       print('📧 Mailto link detected: $uri');
       if (onMailtoLink != null) {

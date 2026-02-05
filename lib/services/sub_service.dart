@@ -40,6 +40,7 @@ class SubService {
     required String planTier,
     required String planPeriod,
     String? transactionId,
+    String? currency,
   }) async {
     return await _dio.post(
       '/api/payment/cmi/sign',
@@ -50,6 +51,8 @@ class SubService {
         'planTier': planTier,
         'planPeriod': planPeriod,
         if (transactionId != null) 'transactionId': transactionId,
+        if (currency != null) 'currency': currency,
+        // 'currency': 'USD',
       },
     );
   }
